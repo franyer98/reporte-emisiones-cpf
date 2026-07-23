@@ -87,10 +87,13 @@
   #menuToggle.open { color: var(--text); border-color: var(--cool); background: var(--cpf2-dim); }
 
   .nav-menu {
+    position: fixed; top: 54px; left: 0; right: 0; z-index: 40;
     background: var(--surface); border-bottom: 1px solid var(--border);
-    max-height: 0; overflow: hidden; transition: max-height .25s ease;
+    box-shadow: 0 12px 24px rgba(0,0,0,0.25);
+    max-height: 0; overflow-y: auto; transition: max-height .25s ease;
+    visibility: hidden;
   }
-  .nav-menu.open { max-height: 400px; }
+  .nav-menu.open { max-height: calc(100vh - 54px); visibility: visible; }
   .nav-menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; padding: 18px 0; }
   .nav-group-title { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: .1em; color: var(--text-faint); margin-bottom: 8px; }
   .nav-link {
@@ -849,6 +852,13 @@ renderFilters2(); renderGrid2();
         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 60);
     });
+  });
+
+  document.addEventListener('click', (e) => {
+    if (nav.classList.contains('open') && !nav.contains(e.target) && !menuBtn.contains(e.target)) {
+      nav.classList.remove('open');
+      menuBtn.classList.remove('open');
+    }
   });
 })();
 </script>
