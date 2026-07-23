@@ -382,6 +382,29 @@ const tooltipBase = {
   displayColors: false,
 };
 
+// ---------- Plugin: valor visible al final de cada barra ----------
+const barValueLabels = {
+  id: 'barValueLabels',
+  afterDatasetsDraw(chart) {
+    if (chart.config.type !== 'bar' || chart.options.indexAxis !== 'y') return;
+    const { ctx } = chart;
+    chart.data.datasets.forEach((dataset, dsIndex) => {
+      const meta = chart.getDatasetMeta(dsIndex);
+      meta.data.forEach((bar, i) => {
+        const value = dataset.data[i];
+        ctx.save();
+        ctx.font = "700 11px 'JetBrains Mono', monospace";
+        ctx.fillStyle = '#eef1f4';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(value.toLocaleString('es-CO'), bar.x + 8, bar.y);
+        ctx.restore();
+      });
+    });
+  }
+};
+Chart.register(barValueLabels);
+
 // ---------- CPF-1: Pareto (horizontal bar, log scale) ----------
 new Chart(document.getElementById('chartPareto1'), {
   type: 'bar',
@@ -398,6 +421,7 @@ new Chart(document.getElementById('chartPareto1'), {
     indexAxis: 'y',
     responsive: true,
     maintainAspectRatio: false,
+    layout: { padding: { right: 56 } },
     animation: { duration: 900, easing: 'easeOutQuart' },
     scales: {
       x: { type: 'logarithmic', grid: { color: '#1a1e25' }, ticks: { callback: v => [10,100,1000,10000].includes(v) ? v.toLocaleString('es-CO') : '' }, title: { display: true, text: 'g/Hr (escala log)', color: '#566072', font: {size:10} } },
@@ -462,6 +486,7 @@ new Chart(document.getElementById('chartPareto2'), {
     indexAxis: 'y',
     responsive: true,
     maintainAspectRatio: false,
+    layout: { padding: { right: 56 } },
     animation: { duration: 900, easing: 'easeOutQuart' },
     scales: {
       x: { type: 'logarithmic', grid: { color: '#1a1e25' }, ticks: { callback: v => [10,100,1000,10000].includes(v) ? v.toLocaleString('es-CO') : '' }, title: { display: true, text: 'g/Hr (escala log)', color: '#566072', font: {size:10} } },
