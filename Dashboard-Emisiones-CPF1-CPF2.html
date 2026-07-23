@@ -209,7 +209,27 @@
     body { background: var(--bg) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     section { break-inside: avoid; }
     .fcard, .chart-card, .card { break-inside: avoid; }
+    .lightbox { display: none !important; }
   }
+
+  /* ---------- LIGHTBOX ---------- */
+  .lightbox { position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center; padding: 20px; }
+  .lightbox.open { display: flex; }
+  .lightbox-backdrop { position: absolute; inset: 0; background: rgba(4,5,6,0.85); backdrop-filter: blur(4px); }
+  .lightbox-content { position: relative; z-index: 1; max-width: 620px; width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; max-height: 90vh; overflow-y: auto; }
+  .lightbox-close { position: absolute; top: 12px; right: 12px; z-index: 2; width: 34px; height: 34px; border-radius: 50%; border: none; background: rgba(0,0,0,.55); color: #fff; font-size: 16px; cursor: pointer; backdrop-filter: blur(4px); }
+  .lightbox-close:hover { background: rgba(0,0,0,.8); }
+  .lightbox-content img { width: 100%; display: block; background: #000; }
+  .lightbox-info { padding: 18px 20px 22px; }
+  .lightbox-badge { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: .06em; padding: 4px 10px; border-radius: 5px; margin-bottom: 10px; }
+  .lightbox-badge.critico { background: rgba(255,71,87,.85); color: #fff; }
+  .lightbox-badge.alto { background: rgba(255,178,56,.88); color: #1a1200; }
+  .lightbox-badge.medio { background: rgba(255,214,10,.85); color: #1a1200; }
+  .lightbox-badge.bajo { background: rgba(45,212,238,.85); color: #00232a; }
+  .lightbox-eq { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 22px; }
+  .lightbox-meta { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--text-faint); text-transform: uppercase; letter-spacing: .04em; margin: 6px 0 14px; }
+  .lightbox-desc { font-size: 14px; color: var(--text-dim); line-height: 1.6; }
+  .chart-canvas-wrap canvas { cursor: pointer; }
 </style>
 </head>
 <body>
@@ -261,7 +281,7 @@
 <div class="panel t1 active" id="panel-t1">
   <section id="ranking">
     <div class="wrap">
-      <div class="section-head"><h2>Ranking de severidad</h2><div class="section-note">TASA DE FUGA POR PUNTO (g/Hr) · ORDENADO DE MAYOR A MENOR</div></div>
+      <div class="section-head"><h2>Ranking de severidad</h2><div class="section-note">TASA DE FUGA POR PUNTO (g/Hr) · TOCA UNA BARRA PARA VER LA FOTO</div></div>
       <div class="chart-card tall"><div class="chart-canvas-wrap" style="height:666px"><canvas id="chartPareto1"></canvas></div></div>
     </div>
   </section>
@@ -301,7 +321,7 @@
 <div class="panel t2" id="panel-t2">
   <section id="ranking2">
     <div class="wrap">
-      <div class="section-head"><h2>Ranking de severidad — CPF-2</h2><div class="section-note">TASA DE FUGA POR PUNTO (g/Hr) · ORDENADO DE MAYOR A MENOR</div></div>
+      <div class="section-head"><h2>Ranking de severidad — CPF-2</h2><div class="section-note">TASA DE FUGA POR PUNTO (g/Hr) · TOCA UNA BARRA PARA VER LA FOTO</div></div>
       <div class="chart-card tall"><div class="chart-canvas-wrap" style="height:534px"><canvas id="chartPareto2"></canvas></div></div>
     </div>
   </section>
@@ -337,6 +357,20 @@
   </section>
 </div>
 
+<div class="lightbox" id="lightbox">
+  <div class="lightbox-backdrop" id="lightboxBackdrop"></div>
+  <div class="lightbox-content">
+    <button class="lightbox-close" id="lightboxClose">✕</button>
+    <img id="lightboxImg" src="" alt="">
+    <div class="lightbox-info">
+      <div class="lightbox-badge" id="lightboxBadge"></div>
+      <div class="lightbox-eq" id="lightboxEq"></div>
+      <div class="lightbox-meta" id="lightboxMeta"></div>
+      <div class="lightbox-desc" id="lightboxDesc"></div>
+    </div>
+  </div>
+</div>
+
 <footer>
   <div class="wrap">
   </div>
@@ -352,6 +386,8 @@ const PARETO1_COLORS = ["#ff4757", "#ff4757", "#ff4757", "#ff4757", "#ffb238", "
 const PARETO2_LABELS = ["300-TK-0103 \u00b7 BRIDA INSTRUMENTACION", "300-TK-0103 \u00b7 MANHOLE", "300-TK-0201 \u00b7 MANHOLE", "300-TK-0201 \u00b7 MANHOLE", "300-TK-0201 \u00b7 BRIDA", "300-TK-0301 \u00b7 MANHOLE", "300-TK-0101 \u00b7 MANHOLE", "300-TK-0001 \u00b7 MANHOLE", "300-TK-0401 \u00b7 MANHOLE", "300-TK-0103 \u00b7 MANHOLE", "300-TK-0101 \u00b7 MANHOLE"];
 const PARETO2_VALUES = [3400, 2800, 1900, 1100, 750, 540, 510, 300, 280, 270, 250];
 const PARETO2_COLORS = ["#ffb238", "#ffb238", "#ffb238", "#ffb238", "#ffb238", "#ffb238", "#ffb238", "#ffd60a", "#ffd60a", "#ffd60a", "#ffd60a"];
+const PARETO1_IDS = [5, 3, 6, 9, 7, 4, 8, 13, 11, 12, 14, 2, 10, 1];
+const PARETO2_IDS = [10, 11, 2, 3, 4, 1, 5, 7, 8, 9, 6];
 const AREA_TASA_LABELS = ["PROCESOS", "FWKOS", "SKIM TANK"];
 const AREA_TASA_VALUES = [27952, 17700, 626];
 const EQ_TASA_LABELS = ["TK-901B", "TK-901C", "TK-901A", "TK-904", "740-TK-030C", "740-TK-020C", "TK-902", "TK-906B"];
@@ -413,6 +449,25 @@ const barValueLabels = {
 };
 Chart.register(barValueLabels);
 
+// ---------- Lightbox: foto al hacer clic en una barra ----------
+function tierLabelLB(t) { return {critico:'CRÍTICO', alto:'ALTO', medio:'MEDIO', bajo:'BAJO'}[t]; }
+function openLightbox(item) {
+  document.getElementById('lightboxImg').src = item.img;
+  const badge = document.getElementById('lightboxBadge');
+  badge.textContent = tierLabelLB(item.tier);
+  badge.className = 'lightbox-badge ' + item.tier;
+  document.getElementById('lightboxEq').textContent = item.equipo;
+  document.getElementById('lightboxMeta').textContent = `${item.area} · ${item.punto} · ${item.elemento} · ${item.tasa.toLocaleString('es-CO')} g/Hr`;
+  document.getElementById('lightboxDesc').textContent = item.hallazgo;
+  document.getElementById('lightbox').classList.add('open');
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+}
+document.getElementById('lightboxClose').addEventListener('click', closeLightbox);
+document.getElementById('lightboxBackdrop').addEventListener('click', closeLightbox);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLightbox(); });
+
 // ---------- CPF-1: Pareto (horizontal bar, log scale) ----------
 new Chart(document.getElementById('chartPareto1'), {
   type: 'bar',
@@ -433,6 +488,12 @@ new Chart(document.getElementById('chartPareto1'), {
     maintainAspectRatio: false,
     layout: { padding: { right: 56 } },
     animation: { duration: 900, easing: 'easeOutQuart' },
+    onClick: (evt, elements) => {
+      if (elements.length) openLightbox(DATA1.find(d => d.id === PARETO1_IDS[elements[0].index]));
+    },
+    onHover: (evt, elements) => {
+      evt.native.target.style.cursor = elements.length ? 'pointer' : 'default';
+    },
     scales: {
       x: { type: 'logarithmic', grid: { color: '#1a1e25' }, ticks: { callback: v => [10,100,1000,10000].includes(v) ? v.toLocaleString('es-CO') : '' }, title: { display: true, text: 'g/Hr (escala log)', color: '#566072', font: {size:10} } },
       y: { grid: { display: false }, ticks: { color: '#eef1f4', font: { family: "'Inter', sans-serif", size: 11 } } }
@@ -500,6 +561,12 @@ new Chart(document.getElementById('chartPareto2'), {
     maintainAspectRatio: false,
     layout: { padding: { right: 56 } },
     animation: { duration: 900, easing: 'easeOutQuart' },
+    onClick: (evt, elements) => {
+      if (elements.length) openLightbox(DATA2.find(d => d.id === PARETO2_IDS[elements[0].index]));
+    },
+    onHover: (evt, elements) => {
+      evt.native.target.style.cursor = elements.length ? 'pointer' : 'default';
+    },
     scales: {
       x: { type: 'logarithmic', grid: { color: '#1a1e25' }, ticks: { callback: v => [10,100,1000,10000].includes(v) ? v.toLocaleString('es-CO') : '' }, title: { display: true, text: 'g/Hr (escala log)', color: '#566072', font: {size:10} } },
       y: { grid: { display: false }, ticks: { color: '#eef1f4', font: { family: "'Inter', sans-serif", size: 11 } } }
