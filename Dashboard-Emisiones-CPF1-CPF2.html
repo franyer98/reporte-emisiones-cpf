@@ -62,16 +62,45 @@
   html[data-theme="light"] .noise { display: none; }
   html[data-theme="light"] body { -webkit-font-smoothing: subpixel-antialiased; }
 
-  .theme-toggle {
-    position: fixed; top: 16px; right: 20px; z-index: 50;
-    width: 38px; height: 38px; border-radius: 50%;
-    background: var(--surface); border: 1px solid var(--border);
-    color: var(--text-dim); display: flex; align-items: center; justify-content: center;
-    cursor: pointer; transition: all .15s ease;
+  .theme-toggle { display: none; }
+
+  .brand-bar {
+    position: sticky; top: 0; z-index: 30; height: 54px;
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    display: flex; align-items: center;
   }
-  .theme-toggle:hover { color: var(--text); border-color: var(--cool); }
+  .brand-bar-inner { display: flex; align-items: center; justify-content: space-between; height: 100%; }
+  .brand { display: flex; align-items: center; gap: 9px; }
+  .brand-name { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 14.5px; letter-spacing: .02em; color: var(--text); }
+  .brand-sep { color: var(--text-faint); }
+  .brand-sub { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--text-faint); text-transform: uppercase; letter-spacing: .04em; }
+  .brand-actions { display: flex; align-items: center; gap: 8px; }
+  .icon-btn {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--surface-2); border: 1px solid var(--border);
+    color: var(--text-dim); display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all .15s ease; position: relative;
+  }
+  .icon-btn:hover { color: var(--text); border-color: var(--cool); }
+  #menuToggle.open { color: var(--text); border-color: var(--cool); background: var(--cpf2-dim); }
+
+  .nav-menu {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    max-height: 0; overflow: hidden; transition: max-height .25s ease;
+  }
+  .nav-menu.open { max-height: 400px; }
+  .nav-menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; padding: 18px 0; }
+  .nav-group-title { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: .1em; color: var(--text-faint); margin-bottom: 8px; }
+  .nav-link {
+    display: block; padding: 8px 0; font-size: 14px; color: var(--text-dim);
+    text-decoration: none; border-bottom: 1px solid var(--border);
+    transition: color .15s ease;
+  }
+  .nav-link:last-child { border-bottom: none; }
+  .nav-link:hover { color: var(--cool); }
   @media (max-width: 620px) {
-    .theme-toggle { top: 12px; right: 12px; width: 34px; height: 34px; }
+    .brand-sub { display: none; }
+    .nav-menu-grid { grid-template-columns: 1fr; gap: 4px; }
   }
   .wrap { max-width: 1180px; margin: 0 auto; padding: 0 28px; position:relative; z-index:2; }
 
@@ -127,7 +156,7 @@
   @media (max-width: 760px) { .facility-row { grid-template-columns: 1fr; } }
 
   /* ---------- FACILITY TABS ---------- */
-  .tabs-bar { position: sticky; top:0; z-index: 10; background: rgba(8,9,11,.92); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); }
+  .tabs-bar { position: sticky; top:54px; z-index: 20; background: var(--surface); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); }
   .tabs { display:flex; gap: 4px; padding: 14px 0; }
   .tab {
     font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 14px;
@@ -233,6 +262,8 @@
   }
   @media print {
     .tabs-bar { display: none !important; }
+    .brand-bar { display: none !important; }
+    .nav-menu { display: none !important; }
     .panel { display: block !important; }
     body { background: var(--bg) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     section { break-inside: avoid; }
@@ -263,12 +294,51 @@
 <body>
 <div class="noise"></div>
 
-<button class="theme-toggle" id="themeToggle" title="Cambiar tema" aria-label="Cambiar tema claro/oscuro">
-  <svg id="iconMoon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-  <svg id="iconSun" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
-</button>
+<div class="brand-bar">
+  <div class="wrap brand-bar-inner">
+    <div class="brand">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="11" fill="#00693C"/>
+        <path d="M12 5c2.8 2.6 4.5 5.2 4.5 7.8a4.5 4.5 0 1 1-9 0C7.5 10.2 9.2 7.6 12 5z" fill="#8DC63F"/>
+      </svg>
+      <span class="brand-name">ECOPETROL</span>
+      <span class="brand-sep">·</span>
+      <span class="brand-sub">Campo Rubiales</span>
+    </div>
+    <div class="brand-actions">
+      <button class="icon-btn" id="menuToggle" title="Menú" aria-label="Abrir menú de secciones">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+      <button class="icon-btn" id="themeToggle" title="Cambiar tema" aria-label="Cambiar tema claro/oscuro">
+        <svg id="iconMoon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <svg id="iconSun" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
 
-<header class="hero">
+<div class="nav-menu" id="navMenu">
+  <div class="wrap">
+    <div class="nav-menu-grid">
+      <div class="nav-group">
+        <div class="nav-group-title">CPF-1</div>
+        <a href="#" class="nav-link" data-tab="t1" data-target="ranking">Ranking de severidad</a>
+        <a href="#" class="nav-link" data-tab="t1" data-target="composicion">Composición de la fuga</a>
+        <a href="#" class="nav-link" data-tab="t1" data-target="accion">Puntos críticos</a>
+        <a href="#" class="nav-link" data-tab="t1" data-target="detalle">Detalle e inspección</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">CPF-2</div>
+        <a href="#" class="nav-link" data-tab="t2" data-target="ranking2">Ranking de severidad</a>
+        <a href="#" class="nav-link" data-tab="t2" data-target="composicion2">Composición de la fuga</a>
+        <a href="#" class="nav-link" data-tab="t2" data-target="accion2">Puntos críticos</a>
+        <a href="#" class="nav-link" data-tab="t2" data-target="detalle2">Detalle e inspección</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<header class="hero" id="resumen">
   <div class="wrap">
     <div class="eyebrow"><span class="dot"></span>CAMPO RUBIALES · INSPECCIÓN TERMOGRÁFICA (FLIR) · EMISIONES FUGITIVAS</div>
     <div class="hero-num">58.38 kg/Hr</div>
@@ -754,6 +824,32 @@ renderFilters2(); renderGrid2();
   btn.addEventListener('click', () => {
     const current = htmlEl.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
     setTheme(current);
+  });
+})();
+
+// ---------- Menú de navegación por secciones ----------
+(function() {
+  const menuBtn = document.getElementById('menuToggle');
+  const nav = document.getElementById('navMenu');
+
+  menuBtn.addEventListener('click', () => {
+    nav.classList.toggle('open');
+    menuBtn.classList.toggle('open');
+  });
+
+  document.querySelectorAll('.nav-link').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const tabId = link.dataset.tab;
+      const targetId = link.dataset.target;
+      document.querySelector(`.tab.${tabId}`).click();
+      nav.classList.remove('open');
+      menuBtn.classList.remove('open');
+      setTimeout(() => {
+        const el = document.getElementById(targetId);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 60);
+    });
   });
 })();
 </script>
