@@ -1,6 +1,6 @@
-# Reporte de Emisiones Fugitivas — Campo Rubiales (CPF-1 & CPF-2)
+# Reporte de Emisiones Fugitivas — CPF-1 & CPF-2
 
-Registro e informe visual de la inspección termográfica (FLIR) de emisiones fugitivas en Campo Rubiales, entre sus dos facilidades: **CPF-1** y **CPF-2**.
+Registro e informe visual de la inspección termográfica (FLIR) de emisiones fugitivas entre dos facilidades: **CPF-1** y **CPF-2**.
 
 ## Contenido
 
