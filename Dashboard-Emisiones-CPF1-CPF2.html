@@ -34,6 +34,20 @@
     --cpf2: #e08a4f;
     --cpf2-dim: rgba(224,138,79,0.14);
   }
+  html[data-theme="light"] {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --surface-2: #eef0f3;
+    --border: #dde1e7;
+    --text: #14171a;
+    --text-dim: #55606b;
+    --text-faint: #8894a0;
+    --cool: #0d9dbb;
+    --mid: #c9791a;
+    --hot: #e0293c;
+    --cpf2: #b8632a;
+    --cpf2-dim: rgba(184,99,42,0.10);
+  }
   * { box-sizing: border-box; margin:0; padding:0; }
   html { scroll-behavior: smooth; }
   body {
@@ -44,6 +58,20 @@
   .noise {
     position: fixed; inset: 0; pointer-events:none; opacity:.035; z-index: 1;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  html[data-theme="light"] .noise { display: none; }
+  html[data-theme="light"] body { -webkit-font-smoothing: subpixel-antialiased; }
+
+  .theme-toggle {
+    position: fixed; top: 16px; right: 20px; z-index: 50;
+    width: 38px; height: 38px; border-radius: 50%;
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--text-dim); display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all .15s ease;
+  }
+  .theme-toggle:hover { color: var(--text); border-color: var(--cool); }
+  @media (max-width: 620px) {
+    .theme-toggle { top: 12px; right: 12px; width: 34px; height: 34px; }
   }
   .wrap { max-width: 1180px; margin: 0 auto; padding: 0 28px; position:relative; z-index:2; }
 
@@ -235,6 +263,11 @@
 <body>
 <div class="noise"></div>
 
+<button class="theme-toggle" id="themeToggle" title="Cambiar tema" aria-label="Cambiar tema claro/oscuro">
+  <svg id="iconMoon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+  <svg id="iconSun" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+</button>
+
 <header class="hero">
   <div class="wrap">
     <div class="eyebrow"><span class="dot"></span>CAMPO RUBIALES · INSPECCIÓN TERMOGRÁFICA (FLIR) · EMISIONES FUGITIVAS</div>
@@ -410,21 +443,18 @@ document.querySelectorAll('.tab').forEach(tab => {
 });
 
 // ---------- Chart.js global theme ----------
-Chart.defaults.font.family = "'JetBrains Mono', monospace";
-Chart.defaults.color = '#8b96a3';
-Chart.defaults.borderColor = '#242a33';
-
+const cv = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 const moneyG = (v) => v.toLocaleString('es-CO') + ' g/Hr';
-const tooltipBase = {
-  backgroundColor: '#12151a',
-  borderColor: '#242a33',
+const getTooltipBase = () => ({
+  backgroundColor: cv('--surface'),
+  borderColor: cv('--border'),
   borderWidth: 1,
-  titleColor: '#eef1f4',
-  bodyColor: '#8b96a3',
+  titleColor: cv('--text'),
+  bodyColor: cv('--text-dim'),
   titleFont: { family: "'Space Grotesk', sans-serif", weight: '600' },
   padding: 10,
   displayColors: false,
-};
+});
 
 // ---------- Plugin: valor visible al final de cada barra ----------
 const barValueLabels = {
@@ -432,13 +462,14 @@ const barValueLabels = {
   afterDatasetsDraw(chart) {
     if (chart.config.type !== 'bar' || chart.options.indexAxis !== 'y') return;
     const { ctx } = chart;
+    const labelColor = cv('--text');
     chart.data.datasets.forEach((dataset, dsIndex) => {
       const meta = chart.getDatasetMeta(dsIndex);
       meta.data.forEach((bar, i) => {
         const value = dataset.data[i];
         ctx.save();
         ctx.font = "700 11px 'JetBrains Mono', monospace";
-        ctx.fillStyle = '#eef1f4';
+        ctx.fillStyle = labelColor;
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
         ctx.fillText(value.toLocaleString('es-CO'), bar.x + 8, bar.y);
@@ -468,6 +499,19 @@ document.getElementById('lightboxClose').addEventListener('click', closeLightbox
 document.getElementById('lightboxBackdrop').addEventListener('click', closeLightbox);
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLightbox(); });
 
+const CHART_IDS = ['chartPareto1','chartAreaDonut1','chartEqDonut1','chartPareto2','chartAreaDonut2','chartEq2'];
+function destroyCharts() {
+  CHART_IDS.forEach(id => {
+    const c = Chart.getChart(id);
+    if (c) c.destroy();
+  });
+}
+function initCharts() {
+  destroyCharts();
+  Chart.defaults.font.family = "'JetBrains Mono', monospace";
+  Chart.defaults.color = cv('--text-dim');
+  Chart.defaults.borderColor = cv('--border');
+
 // ---------- CPF-1: Pareto (horizontal bar, log scale) ----------
 new Chart(document.getElementById('chartPareto1'), {
   type: 'bar',
@@ -495,12 +539,12 @@ new Chart(document.getElementById('chartPareto1'), {
       evt.native.target.style.cursor = elements.length ? 'pointer' : 'default';
     },
     scales: {
-      x: { type: 'logarithmic', grid: { color: '#1a1e25' }, ticks: { callback: v => [10,100,1000,10000].includes(v) ? v.toLocaleString('es-CO') : '' }, title: { display: true, text: 'g/Hr (escala log)', color: '#566072', font: {size:10} } },
-      y: { grid: { display: false }, ticks: { color: '#eef1f4', font: { family: "'Inter', sans-serif", size: 11 } } }
+      x: { type: 'logarithmic', grid: { color: cv('--surface-2') }, ticks: { callback: v => [10,100,1000,10000].includes(v) ? v.toLocaleString('es-CO') : '' }, title: { display: true, text: 'g/Hr (escala log)', color: cv('--text-faint'), font: {size:10} } },
+      y: { grid: { display: false }, ticks: { color: cv('--text'), font: { family: "'Inter', sans-serif", size: 11 } } }
     },
     plugins: {
       legend: { display: false },
-      tooltip: { ...tooltipBase, callbacks: { label: (ctx) => moneyG(ctx.raw) } }
+      tooltip: { ...getTooltipBase(), callbacks: { label: (ctx) => moneyG(ctx.raw) } }
     }
   }
 });
@@ -510,14 +554,14 @@ new Chart(document.getElementById('chartAreaDonut1'), {
   type: 'doughnut',
   data: {
     labels: AREA_TASA_LABELS,
-    datasets: [{ data: AREA_TASA_VALUES, backgroundColor: ['#ff4757','#ffb238','#2dd4ee'], borderColor: '#12151a', borderWidth: 3 }]
+    datasets: [{ data: AREA_TASA_VALUES, backgroundColor: ['#ff4757','#ffb238','#2dd4ee'], borderColor: cv('--surface'), borderWidth: 3 }]
   },
   options: {
     responsive: true, maintainAspectRatio: false,
     animation: { duration: 900 },
     plugins: {
-      legend: { position: 'bottom', labels: { color: '#8b96a3', font: { family: "'Inter', sans-serif", size: 11 }, padding: 14, usePointStyle: true, pointStyle: 'circle' } },
-      tooltip: { ...tooltipBase, callbacks: { label: (ctx) => `${ctx.label}: ${moneyG(ctx.raw)} (${(ctx.raw/AREA_TASA_VALUES.reduce((a,b)=>a+b,0)*100).toFixed(0)}%)` } }
+      legend: { position: 'bottom', labels: { color: cv('--text-dim'), font: { family: "'Inter', sans-serif", size: 11 }, padding: 14, usePointStyle: true, pointStyle: 'circle' } },
+      tooltip: { ...getTooltipBase(), callbacks: { label: (ctx) => `${ctx.label}: ${moneyG(ctx.raw)} (${(ctx.raw/AREA_TASA_VALUES.reduce((a,b)=>a+b,0)*100).toFixed(0)}%)` } }
     },
     cutout: '68%'
   }
@@ -528,14 +572,14 @@ new Chart(document.getElementById('chartEqDonut1'), {
   type: 'doughnut',
   data: {
     labels: EQ_TASA_LABELS,
-    datasets: [{ data: EQ_TASA_VALUES, backgroundColor: ['#ff4757','#ffb238','#ffd60a','#2dd4ee','#3fa9f5','#8b96a3','#e08a4f','#6e2c1f'], borderColor: '#12151a', borderWidth: 3 }]
+    datasets: [{ data: EQ_TASA_VALUES, backgroundColor: ['#ff4757','#ffb238','#ffd60a','#2dd4ee','#3fa9f5','#8b96a3','#e08a4f','#6e2c1f'], borderColor: cv('--surface'), borderWidth: 3 }]
   },
   options: {
     responsive: true, maintainAspectRatio: false,
     animation: { duration: 900 },
     plugins: {
-      legend: { position: 'bottom', labels: { color: '#8b96a3', font: { family: "'Inter', sans-serif", size: 10.5 }, padding: 10, usePointStyle: true, pointStyle: 'circle', boxWidth: 8 } },
-      tooltip: { ...tooltipBase, callbacks: { label: (ctx) => `${ctx.label}: ${moneyG(ctx.raw)} (${(ctx.raw/EQ_TASA_VALUES.reduce((a,b)=>a+b,0)*100).toFixed(0)}%)` } }
+      legend: { position: 'bottom', labels: { color: cv('--text-dim'), font: { family: "'Inter', sans-serif", size: 10.5 }, padding: 10, usePointStyle: true, pointStyle: 'circle', boxWidth: 8 } },
+      tooltip: { ...getTooltipBase(), callbacks: { label: (ctx) => `${ctx.label}: ${moneyG(ctx.raw)} (${(ctx.raw/EQ_TASA_VALUES.reduce((a,b)=>a+b,0)*100).toFixed(0)}%)` } }
     },
     cutout: '60%'
   }
@@ -568,12 +612,12 @@ new Chart(document.getElementById('chartPareto2'), {
       evt.native.target.style.cursor = elements.length ? 'pointer' : 'default';
     },
     scales: {
-      x: { type: 'logarithmic', grid: { color: '#1a1e25' }, ticks: { callback: v => [10,100,1000,10000].includes(v) ? v.toLocaleString('es-CO') : '' }, title: { display: true, text: 'g/Hr (escala log)', color: '#566072', font: {size:10} } },
-      y: { grid: { display: false }, ticks: { color: '#eef1f4', font: { family: "'Inter', sans-serif", size: 11 } } }
+      x: { type: 'logarithmic', grid: { color: cv('--surface-2') }, ticks: { callback: v => [10,100,1000,10000].includes(v) ? v.toLocaleString('es-CO') : '' }, title: { display: true, text: 'g/Hr (escala log)', color: cv('--text-faint'), font: {size:10} } },
+      y: { grid: { display: false }, ticks: { color: cv('--text'), font: { family: "'Inter', sans-serif", size: 11 } } }
     },
     plugins: {
       legend: { display: false },
-      tooltip: { ...tooltipBase, callbacks: { label: (ctx) => moneyG(ctx.raw) } }
+      tooltip: { ...getTooltipBase(), callbacks: { label: (ctx) => moneyG(ctx.raw) } }
     }
   }
 });
@@ -583,14 +627,14 @@ new Chart(document.getElementById('chartAreaDonut2'), {
   type: 'doughnut',
   data: {
     labels: AREA2_LABELS,
-    datasets: [{ data: AREA2_VALUES, backgroundColor: ['#e08a4f','#8b96a3'], borderColor: '#12151a', borderWidth: 3 }]
+    datasets: [{ data: AREA2_VALUES, backgroundColor: ['#e08a4f','#8b96a3'], borderColor: cv('--surface'), borderWidth: 3 }]
   },
   options: {
     responsive: true, maintainAspectRatio: false,
     animation: { duration: 900 },
     plugins: {
-      legend: { position: 'bottom', labels: { color: '#8b96a3', font: { family: "'Inter', sans-serif", size: 11 }, padding: 14, usePointStyle: true, pointStyle: 'circle' } },
-      tooltip: { ...tooltipBase, callbacks: { label: (ctx) => `${ctx.label}: ${moneyG(ctx.raw)} (${(ctx.raw/AREA2_VALUES.reduce((a,b)=>a+b,0)*100).toFixed(0)}%)` } }
+      legend: { position: 'bottom', labels: { color: cv('--text-dim'), font: { family: "'Inter', sans-serif", size: 11 }, padding: 14, usePointStyle: true, pointStyle: 'circle' } },
+      tooltip: { ...getTooltipBase(), callbacks: { label: (ctx) => `${ctx.label}: ${moneyG(ctx.raw)} (${(ctx.raw/AREA2_VALUES.reduce((a,b)=>a+b,0)*100).toFixed(0)}%)` } }
     },
     cutout: '68%'
   }
@@ -601,18 +645,19 @@ new Chart(document.getElementById('chartEq2'), {
   type: 'doughnut',
   data: {
     labels: EQ2_LABELS,
-    datasets: [{ data: EQ2_VALUES, backgroundColor: ['#e08a4f','#ffb238','#ffd60a','#2dd4ee','#3fa9f5','#8b96a3'], borderColor: '#12151a', borderWidth: 3 }]
+    datasets: [{ data: EQ2_VALUES, backgroundColor: ['#e08a4f','#ffb238','#ffd60a','#2dd4ee','#3fa9f5','#8b96a3'], borderColor: cv('--surface'), borderWidth: 3 }]
   },
   options: {
     responsive: true, maintainAspectRatio: false,
     animation: { duration: 900 },
     plugins: {
-      legend: { position: 'bottom', labels: { color: '#8b96a3', font: { family: "'Inter', sans-serif", size: 10.5 }, padding: 10, usePointStyle: true, pointStyle: 'circle', boxWidth: 8 } },
-      tooltip: { ...tooltipBase, callbacks: { label: (ctx) => `${ctx.label}: ${moneyG(ctx.raw)} (${(ctx.raw/EQ2_VALUES.reduce((a,b)=>a+b,0)*100).toFixed(0)}%)` } }
+      legend: { position: 'bottom', labels: { color: cv('--text-dim'), font: { family: "'Inter', sans-serif", size: 10.5 }, padding: 10, usePointStyle: true, pointStyle: 'circle', boxWidth: 8 } },
+      tooltip: { ...getTooltipBase(), callbacks: { label: (ctx) => `${ctx.label}: ${moneyG(ctx.raw)} (${(ctx.raw/EQ2_VALUES.reduce((a,b)=>a+b,0)*100).toFixed(0)}%)` } }
     },
     cutout: '60%'
   }
 });
+} // fin initCharts()
 
 // ---------- Filters + grid (CPF-1) ----------
 const areas1 = ['Todas', ...new Set(DATA1.map(d=>d.area))];
@@ -686,6 +731,31 @@ function renderGrid2() {
 
 renderFilters1(); renderGrid1();
 renderFilters2(); renderGrid2();
+
+// ---------- Tema claro / oscuro ----------
+(function() {
+  const htmlEl = document.documentElement;
+  const btn = document.getElementById('themeToggle');
+  const iconSun = document.getElementById('iconSun');
+  const iconMoon = document.getElementById('iconMoon');
+
+  function setTheme(theme) {
+    htmlEl.setAttribute('data-theme', theme);
+    iconSun.style.display = theme === 'light' ? 'block' : 'none';
+    iconMoon.style.display = theme === 'light' ? 'none' : 'block';
+    try { localStorage.setItem('cpf-theme', theme); } catch (e) {}
+    initCharts();
+  }
+
+  let saved = 'dark';
+  try { saved = localStorage.getItem('cpf-theme') || 'dark'; } catch (e) {}
+  setTheme(saved);
+
+  btn.addEventListener('click', () => {
+    const current = htmlEl.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    setTheme(current);
+  });
+})();
 </script>
 </body>
 </html>
