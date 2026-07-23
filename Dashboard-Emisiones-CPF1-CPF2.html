@@ -190,7 +190,8 @@
   .chart-card h3 { font-family:'Space Grotesk',sans-serif; font-size: 14px; font-weight: 600; margin-bottom: 4px; }
   .chart-card .chart-sub { font-family:'JetBrains Mono',monospace; font-size: 10.5px; color: var(--text-faint); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 14px; }
   .chart-card canvas { max-height: 320px; }
-  .chart-card.tall canvas { max-height: 520px; }
+  .chart-card.tall .chart-canvas-wrap { position: relative; }
+  .chart-card.tall canvas { max-height: none; }
   @media (max-width: 900px) {
     .chart-grid, .chart-grid.two { grid-template-columns: 1fr; }
   }
@@ -261,7 +262,7 @@
   <section id="ranking">
     <div class="wrap">
       <div class="section-head"><h2>Ranking de severidad</h2><div class="section-note">TASA DE FUGA POR PUNTO (g/Hr) · ORDENADO DE MAYOR A MENOR</div></div>
-      <div class="chart-card tall"><canvas id="chartPareto1"></canvas></div>
+      <div class="chart-card tall"><div class="chart-canvas-wrap" style="height:666px"><canvas id="chartPareto1"></canvas></div></div>
     </div>
   </section>
   <section id="composicion">
@@ -301,7 +302,7 @@
   <section id="ranking2">
     <div class="wrap">
       <div class="section-head"><h2>Ranking de severidad — CPF-2</h2><div class="section-note">TASA DE FUGA POR PUNTO (g/Hr) · ORDENADO DE MAYOR A MENOR</div></div>
-      <div class="chart-card tall"><canvas id="chartPareto2"></canvas></div>
+      <div class="chart-card tall"><div class="chart-canvas-wrap" style="height:534px"><canvas id="chartPareto2"></canvas></div></div>
     </div>
   </section>
   <section id="composicion2">
@@ -422,6 +423,8 @@ new Chart(document.getElementById('chartPareto1'), {
       backgroundColor: PARETO1_COLORS,
       borderRadius: 4,
       barThickness: 22,
+      categoryPercentage: 0.9,
+      barPercentage: 0.7,
     }]
   },
   options: {
@@ -487,6 +490,8 @@ new Chart(document.getElementById('chartPareto2'), {
       backgroundColor: PARETO2_COLORS,
       borderRadius: 4,
       barThickness: 22,
+      categoryPercentage: 0.9,
+      barPercentage: 0.7,
     }]
   },
   options: {
