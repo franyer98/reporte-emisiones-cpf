@@ -281,6 +281,53 @@
     .chart-grid, .chart-grid.two { grid-template-columns: 1fr; }
   }
 
+  /* ---------- SIMULADOR ---------- */
+  .sim-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+  .sim-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 22px; }
+  .sim-field { margin-bottom: 20px; }
+  .sim-field:last-child { margin-bottom: 0; }
+  .sim-field label { display: block; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-faint); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; }
+  .sim-field input[type="number"] {
+    width: 100%; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px 14px; font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700;
+    color: var(--text); outline: none;
+  }
+  .sim-field input[type="number"]:focus { border-color: var(--cool); }
+  .sim-chip-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .sim-chip {
+    font-family: 'JetBrains Mono', monospace; font-size: 11.5px; padding: 8px 14px; border-radius: 999px;
+    border: 1px solid var(--border); background: var(--surface-2); color: var(--text-dim); cursor: pointer;
+    transition: all .15s ease;
+  }
+  .sim-chip:hover { border-color: var(--cool); color: var(--text); }
+  .sim-chip.active { background: var(--text); color: var(--bg); border-color: var(--text); font-weight: 700; }
+  .sim-custom-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px,1fr)); gap: 8px; }
+  .sim-custom-grid .sc-item { display: flex; flex-direction: column; gap: 3px; }
+  .sim-custom-grid label { font-size: 9.5px; margin: 0; text-transform: none; }
+  .sim-custom-grid input {
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; color: var(--text);
+    padding: 6px 7px; font-family: 'JetBrains Mono', monospace; font-size: 11px; width: 100%; outline: none;
+  }
+  .sim-result {
+    background: linear-gradient(160deg, rgba(0,105,60,0.10), var(--surface));
+    border: 1px solid rgba(0,105,60,0.35); border-radius: 12px; padding: 24px; text-align: center;
+  }
+  .sim-result-label { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-faint); letter-spacing: .06em; }
+  .sim-result-value { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 44px; color: #00693C; margin: 8px 0 4px; }
+  html[data-theme="light"] .sim-result-value { color: #00522f; }
+  .sim-result-sub { font-size: 12px; color: var(--text-dim); margin-bottom: 16px; }
+  .sim-toggle-steps {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--cool); background: none;
+    border: none; cursor: pointer; padding: 4px;
+  }
+  .sim-steps { display: none; text-align: left; margin-top: 14px; border-top: 1px solid var(--border); padding-top: 12px; }
+  .sim-steps.open { display: block; }
+  .sim-step-row { display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; font-size: 11.5px; border-bottom: 1px dashed var(--border); }
+  .sim-step-row:last-child { border-bottom: none; }
+  .sim-step-row .k { color: var(--text-dim); }
+  .sim-step-row .v { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--text); white-space: nowrap; }
+  @media (max-width: 800px) { .sim-grid { grid-template-columns: 1fr; } }
+
   footer { padding: 40px 0 60px; border-top: 1px solid var(--border); margin-top: 8px; }
   .footer-inner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding-top: 28px; }
   .footer-credit { font-size: 13px; color: var(--text-dim); }
@@ -359,6 +406,10 @@
         <a href="#" class="nav-link" data-tab="t2" data-target="composicion2">Composición de la fuga</a>
         <a href="#" class="nav-link" data-tab="t2" data-target="accion2">Puntos críticos</a>
         <a href="#" class="nav-link" data-tab="t2" data-target="detalle2">Detalle e inspección</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">HERRAMIENTAS</div>
+        <a href="#" class="nav-link" data-target="simulador">Simulador GEI (g/h → CO2eq)</a>
       </div>
     </div>
   </div>
@@ -510,6 +561,46 @@
     </div>
   </div>
 </div>
+
+<section id="simulador">
+  <div class="wrap">
+    <div class="section-head"><h2>Simulador GEI — g/h a Ton CO2eq/año</h2><div class="section-note">CADENA COMPLETA DE 11 PASOS · MISMA FÓRMULA DE ECOPETROL (GOP-F-006)</div></div>
+    <div class="sim-grid">
+      <div class="sim-panel">
+        <div class="sim-field">
+          <label>Lectura de la cámara (g/h)</label>
+          <input type="number" id="simGh" value="1000" min="0" step="1">
+        </div>
+        <div class="sim-field">
+          <label>Composición de gas</label>
+          <div class="sim-chip-row" id="simFacilidad">
+            <button class="sim-chip active" data-preset="cpf1">CPF-1 (promedio)</button>
+            <button class="sim-chip" data-preset="cpf2">CPF-2 (promedio)</button>
+            <button class="sim-chip" data-preset="custom">Personalizada</button>
+          </div>
+        </div>
+        <div class="sim-field">
+          <label>GWP del metano (potencial de calentamiento global)</label>
+          <div class="sim-chip-row" id="simGwp">
+            <button class="sim-chip" data-gwp="25">25 · IPCC AR4</button>
+            <button class="sim-chip active" data-gwp="28">28 · IPCC AR5</button>
+          </div>
+        </div>
+        <div class="sim-field" id="simCustomWrap" style="display:none;">
+          <label>Composición molar personalizada (% — debe sumar ~100)</label>
+          <div class="sim-custom-grid" id="simCustomGrid"></div>
+        </div>
+      </div>
+      <div class="sim-result">
+        <div class="sim-result-label">GEI — TON CO2EQ / AÑO</div>
+        <div class="sim-result-value" id="simResultTotal">—</div>
+        <div class="sim-result-sub" id="simResultSub"></div>
+        <button class="sim-toggle-steps" id="simToggleSteps">Ver los 11 pasos ▾</button>
+        <div class="sim-steps" id="simSteps"></div>
+      </div>
+    </div>
+  </div>
+</section>
 
 <footer>
   <div class="wrap">
@@ -841,6 +932,104 @@ function renderGrid2() {
 renderFilters1(); renderGrid1();
 renderFilters2(); renderGrid2();
 
+// ---------- Simulador GEI: cadena completa de 11 pasos ----------
+(function() {
+  const GASES = ['O2','N2','CO2','C1 (CH4)','C2','C3','iC4','nC4','iC5','nC5','C6','C7','C8','C9','C10','C11','C12'];
+  const PM = [31.9988, 28.0134, 44.0098, 16.04276, 30.06964, 44.09652, 58.1234, 58.1234, 72.15028, 72.15028, 86.17716, 100.20404, 114.23092, 128.2578, 142.28468, 156.31156, 170.33844];
+  const PRESETS = {
+    cpf1: [0, 49.365, 6.225, 43.635, 0.06, 0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    cpf2: [0, 20.5328, 5.9911, 73.2644, 0.0333, 0.005, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  };
+
+  let preset = 'cpf1';
+  let gwp = 28;
+  const customVals = [...PRESETS.cpf1];
+
+  const ghInput = document.getElementById('simGh');
+  const customWrap = document.getElementById('simCustomWrap');
+  const customGrid = document.getElementById('simCustomGrid');
+  const resultTotal = document.getElementById('simResultTotal');
+  const resultSub = document.getElementById('simResultSub');
+  const stepsEl = document.getElementById('simSteps');
+  const toggleBtn = document.getElementById('simToggleSteps');
+
+  // construir inputs de composicion personalizada
+  GASES.forEach((g, i) => {
+    const div = document.createElement('div');
+    div.className = 'sc-item';
+    div.innerHTML = `<label>${g}</label><input type="number" step="0.001" data-idx="${i}" value="${customVals[i]}">`;
+    customGrid.appendChild(div);
+  });
+  customGrid.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('input', () => {
+      customVals[inp.dataset.idx] = parseFloat(inp.value) || 0;
+      compute();
+    });
+  });
+
+  document.querySelectorAll('#simFacilidad .sim-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('#simFacilidad .sim-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      preset = chip.dataset.preset;
+      customWrap.style.display = preset === 'custom' ? 'block' : 'none';
+      compute();
+    });
+  });
+  document.querySelectorAll('#simGwp .sim-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('#simGwp .sim-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      gwp = parseFloat(chip.dataset.gwp);
+      compute();
+    });
+  });
+  ghInput.addEventListener('input', compute);
+  toggleBtn.addEventListener('click', () => {
+    stepsEl.classList.toggle('open');
+    toggleBtn.textContent = stepsEl.classList.contains('open') ? 'Ocultar los 11 pasos ▴' : 'Ver los 11 pasos ▾';
+  });
+
+  function compute() {
+    const F = parseFloat(ghInput.value) || 0;
+    const mol = preset === 'custom' ? customVals : PRESETS[preset];
+
+    const PM_gas = mol.reduce((s, v, i) => s + v * PM[i], 0) / 100;
+    const Y_CH4 = mol[3] * PM[3] / PM_gas;
+    const Z_CO2 = mol[2] * PM[2] / PM_gas;
+    const AA_TOC = mol.slice(3).reduce((s, v, i) => s + v * PM[i + 3], 0) / PM_gas;
+    const AB_CH4inTOC = Y_CH4 * 100 / AA_TOC;
+    const AC_CH4gh = F * AB_CH4inTOC / 100;
+    const AD_CO2gh = F / AA_TOC * 100 * Z_CO2 / 100;
+    const AE_CH4tonAno = AC_CH4gh * 24 * 365 / 1_000_000;
+    const AF_CO2tonAno = AD_CO2gh * 24 * 365 / 1_000_000;
+    const AG_total = AF_CO2tonAno + (AE_CH4tonAno * gwp);
+
+    resultTotal.textContent = isFinite(AG_total) ? AG_total.toLocaleString('es-CO', {maximumFractionDigits: 2}) : '—';
+    resultSub.textContent = `${F.toLocaleString('es-CO')} g/h · GWP ${gwp} · composición ${preset === 'custom' ? 'personalizada' : preset.toUpperCase()}`;
+
+    const steps = [
+      ['1. Peso molecular del gas', PM_gas, 'g/mol'],
+      ['2. % Másico CH4', Y_CH4, '%'],
+      ['3. % Másico CO2', Z_CO2, '%'],
+      ['4. % Fracción Másica TOC', AA_TOC, '%'],
+      ['5. % CH4 dentro del TOC', AB_CH4inTOC, '%'],
+      ['6. Flujo de CH4', AC_CH4gh, 'g/h'],
+      ['7. Flujo de CO2', AD_CO2gh, 'g/h'],
+      ['8. CH4 en Ton/año', AE_CH4tonAno, 'ton/año'],
+      ['9. CO2 en Ton/año', AF_CO2tonAno, 'ton/año'],
+      [`10. CH4 × GWP (${gwp})`, AE_CH4tonAno * gwp, 'ton CO2eq/año'],
+      ['11. GEI total (CO2 + CH4×GWP)', AG_total, 'ton CO2eq/año'],
+    ];
+    stepsEl.innerHTML = steps.map(([label, val, unit]) => `
+      <div class="sim-step-row"><span class="k">${label}</span><span class="v">${isFinite(val) ? val.toLocaleString('es-CO',{maximumFractionDigits:4}) : '—'} ${unit}</span></div>
+    `).join('');
+  }
+
+  compute();
+})();
+
+
 // ---------- Tema claro / oscuro ----------
 (function() {
   const htmlEl = document.documentElement;
@@ -881,7 +1070,7 @@ renderFilters2(); renderGrid2();
       e.preventDefault();
       const tabId = link.dataset.tab;
       const targetId = link.dataset.target;
-      document.querySelector(`.tab.${tabId}`).click();
+      if (tabId) document.querySelector(`.tab.${tabId}`).click();
       nav.classList.remove('open');
       menuBtn.classList.remove('open');
       setTimeout(() => {
