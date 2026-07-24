@@ -132,6 +132,18 @@
     font-size: clamp(44px, 8vw, 92px); line-height: .96; letter-spacing: -0.03em;
     color: var(--mid);
   }
+  .hero-co2 {
+    display: inline-flex; align-items: center; gap: 7px; margin-top: 14px;
+    background: rgba(0,105,60,0.12); border: 1px solid rgba(0,105,60,0.35);
+    color: #00693C; padding: 7px 14px; border-radius: 999px;
+    font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600;
+  }
+  html[data-theme="light"] .hero-co2 { color: #00522f; background: rgba(0,105,60,0.08); }
+  .hero-co2-value { font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 700; }
+  .hero-co2-info {
+    font-family: 'Inter', sans-serif; font-style: normal; opacity: .65; cursor: help;
+    margin-left: 2px; font-size: 12px;
+  }
   .hero-sub { font-size: clamp(15px,2.2vw,18px); color: var(--text-dim); max-width: 680px; margin-top: 14px; }
   .hero-sub b { color: var(--text); font-weight: 600; }
   .facility-row {
@@ -345,6 +357,11 @@
   <div class="wrap">
     <div class="eyebrow"><span class="dot"></span>INSPECCIÓN TERMOGRÁFICA (FLIR) · EMISIONES FUGITIVAS</div>
     <div class="hero-num">58.38 kg/Hr</div>
+    <div class="hero-co2">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><path d="M8 12h8M12 8v8"/></svg>
+      <span class="hero-co2-value">14,447</span> ton CO2eq/año
+      <span class="hero-co2-info" title="Estimado a partir de la composición de gas promedio por facilidad (cromatografía Plantilla GEI-GOR) y GWP del CH4 = 28 (IPCC AR5). No es una medición directa de CO2 por punto.">ⓘ</span>
+    </div>
     <div class="hero-sub">de gas fugitivo detectado entre dos facilidades — <b>CPF-1</b> (14 puntos, 46.28 kg/Hr) y <b>CPF-2</b> (11 puntos, 12.10 kg/Hr) — equivalente a <b>1.40 toneladas/día</b>.</div>
     <div class="facility-row">
       <div class="fcard total">
