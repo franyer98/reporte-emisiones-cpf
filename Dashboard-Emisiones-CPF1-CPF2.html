@@ -323,11 +323,17 @@
   .sim-chip.active { background: var(--text); color: var(--bg); border-color: var(--text); font-weight: 700; }
   .sim-custom-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px,1fr)); gap: 8px; }
   .sim-custom-grid .sc-item { display: flex; flex-direction: column; gap: 3px; }
-  .sim-custom-grid label { font-size: 9.5px; margin: 0; text-transform: none; }
+  .sim-custom-grid label { font-size: 9.5px; margin: 0; text-transform: none; display: flex; justify-content: space-between; align-items: baseline; }
+  .sim-custom-grid label .sc-col { font-family: 'JetBrains Mono', monospace; font-size: 8px; color: var(--text-faint); background: var(--surface-2); border-radius: 3px; padding: 0 4px; }
   .sim-custom-grid input {
     background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; color: var(--text);
     padding: 6px 7px; font-family: 'JetBrains Mono', monospace; font-size: 11px; width: 100%; outline: none;
   }
+  #simPasteRow {
+    width: 100%; background: var(--surface-2); border: 1px dashed var(--cool); border-radius: 8px;
+    padding: 10px 12px; color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 11px; outline: none;
+  }
+  .sim-paste-hint { font-size: 10.5px; color: var(--text-faint); margin-top: 5px; line-height: 1.5; }
   .sim-result {
     background: linear-gradient(160deg, rgba(0,105,60,0.10), var(--surface));
     border: 1px solid rgba(0,105,60,0.35); border-radius: 12px; padding: 24px; text-align: center;
@@ -618,7 +624,10 @@
           </div>
         </div>
         <div class="sim-field" id="simCustomWrap" style="display:none;">
-          <label>Composición molar personalizada (% mol — debe sumar ~100)</label>
+          <label>Pegar fila desde Excel (opcional — atajo)</label>
+          <input type="text" id="simPasteRow" placeholder="Pega aquí: g/h + los 18 % mol, tal como los copias de la fila en Excel">
+          <div class="sim-paste-hint">Copia desde la celda "Lectura Camara g/h" hasta "% mol C12" (columnas F a X) y pega directo aquí — llena todo solo.</div>
+          <label style="margin-top:16px;">Composición molar personalizada (% mol — debe sumar ~100)</label>
           <div class="sim-custom-grid" id="simCustomGrid"></div>
         </div>
       </div>
@@ -1007,10 +1016,11 @@ renderFilters2(); renderGrid2();
   const toggleBtn = document.getElementById('simToggleSteps');
 
   // construir inputs de composicion personalizada
+  const EXCEL_COLS = ['G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X'];
   GASES.forEach((g, i) => {
     const div = document.createElement('div');
     div.className = 'sc-item';
-    div.innerHTML = `<label>${g}</label><input type="number" step="0.001" data-idx="${i}" value="${customVals[i]}">`;
+    div.innerHTML = `<label><span>${g}</span><span class="sc-col">${EXCEL_COLS[i]}</span></label><input type="number" step="0.001" data-idx="${i}" value="${customVals[i]}">`;
     customGrid.appendChild(div);
   });
   customGrid.querySelectorAll('input').forEach(inp => {
@@ -1041,6 +1051,22 @@ renderFilters2(); renderGrid2();
   toggleBtn.addEventListener('click', () => {
     stepsEl.classList.toggle('open');
     toggleBtn.textContent = stepsEl.classList.contains('open') ? 'Ocultar los 11 pasos ▴' : 'Ver los 11 pasos ▾';
+  });
+
+  const pasteInput = document.getElementById('simPasteRow');
+  pasteInput.addEventListener('input', () => {
+    // acepta tabs, o multiples espacios, como separador (igual que al pegar de Excel)
+    const parts = pasteInput.value.trim().split(/	+|\s{2,}/).map(s => s.replace(',', '.').trim()).filter(s => s !== '');
+    const nums = parts.map(parseFloat).filter(n => !isNaN(n));
+    if (nums.length < 2) return;
+    ghInput.value = nums[0];
+    const molValues = nums.slice(1, 19);
+    molValues.forEach((v, i) => {
+      customVals[i] = v;
+      const inp = customGrid.querySelector(`input[data-idx="${i}"]`);
+      if (inp) inp.value = v;
+    });
+    compute();
   });
 
   function compute() {
