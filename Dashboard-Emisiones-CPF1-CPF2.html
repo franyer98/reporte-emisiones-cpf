@@ -630,25 +630,17 @@
           <input type="number" id="simGh" value="1000" min="0" step="1">
         </div>
         <div class="sim-field">
-          <label>Composición de gas</label>
-          <div class="sim-chip-row" id="simFacilidad">
-            <button class="sim-chip active" data-preset="cpf1">CPF-1 (promedio)</button>
-            <button class="sim-chip" data-preset="cpf2">CPF-2 (promedio)</button>
-            <button class="sim-chip" data-preset="custom">Personalizada</button>
-          </div>
-        </div>
-        <div class="sim-field">
           <label>GWP del metano (potencial de calentamiento global)</label>
           <div class="sim-chip-row" id="simGwp">
             <button class="sim-chip" data-gwp="25">25 · IPCC AR4</button>
             <button class="sim-chip active" data-gwp="28">28 · IPCC AR5</button>
           </div>
         </div>
-        <div class="sim-field" id="simCustomWrap" style="display:none;">
+        <div class="sim-field" id="simCustomWrap">
           <label>Pegar fila desde Excel (opcional — atajo)</label>
           <input type="text" id="simPasteRow" placeholder="Pega aquí: g/h + los 18 % mol, tal como los copias de la fila en Excel">
           <div class="sim-paste-hint">Copia desde la celda "Lectura Camara g/h" hasta "% mol C12" (columnas F a X) y pega directo aquí — llena todo solo.</div>
-          <label style="margin-top:16px;">Composición molar personalizada (% mol — debe sumar ~100)</label>
+          <label style="margin-top:16px;">Composición molar (% mol — debe sumar ~100)</label>
           <div class="sim-custom-grid" id="simCustomGrid"></div>
         </div>
       </div>
@@ -1019,17 +1011,11 @@ renderFilters2(); renderGrid2();
 (function() {
   const GASES = ['H2','O2','N2','CO2','C1','C2','C3','iC4','nC4','iC5','nC5','C6','C7','C8','C9','C10','C11','C12'];
   const PM = [2.016, 31.9988, 28.0134, 44.0098, 16.04276, 30.06964, 44.09652, 58.1234, 58.1234, 72.15028, 72.15028, 86.17716, 100.20404, 114.23092, 128.2578, 142.28468, 156.31156, 170.33844];
-  const PRESETS = {
-    cpf1: [0, 0, 49.365, 6.225, 43.635, 0.06, 0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    cpf2: [0, 0, 20.5328, 5.9911, 73.2644, 0.0333, 0.005, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  };
 
-  let preset = 'cpf1';
   let gwp = 28;
-  const customVals = [...PRESETS.cpf1];
+  const customVals = new Array(18).fill(0);
 
   const ghInput = document.getElementById('simGh');
-  const customWrap = document.getElementById('simCustomWrap');
   const customGrid = document.getElementById('simCustomGrid');
   const resultTotal = document.getElementById('simResultTotal');
   const resultSub = document.getElementById('simResultSub');
@@ -1051,15 +1037,6 @@ renderFilters2(); renderGrid2();
     });
   });
 
-  document.querySelectorAll('#simFacilidad .sim-chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      document.querySelectorAll('#simFacilidad .sim-chip').forEach(c => c.classList.remove('active'));
-      chip.classList.add('active');
-      preset = chip.dataset.preset;
-      customWrap.style.display = preset === 'custom' ? 'block' : 'none';
-      compute();
-    });
-  });
   document.querySelectorAll('#simGwp .sim-chip').forEach(chip => {
     chip.addEventListener('click', () => {
       document.querySelectorAll('#simGwp .sim-chip').forEach(c => c.classList.remove('active'));
@@ -1092,7 +1069,7 @@ renderFilters2(); renderGrid2();
 
   function compute() {
     const F = parseFloat(ghInput.value) || 0;
-    const mol = preset === 'custom' ? customVals : PRESETS[preset];
+    const mol = customVals;
 
     const PM_gas = mol.reduce((s, v, i) => s + v * PM[i], 0) / 100;
     const Y_CH4 = mol[4] * PM[4] / PM_gas;
@@ -1106,7 +1083,7 @@ renderFilters2(); renderGrid2();
     const AG_total = AF_CO2tonAno + (AE_CH4tonAno * gwp);
 
     resultTotal.textContent = isFinite(AG_total) ? AG_total.toLocaleString('es-CO', {maximumFractionDigits: 2}) : '—';
-    resultSub.textContent = `${F.toLocaleString('es-CO')} g/h · GWP ${gwp} · composición ${preset === 'custom' ? 'personalizada' : preset.toUpperCase()}`;
+    resultSub.textContent = `${F.toLocaleString('es-CO')} g/h · GWP ${gwp}`;
 
     const steps = [
       ['Peso Molecular Gas (g/mol)', PM_gas, 'g/mol'],
