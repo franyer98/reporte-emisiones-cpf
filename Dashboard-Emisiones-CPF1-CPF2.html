@@ -348,6 +348,12 @@
     padding: 10px 12px; color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 11px; outline: none;
   }
   .sim-paste-hint { font-size: 10.5px; color: var(--text-faint); margin-top: 5px; line-height: 1.5; }
+  .sim-sum-check {
+    margin-top: 10px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; font-weight: 600;
+    padding: 8px 12px; border-radius: 7px; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .sim-sum-check.ok { background: rgba(45,212,238,0.10); color: var(--cool); }
+  .sim-sum-check.warn { background: rgba(255,71,87,0.10); color: var(--hot); }
   .sim-result {
     background: linear-gradient(160deg, rgba(0,105,60,0.10), var(--surface));
     border: 1px solid rgba(0,105,60,0.35); border-radius: 12px; padding: 24px; text-align: center;
@@ -642,6 +648,7 @@
           <div class="sim-paste-hint">Copia desde la celda "Lectura Camara g/h" hasta "% mol C12" (columnas F a X) y pega directo aquí — llena todo solo.</div>
           <label style="margin-top:16px;">Composición molar (% mol — debe sumar ~100)</label>
           <div class="sim-custom-grid" id="simCustomGrid"></div>
+          <div class="sim-sum-check" id="simSumCheck"></div>
         </div>
       </div>
       <div class="sim-result">
@@ -1070,6 +1077,19 @@ renderFilters2(); renderGrid2();
   function compute() {
     const F = parseFloat(ghInput.value) || 0;
     const mol = customVals;
+
+    const sumCheck = document.getElementById('simSumCheck');
+    const molSum = mol.reduce((s, v) => s + v, 0);
+    if (molSum === 0) {
+      sumCheck.textContent = '';
+      sumCheck.className = 'sim-sum-check';
+    } else if (Math.abs(molSum - 100) <= 2) {
+      sumCheck.textContent = `✓ Suma de composición: ${molSum.toLocaleString('es-CO',{maximumFractionDigits:2})}%`;
+      sumCheck.className = 'sim-sum-check ok';
+    } else {
+      sumCheck.textContent = `⚠ Suma de composición: ${molSum.toLocaleString('es-CO',{maximumFractionDigits:2})}% — debería dar ~100%. Revisa los valores.`;
+      sumCheck.className = 'sim-sum-check warn';
+    }
 
     const PM_gas = mol.reduce((s, v, i) => s + v * PM[i], 0) / 100;
     const Y_CH4 = mol[4] * PM[4] / PM_gas;
