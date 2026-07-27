@@ -492,6 +492,10 @@
   .intro-gwp-label { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; text-align: center; line-height: 1.5; }
   .intro-gwp-label span { display: block; font-weight: 400; color: var(--text-faint); font-size: 10.5px; }
   .intro-gwp-eq { font-family: 'Space Grotesk', sans-serif; font-size: 22px; color: var(--text-faint); font-weight: 700; }
+
+  .intro-video-wrap { position: relative; width: 100%; padding-top: 56.25%; border-radius: 10px; overflow: hidden; margin: 16px 0 8px; border: 1px solid var(--border); }
+  .intro-video-wrap iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
+  .intro-video-caption { font-size: 11.5px; color: var(--text-faint); text-align: center; }
   @media (max-width: 600px) { .intro-glossary { grid-template-columns: 1fr; } }
 
 </style>
@@ -564,6 +568,10 @@
   <div class="intro-step-num">01</div>
   <h2>Cómo se detecta</h2>
   <p>Los tanques no quedan 100% sellados — con el tiempo, empaques y escotillas se desajustan y el gas se escapa sin verse a simple vista. Para detectarlo se usa una <b>cámara OGI/FLIR</b>, que "ve" el gas como una nube de calor y además lo <b>cuantifica</b>: cuántos gramos escapan por hora (<b>g/h</b>) — el dato de partida de todo el cálculo.</p>
+  <div class="intro-video-wrap">
+    <iframe src="https://www.youtube.com/embed/j7WIK7fFtYQ" title="Cámaras OGI FLIR — detección de fugas de gas" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>
+  </div>
+  <p class="intro-video-caption">Video oficial de FLIR mostrando cómo estas cámaras detectan fugas invisibles al ojo humano.</p>
 </section>
 
 <section class="intro-section">
