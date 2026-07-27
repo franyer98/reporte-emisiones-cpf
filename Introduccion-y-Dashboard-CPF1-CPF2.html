@@ -437,8 +437,8 @@
   .intro-gwp-compare { display: flex; gap: 14px; margin: 16px 0; flex-wrap: wrap; }
   .intro-gwp-item { flex: 1; min-width: 150px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 15px; }
   .intro-gwp-item .gas { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 15px; margin-bottom: 6px; }
-  .intro-gwp-item .bar { height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; margin-bottom: 6px; }
-  .intro-gwp-item .bar-fill { height: 100%; border-radius: 4px; width: 100%; }
+  .intro-gwp-item .igwp-bar { height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; margin-bottom: 6px; }
+  .intro-gwp-item .igwp-bar-fill { height: 100%; border-radius: 4px; width: 100%; }
   .intro-gwp-item.co2 .bar-fill { background: var(--text-faint); }
   .intro-gwp-item.ch4 .bar-fill { background: var(--hot); }
   .intro-gwp-item .note { font-size: 11px; color: var(--text-faint); }
@@ -554,8 +554,8 @@
   <h2>¿Por qué importa saber qué gas es exactamente?</h2>
   <p>Porque no todos los gases calientan la atmósfera igual. El <b>metano (CH4)</b> es mucho más potente como gas de efecto invernadero que el <b>CO2</b> — atrapa muchísimo más calor.</p>
   <div class="intro-gwp-compare">
-    <div class="intro-gwp-item co2"><div class="gas">CO2</div><div class="bar"><div class="bar-fill"></div></div><div class="note">1 tonelada = 1 tonelada de "efecto calentador"</div></div>
-    <div class="intro-gwp-item ch4"><div class="gas">CH4 (metano)</div><div class="bar"><div class="bar-fill"></div></div><div class="note">1 tonelada = efecto de 25 a 28 toneladas de CO2</div></div>
+    <div class="intro-gwp-item co2"><div class="gas">CO2</div><div class="igwp-bar"><div class="igwp-bar-fill"></div></div><div class="note">1 tonelada = 1 tonelada de "efecto calentador"</div></div>
+    <div class="intro-gwp-item ch4"><div class="gas">CH4 (metano)</div><div class="igwp-bar"><div class="igwp-bar-fill"></div></div><div class="note">1 tonelada = efecto de 25 a 28 toneladas de CO2</div></div>
   </div>
   <p>Para poder comparar y sumar "un poco de esto, un poco de aquello" en un solo número, los científicos (agrupados en un organismo de la ONU llamado <b>IPCC</b>) calcularon cuántas veces más fuerte es el metano frente al CO2. A ese número se le llama <b>GWP</b> (Potencial de Calentamiento Global) — y así se llega al término que vas a ver en todos los reportes: <b>CO2 equivalente (CO2eq)</b>.</p>
 </section>
