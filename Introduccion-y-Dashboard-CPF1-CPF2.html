@@ -519,84 +519,61 @@
 <div id="introTop"></div>
 <header class="intro-hero">
   <div class="intro-wrap">
-    <div class="intro-eyebrow">GUÍA INTRODUCTORIA · SIN TECNICISMOS</div>
+    <div class="intro-eyebrow">GUÍA INTRODUCTORIA</div>
     <h1 class="intro-title">¿Qué son las<br>emisiones fugitivas?</h1>
-    <p class="intro-lede">Una explicación de principio a fin: qué se mide, cómo se mide, y cómo un número de cámara termina convertido en toneladas de CO2 al año.</p>
+    <p class="intro-lede">Gas que se escapa de tanques y tuberías sin que nadie lo note — y cómo se convierte en un número: toneladas de CO2 al año.</p>
   </div>
 </header>
 
 <section class="intro-section">
   <div class="intro-step-num">01</div>
-  <h2>El problema, en simple</h2>
-  <p>Los tanques y tuberías de una instalación petrolera no están 100% sellados. Con el tiempo, empaques, escotillas y bridas se desajustan un poco — y por esas pequeñas aberturas se escapa gas, sin que nadie lo note a simple vista. Eso es una <b>emisión fugitiva</b>: gas que se pierde sin querer, no por una válvula abierta a propósito.</p>
-  <div class="intro-analogy"><b>Analogía:</b> es como una llanta de carro con una fuga lenta. No la ves salir, no escuchas nada raro, pero cada semana tienes que echarle más aire. El tanque de crudo es igual: el gas se va poco a poco por grietas que no son visibles al ojo.</div>
-  <p>El problema es doble: se pierde producto (dinero) y se libera un gas de efecto invernadero a la atmósfera (impacto ambiental).</p>
+  <h2>Cómo se detecta</h2>
+  <p>Los tanques no quedan 100% sellados — con el tiempo, empaques y escotillas se desajustan y el gas se escapa sin verse a simple vista. Para detectarlo se usa una <b>cámara OGI/FLIR</b>, que "ve" el gas como una nube de calor y además lo <b>cuantifica</b>: cuántos gramos escapan por hora (<b>g/h</b>) — el dato de partida de todo el cálculo.</p>
 </section>
 
 <section class="intro-section">
   <div class="intro-step-num">02</div>
-  <h2>¿Cómo se detecta algo invisible?</h2>
-  <p>El gas que se fuga (metano, principalmente) es invisible al ojo humano. Para "verlo", se usa una <b>cámara OGI/FLIR</b> — una cámara térmica especial que no ve luz normal, sino calor e infrarrojo.</p>
-  <div class="intro-analogy"><b>Analogía:</b> es parecido a los lentes de visión nocturna que usan para ver personas en la oscuridad por su calor corporal. La cámara OGI hace algo similar, pero en vez de detectar personas, detecta la "firma" del gas de hidrocarburos contra el fondo — el gas absorbe y emite infrarrojo distinto al aire que lo rodea, así que aparece como una nube en la pantalla de la cámara.</div>
-  <p>Cuando el inspector encuentra una fuga, la cámara no solo la muestra — también la <b>cuantifica</b>: calcula cuántos gramos de gas están saliendo cada hora. Ese número (<b>g/h</b>) es el punto de partida de todo lo que viene después.</p>
+  <h2>Por qué importa la composición</h2>
+  <p>El gas no es un solo compuesto — es una mezcla (metano, CO2, nitrógeno, etc.), medida en laboratorio (<b>cromatografía</b>). Importa porque el <b>metano calienta la atmósfera ~28 veces más</b> que el CO2:</p>
+  <div class="intro-gwp-compare">
+    <div class="intro-gwp-item co2"><div class="gas">CO2</div><div class="igwp-bar"><div class="igwp-bar-fill"></div></div><div class="note">1 ton = 1 ton de efecto</div></div>
+    <div class="intro-gwp-item ch4"><div class="gas">CH4</div><div class="igwp-bar"><div class="igwp-bar-fill"></div></div><div class="note">1 ton = 25-28 ton de efecto</div></div>
+  </div>
+  <p>Ese factor (<b>GWP</b>, definido por el <b>IPCC</b>) es lo que permite sumar ambos gases en una sola cifra: <b>CO2 equivalente</b>.</p>
 </section>
 
 <section class="intro-section">
   <div class="intro-step-num">03</div>
-  <h2>No todo el "gas" es el mismo gas</h2>
-  <p>Aquí viene la parte menos obvia: el gas que sale de un tanque de crudo <b>no es un solo gas</b> — es una mezcla de muchos. Principalmente metano, pero también algo de CO2, nitrógeno, y otros hidrocarburos más pesados (etano, propano, y así sucesivamente).</p>
-  <div class="intro-analogy"><b>Analogía:</b> imagina un balde con 100 canicas de colores — no todas son del mismo color. Puede que 75 sean verdes (metano), 18 azules (nitrógeno), 5 rojas (CO2), y el resto de otros colores. Para saber exactamente qué hay en el balde, alguien tiene que contarlas — eso es lo que hace un laboratorio con una muestra del gas: te dice "de este balde, tal % es esto, tal % es lo otro".</div>
-  <p>Ese conteo se llama <b>cromatografía</b>, y da 18 porcentajes distintos que, entre todos, deben sumar 100% — porque están describiendo el balde completo, no una parte de él.</p>
+  <h2>El camino completo</h2>
+  <div class="intro-flow">
+    <div class="box hl">Cámara<br>(g/h)</div>
+    <div class="arrow">+</div>
+    <div class="box hl">Cromatografía</div>
+    <div class="arrow">&#8594;</div>
+    <div class="box">% metano<br>puro</div>
+    <div class="arrow">&#8594;</div>
+    <div class="box">Ton/año</div>
+    <div class="arrow">&#8594;</div>
+    <div class="box final">Ton CO2eq<br>/año</div>
+  </div>
 </section>
 
 <section class="intro-section">
   <div class="intro-step-num">04</div>
-  <h2>¿Por qué importa saber qué gas es exactamente?</h2>
-  <p>Porque no todos los gases calientan la atmósfera igual. El <b>metano (CH4)</b> es mucho más potente como gas de efecto invernadero que el <b>CO2</b> — atrapa muchísimo más calor.</p>
-  <div class="intro-gwp-compare">
-    <div class="intro-gwp-item co2"><div class="gas">CO2</div><div class="igwp-bar"><div class="igwp-bar-fill"></div></div><div class="note">1 tonelada = 1 tonelada de "efecto calentador"</div></div>
-    <div class="intro-gwp-item ch4"><div class="gas">CH4 (metano)</div><div class="igwp-bar"><div class="igwp-bar-fill"></div></div><div class="note">1 tonelada = efecto de 25 a 28 toneladas de CO2</div></div>
-  </div>
-  <p>Para poder comparar y sumar "un poco de esto, un poco de aquello" en un solo número, los científicos (agrupados en un organismo de la ONU llamado <b>IPCC</b>) calcularon cuántas veces más fuerte es el metano frente al CO2. A ese número se le llama <b>GWP</b> (Potencial de Calentamiento Global) — y así se llega al término que vas a ver en todos los reportes: <b>CO2 equivalente (CO2eq)</b>.</p>
-</section>
-
-<section class="intro-section">
-  <div class="intro-step-num">05</div>
-  <h2>El camino completo, de principio a fin</h2>
-  <p>Uniendo todo lo anterior, así es como un número de cámara termina convertido en el resultado que ves en los reportes:</p>
-  <div class="intro-flow">
-    <div class="box hl">Cámara OGI/FLIR<br>(g/h)</div>
-    <div class="arrow">+</div>
-    <div class="box hl">Cromatografía<br>(% de cada gas)</div>
-    <div class="arrow">&#8594;</div>
-    <div class="box">¿Cuánto de eso<br>es metano puro?</div>
-    <div class="arrow">&#8594;</div>
-    <div class="box">Gramos/hora<br>&#8594; Toneladas/año</div>
-    <div class="arrow">&#8594;</div>
-    <div class="box final">Toneladas de<br>CO2 equivalente/año</div>
-  </div>
-  <p>Ese último número es el que finalmente se reporta — es el que resume, en una sola cifra, cuánto le está costando al ambiente esa fuga específica durante un año completo, asumiendo que sigue goteando al mismo ritmo.</p>
-</section>
-
-<section class="intro-section">
-  <div class="intro-step-num">06</div>
   <h2>Glosario rápido</h2>
-  <p>Los términos que vas a encontrar una y otra vez en los reportes:</p>
   <div class="intro-glossary">
-    <div class="intro-glossary-item"><div class="term">OGI / FLIR</div><div class="def">Cámara térmica que "ve" fugas de gas invisibles al ojo humano.</div></div>
-    <div class="intro-glossary-item"><div class="term">g/h</div><div class="def">Gramos de gas que se escapan por hora — la lectura cruda de la cámara.</div></div>
-    <div class="intro-glossary-item"><div class="term">Cromatografía</div><div class="def">Análisis de laboratorio que dice de qué gases exactos está hecha la mezcla.</div></div>
-    <div class="intro-glossary-item"><div class="term">CH4</div><div class="def">Metano — el componente principal del gas natural, y un gas de efecto invernadero potente.</div></div>
-    <div class="intro-glossary-item"><div class="term">GEI</div><div class="def">Gases de Efecto Invernadero — los gases que atrapan calor en la atmósfera.</div></div>
-    <div class="intro-glossary-item"><div class="term">IPCC</div><div class="def">Panel Intergubernamental de la ONU que evalúa la ciencia del cambio climático.</div></div>
-    <div class="intro-glossary-item"><div class="term">GWP</div><div class="def">Potencial de Calentamiento Global — cuántas veces más fuerte es un gas frente al CO2.</div></div>
-    <div class="intro-glossary-item"><div class="term">CO2eq</div><div class="def">"CO2 equivalente" — el resultado final, todos los gases convertidos a una sola cifra comparable.</div></div>
+    <div class="intro-glossary-item"><div class="term">OGI / FLIR</div><div class="def">Cámara térmica que "ve" fugas invisibles al ojo.</div></div>
+    <div class="intro-glossary-item"><div class="term">g/h</div><div class="def">Gramos de gas por hora — lectura cruda de la cámara.</div></div>
+    <div class="intro-glossary-item"><div class="term">Cromatografía</div><div class="def">Análisis de laboratorio de la mezcla de gases.</div></div>
+    <div class="intro-glossary-item"><div class="term">CH4 / GEI</div><div class="def">Metano — gas de efecto invernadero potente.</div></div>
+    <div class="intro-glossary-item"><div class="term">IPCC</div><div class="def">Panel científico de la ONU sobre cambio climático.</div></div>
+    <div class="intro-glossary-item"><div class="term">GWP</div><div class="def">Cuántas veces más fuerte es un gas frente al CO2.</div></div>
   </div>
 </section>
 
 <div class="intro-cta">
   <h2>¿Listo para ver los datos reales?</h2>
-  <p>El dashboard interactivo tiene los 25 puntos de fuga detectados, con fotos, gráficos, y un simulador para calcular tú mismo el CO2 equivalente de cualquier lectura.</p>
+  <p>25 puntos de fuga, con fotos, gráficos, y un simulador para calcular el CO2 equivalente de cualquier lectura.</p>
   <button class="intro-cta-btn" id="introUnlockBtn">Acceder al Dashboard &#8594;</button>
   <div class="intro-unlock-row" id="introUnlockRow">
     <input type="password" id="introUnlockInput" placeholder="Clave de acceso">
