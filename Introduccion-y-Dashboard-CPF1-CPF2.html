@@ -846,20 +846,22 @@ const DATA2 = [{"id": 1, "campo": "RUBIALES", "area": "FWKOS", "equipo": "300-TK
 
 const PARETO1_LABELS = ["TK-901B", "TK-901C", "TK-901B", "TK-901A", "TK-901B", "TK-901B", "TK-901A", "TK-904", "740-TK-030C", "740-TK-020C", "TK-906B", "TK-902", "740-TK-030C", "TK-902"];
 const PARETO1_VALUES = [13000, 10000, 9300, 7600, 4700, 630, 350, 240, 140, 140, 67, 53, 39, 19];
-const PARETO1_COLORS = ["#ff4757", "#ff4757", "#ff4757", "#ff4757", "#ffb238", "#ffb238", "#ffd60a", "#ffd60a", "#ffd60a", "#ffd60a", "#2dd4ee", "#2dd4ee", "#2dd4ee", "#2dd4ee"];
+const PARETO1_COLORS = ["#2dd4ee", "#3fa9f5", "#2dd4ee", "#ffd60a", "#2dd4ee", "#2dd4ee", "#ffd60a", "#f472b6", "#ffb238", "#ff4757", "#4ade80", "#a78bfa", "#ffb238", "#a78bfa"];
 const PARETO2_LABELS = ["300-TK-0103", "300-TK-0103", "300-TK-0201", "300-TK-0201", "300-TK-0201", "300-TK-0301", "300-TK-0101", "300-TK-0001", "300-TK-0401", "300-TK-0103", "300-TK-0101"];
 const PARETO2_VALUES = [3400, 2800, 1900, 1100, 750, 540, 510, 300, 280, 270, 250];
-const PARETO2_COLORS = ["#ffb238", "#ffb238", "#ffb238", "#ffb238", "#ffb238", "#ffb238", "#ffb238", "#ffd60a", "#ffd60a", "#ffd60a", "#ffd60a"];
+const PARETO2_COLORS = ["#ffd60a", "#ffd60a", "#2dd4ee", "#2dd4ee", "#2dd4ee", "#3fa9f5", "#ffb238", "#ff4757", "#a78bfa", "#ffd60a", "#ffb238"];
 const PARETO1_IDS = [5, 3, 6, 9, 7, 4, 8, 13, 11, 12, 14, 2, 10, 1];
 const PARETO2_IDS = [10, 11, 2, 3, 4, 1, 5, 7, 8, 9, 6];
 const AREA_TASA_LABELS = ["PROCESOS", "FWKOS", "SKIM TANK"];
 const AREA_TASA_VALUES = [27952, 17700, 626];
 const EQ_TASA_LABELS = ["TK-901B", "TK-901C", "TK-901A", "TK-904", "740-TK-030C", "740-TK-020C", "TK-902", "TK-906B"];
 const EQ_TASA_VALUES = [27630, 10000, 7950, 240, 179, 140, 72, 67];
+const EQ_TASA_COLORS = ["#2dd4ee", "#3fa9f5", "#ffd60a", "#f472b6", "#ffb238", "#ff4757", "#a78bfa", "#4ade80"];
 const AREA2_LABELS = ["FWKOS", "ALMACENAMIENTO"];
 const AREA2_VALUES = [5630, 6470];
 const EQ2_LABELS = ["300-TK-0103", "300-TK-0201", "300-TK-0101", "300-TK-0301", "300-TK-0001", "300-TK-0401"];
 const EQ2_VALUES = [6470, 3750, 760, 540, 300, 280];
+const EQ2_COLORS = ["#ffd60a", "#2dd4ee", "#ffb238", "#3fa9f5", "#ff4757", "#a78bfa"];
 
 function tierLabel(t) { return {critico:'CRÍTICO', alto:'ALTO', medio:'MEDIO', bajo:'BAJO'}[t]; }
 
@@ -1006,7 +1008,7 @@ new Chart(document.getElementById('chartEqDonut1'), {
   type: 'doughnut',
   data: {
     labels: EQ_TASA_LABELS,
-    datasets: [{ data: EQ_TASA_VALUES, backgroundColor: ['#ff4757','#ffb238','#ffd60a','#2dd4ee','#3fa9f5','#8b96a3','#e08a4f','#6e2c1f'], borderColor: cv('--surface'), borderWidth: 3 }]
+    datasets: [{ data: EQ_TASA_VALUES, backgroundColor: EQ_TASA_COLORS, borderColor: cv('--surface'), borderWidth: 3 }]
   },
   options: {
     responsive: true, maintainAspectRatio: false,
@@ -1082,7 +1084,7 @@ new Chart(document.getElementById('chartEq2'), {
   type: 'doughnut',
   data: {
     labels: EQ2_LABELS,
-    datasets: [{ data: EQ2_VALUES, backgroundColor: ['#e08a4f','#ffb238','#ffd60a','#2dd4ee','#3fa9f5','#8b96a3'], borderColor: cv('--surface'), borderWidth: 3 }]
+    datasets: [{ data: EQ2_VALUES, backgroundColor: EQ2_COLORS, borderColor: cv('--surface'), borderWidth: 3 }]
   },
   options: {
     responsive: true, maintainAspectRatio: false,
