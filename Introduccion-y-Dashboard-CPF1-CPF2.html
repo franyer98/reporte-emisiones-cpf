@@ -789,17 +789,7 @@
   <div class="wrap">
     <div class="section-head"><h2>Simulador GEI — g/h a Ton CO2eq/año</h2><div class="section-note">CADENA COMPLETA DE 11 PASOS · FÓRMULA OFICIAL (GOP-F-006)</div></div>
 
-    <div class="sim-lock" id="simLock">
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>
-      <div class="sim-lock-text">Esta sección requiere clave de acceso</div>
-      <div class="sim-lock-row">
-        <input type="password" id="simLockInput" placeholder="Clave">
-        <button id="simLockBtn">Desbloquear</button>
-      </div>
-      <div class="sim-lock-error" id="simLockError">Clave incorrecta.</div>
-    </div>
-
-    <div class="sim-grid" id="simContent" style="display:none;">
+    <div class="sim-grid" id="simContent">
       <div class="sim-guide-banner">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
         <div class="sim-guide-text">
@@ -1170,28 +1160,6 @@ function renderGrid2() {
 
 renderFilters1(); renderGrid1();
 renderFilters2(); renderGrid2();
-
-// ---------- Simulador GEI: candado de acceso ----------
-(function() {
-  const PASSWORD = 'FRANYER';
-  const lockPanel = document.getElementById('simLock');
-  const content = document.getElementById('simContent');
-  const input = document.getElementById('simLockInput');
-  const btn = document.getElementById('simLockBtn');
-  const errorMsg = document.getElementById('simLockError');
-
-  function tryUnlock() {
-    if (input.value.trim().toUpperCase() === PASSWORD) {
-      lockPanel.style.display = 'none';
-      content.style.display = 'grid';
-      errorMsg.classList.remove('show');
-    } else {
-      errorMsg.classList.add('show');
-    }
-  }
-  btn.addEventListener('click', tryUnlock);
-  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') tryUnlock(); });
-})();
 
 // ---------- Simulador GEI: cadena completa de 11 pasos ----------
 (function() {
