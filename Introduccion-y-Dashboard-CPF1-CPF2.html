@@ -429,11 +429,20 @@
   .intro-section p:last-child { margin-bottom: 0; }
   .intro-analogy { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--mid); border-radius: 8px; padding: 15px 17px; margin: 16px 0; font-size: 13.5px; color: var(--text-dim); }
   .intro-analogy b { color: var(--mid); }
-  .intro-flow { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; margin: 18px 0; }
-  .intro-flow .box { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 9px 13px; font-size: 12px; font-weight: 600; text-align: center; color: var(--text-dim); }
-  .intro-flow .box.hl { border-color: var(--cool); color: var(--cool); }
-  .intro-flow .box.final { background: #00693C; color: #fff; border-color: #00693C; }
-  .intro-flow .arrow { color: var(--text-faint); font-size: 15px; }
+  .intro-flow-v { display: flex; flex-direction: column; align-items: center; gap: 4px; margin: 20px 0; }
+  .flow-inputs { display: flex; align-items: stretch; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  .flow-plus { display: flex; align-items: center; font-size: 18px; color: var(--text-faint); font-weight: 700; }
+  .flow-box {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 18px; text-align: center; min-width: 180px;
+  }
+  .flow-box.hl { border-color: var(--cool); }
+  .flow-box.hl .flow-box-title { color: var(--cool); }
+  .flow-box.final { background: #00693C; border-color: #00693C; }
+  .flow-box.final .flow-box-title, .flow-box.final .flow-box-sub { color: #fff; }
+  .flow-box-title { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 15px; color: var(--text); }
+  .flow-box-sub { font-size: 11px; color: var(--text-faint); margin-top: 3px; }
+  .flow-arrow-v { color: var(--text-faint); font-size: 20px; line-height: 1; margin: 2px 0; }
   .intro-gwp-compare { display: flex; gap: 14px; margin: 16px 0; flex-wrap: wrap; }
   .intro-gwp-item { flex: 1; min-width: 150px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 15px; }
   .intro-gwp-item .gas { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 15px; margin-bottom: 6px; }
@@ -599,16 +608,33 @@
 <section class="intro-section">
   <div class="intro-step-num">03</div>
   <h2>Cadena de cálculo</h2>
-  <div class="intro-flow">
-    <div class="box hl">Cuantificación<br>(g/h)</div>
-    <div class="arrow">+</div>
-    <div class="box hl">Cromatografía</div>
-    <div class="arrow">&#8594;</div>
-    <div class="box">% Másico<br>CH4</div>
-    <div class="arrow">&#8594;</div>
-    <div class="box">Ton/año</div>
-    <div class="arrow">&#8594;</div>
-    <div class="box final">Ton CO2eq<br>/año</div>
+  <div class="intro-flow-v">
+    <div class="flow-inputs">
+      <div class="flow-box hl">
+        <div class="flow-box-title">Cuantificación (g/h)</div>
+        <div class="flow-box-sub">Medición directa en campo</div>
+      </div>
+      <div class="flow-plus">+</div>
+      <div class="flow-box hl">
+        <div class="flow-box-title">Cromatografía</div>
+        <div class="flow-box-sub">Análisis de laboratorio</div>
+      </div>
+    </div>
+    <div class="flow-arrow-v">&#8595;</div>
+    <div class="flow-box">
+      <div class="flow-box-title">% Másico CH4</div>
+      <div class="flow-box-sub">Qué parte del gas es metano puro</div>
+    </div>
+    <div class="flow-arrow-v">&#8595;</div>
+    <div class="flow-box">
+      <div class="flow-box-title">Ton/año</div>
+      <div class="flow-box-sub">Se extiende el dato a un año completo</div>
+    </div>
+    <div class="flow-arrow-v">&#8595;</div>
+    <div class="flow-box final">
+      <div class="flow-box-title">Ton CO2eq / año</div>
+      <div class="flow-box-sub">Resultado final, aplicando el GWP</div>
+    </div>
   </div>
 </section>
 
