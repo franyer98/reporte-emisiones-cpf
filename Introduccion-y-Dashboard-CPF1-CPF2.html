@@ -1421,6 +1421,63 @@ function makeAreaLabelSprite(text, colorHex) {
   return sprite;
 }
 
+function createFixture(tipoPunto, tierHex) {
+  const tipo = (tipoPunto || '').toUpperCase();
+  const fixMat = new THREE.MeshStandardMaterial({ color: 0x8a8f96, roughness: 0.55, metalness: 0.55 });
+  const glowMat = new THREE.MeshStandardMaterial({ color: tierHex, emissive: tierHex, emissiveIntensity: 0.7, roughness: 0.3 });
+  const g = new THREE.Group();
+
+  if (tipo.includes('BRIDA')) {
+    // Brida: tuberia corta + platina (flange) con pernos, sobresale del tanque
+    const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.22, 16), fixMat);
+    pipe.rotation.z = Math.PI/2;
+    pipe.position.x = 0.11;
+    g.add(pipe);
+    const flange = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.03, 20), glowMat);
+    flange.rotation.z = Math.PI/2;
+    flange.position.x = 0.22;
+    g.add(flange);
+    for (let b = 0; b < 6; b++) {
+      const ang = (b/6) * Math.PI * 2;
+      const bolt = new THREE.Mesh(new THREE.SphereGeometry(0.014, 6, 6), fixMat);
+      bolt.position.set(0.235, Math.cos(ang)*0.085, Math.sin(ang)*0.085);
+      g.add(bolt);
+    }
+    g.userData.outward = 0.24;
+  } else if (tipo.includes('ESCOTILLA')) {
+    // Escotilla: tapa con bisagra y palanca, montada al ras del techo
+    const lid = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.035, 24), glowMat);
+    g.add(lid);
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.02, 8, 24), fixMat);
+    rim.rotation.x = Math.PI/2;
+    g.add(rim);
+    const hinge = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.03, 0.2), fixMat);
+    hinge.position.set(-0.16, 0.02, 0);
+    g.add(hinge);
+    const handle = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.025, 0.025), fixMat);
+    handle.position.set(0.06, 0.03, 0);
+    g.add(handle);
+    g.userData.outward = 0.02;
+  } else {
+    // Manhole: tapa circular grande al ras del costado del tanque, con marco
+    const cover = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.19, 0.04, 28), glowMat);
+    cover.rotation.z = Math.PI/2;
+    cover.position.x = 0.02;
+    g.add(cover);
+    const frame = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.025, 8, 28), fixMat);
+    frame.rotation.y = Math.PI/2;
+    g.add(frame);
+    for (let b = 0; b < 8; b++) {
+      const ang = (b/8) * Math.PI * 2;
+      const bolt = new THREE.Mesh(new THREE.SphereGeometry(0.013, 6, 6), fixMat);
+      bolt.position.set(0.045, Math.cos(ang)*0.205, Math.sin(ang)*0.205);
+      g.add(bolt);
+    }
+    g.userData.outward = 0.05;
+  }
+  return g;
+}
+
 function buildTank3D(scene, x, z, name, points, clickable, smokeList) {
   const radius = 1, height = 2.2;
   const group = new THREE.Group();
@@ -1466,19 +1523,35 @@ function buildTank3D(scene, x, z, name, points, clickable, smokeList) {
   const topY = 0.16 + height + roofH*0.55;
   points.forEach((pt, i) => {
     const angle = (i / Math.max(points.length, 1)) * Math.PI * 2 + 0.4;
-    const mr = radius * 0.5;
-    const markerMat = new THREE.MeshStandardMaterial({
-      color: TIER_HEX[pt.tier], emissive: TIER_HEX[pt.tier], emissiveIntensity: 0.55, roughness: 0.35
-    });
-    const marker = new THREE.Mesh(new THREE.SphereGeometry(0.15, 20, 20), markerMat);
-    marker.position.set(Math.cos(angle) * mr, topY + 0.12, Math.sin(angle) * mr);
-    marker.userData.item = pt;
-    marker.userData.baseScale = 1;
-    group.add(marker);
-    clickable.push(marker);
+    const tipo = (pt.punto || '').toUpperCase();
+    const fixture = createFixture(pt.punto, TIER_HEX[pt.tier]);
+    let worldX, worldY, worldZ;
 
-    const worldPos = new THREE.Vector3(x + Math.cos(angle) * mr, topY + 0.12, z + Math.sin(angle) * mr);
-    addSmokePlume(scene, worldPos, TIER_HEX[pt.tier], smokeList);
+    if (tipo.includes('ESCOTILLA')) {
+      // sobre el techo, cerca del apice, plana hacia arriba
+      const mr = radius * 0.4;
+      fixture.position.set(Math.cos(angle) * mr, topY, Math.sin(angle) * mr);
+      worldX = x + Math.cos(angle) * mr; worldY = topY + 0.15; worldZ = z + Math.sin(angle) * mr;
+    } else if (tipo.includes('BRIDA')) {
+      // en el costado, altura baja (linea de tuberia)
+      const fy = 0.16 + height * 0.24;
+      fixture.position.set(Math.cos(angle) * radius, fy, Math.sin(angle) * radius);
+      fixture.rotation.y = -angle;
+      worldX = x + Math.cos(angle) * (radius + 0.24); worldY = fy; worldZ = z + Math.sin(angle) * (radius + 0.24);
+    } else {
+      // manhole: en el costado, a media altura
+      const fy = 0.16 + height * 0.6;
+      fixture.position.set(Math.cos(angle) * radius, fy, Math.sin(angle) * radius);
+      fixture.rotation.y = -angle;
+      worldX = x + Math.cos(angle) * (radius + 0.05); worldY = fy; worldZ = z + Math.sin(angle) * (radius + 0.05);
+    }
+
+    fixture.userData.item = pt;
+    fixture.userData.baseScale = 1;
+    group.add(fixture);
+    clickable.push(fixture);
+
+    addSmokePlume(scene, new THREE.Vector3(worldX, worldY, worldZ), TIER_HEX[pt.tier], smokeList);
   });
 
   scene.add(group);
@@ -1624,9 +1697,11 @@ function buildTankMap3D(canvasId, hintId, data) {
     requestAnimationFrame(animate);
     updateSmoke(smokeList, clock.getElapsedTime());
     raycaster.setFromCamera(mouseNDC, camera);
-    const hits = raycaster.intersectObjects(clickable);
+    const hits = raycaster.intersectObjects(clickable, true);
     if (hits.length) {
-      const obj = hits[0].object;
+      let obj = hits[0].object;
+      while (obj && !obj.userData.item) obj = obj.parent;
+      if (!obj) { renderer.render(scene, camera); return; }
       if (hovered !== obj) {
         if (hovered) hovered.scale.setScalar(1);
         hovered = obj;
