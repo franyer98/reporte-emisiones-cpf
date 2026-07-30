@@ -1355,12 +1355,12 @@ function makeTextSprite(text) {
   return sprite;
 }
 
-function makeAreaLabelSprite(text) {
+function makeAreaLabelSprite(text, colorHex) {
   const c = document.createElement('canvas');
   c.width = 420; c.height = 80;
   const ctx = c.getContext('2d');
   ctx.font = "700 34px 'JetBrains Mono', monospace";
-  ctx.fillStyle = '#2dd4ee';
+  ctx.fillStyle = colorHex;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.shadowColor = 'rgba(0,0,0,0.9)';
@@ -1476,15 +1476,39 @@ function buildTankMap3D(canvasId, hintId, data) {
   Object.keys(tankArea).forEach(eq => tanksByArea[tankArea[eq].area].push(eq));
 
   const rowSpacing = 5.5, colSpacing = 3.6;
+  const AREA_PALETTE = ['#3fa9f5','#a78bfa','#4ade80','#fb923c','#f472b6','#ffd60a'];
   const clickable = [];
   areas.forEach((area, rowIndex) => {
     const tanks = tanksByArea[area];
     const startX = -((tanks.length - 1) * colSpacing) / 2;
     const z = rowIndex * rowSpacing;
+    const areaColor = AREA_PALETTE[rowIndex % AREA_PALETTE.length];
+
+    // plataforma de piso coloreada, delimitando la zona de esta area
+    const padW = tanks.length * colSpacing + 1.6;
+    const pad = new THREE.Mesh(
+      new THREE.PlaneGeometry(padW, rowSpacing * 0.82),
+      new THREE.MeshStandardMaterial({ color: areaColor, roughness: 1, transparent: true, opacity: 0.16 })
+    );
+    pad.rotation.x = -Math.PI/2;
+    pad.position.set(0, 0, z);
+    scene.add(pad);
+    // borde de la plataforma (rectangulo delineado)
+    const edgePts = [
+      new THREE.Vector3(-padW/2, 0.005, z - rowSpacing*0.41),
+      new THREE.Vector3(padW/2, 0.005, z - rowSpacing*0.41),
+      new THREE.Vector3(padW/2, 0.005, z + rowSpacing*0.41),
+      new THREE.Vector3(-padW/2, 0.005, z + rowSpacing*0.41),
+      new THREE.Vector3(-padW/2, 0.005, z - rowSpacing*0.41),
+    ];
+    const edgeGeo = new THREE.BufferGeometry().setFromPoints(edgePts);
+    const edgeLine = new THREE.Line(edgeGeo, new THREE.LineBasicMaterial({ color: areaColor, transparent: true, opacity: 0.55 }));
+    scene.add(edgeLine);
+
     tanks.forEach((eq, i) => {
       buildTank3D(scene, startX + i*colSpacing, z, eq, data.filter(d => d.equipo === eq), clickable);
     });
-    const areaLabel = makeAreaLabelSprite(area);
+    const areaLabel = makeAreaLabelSprite(area, areaColor);
     areaLabel.position.set(startX - colSpacing*0.9, 0.4, z);
     scene.add(areaLabel);
   });
