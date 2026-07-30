@@ -1337,6 +1337,54 @@ buildMapa(DATA2, 'mapaGrid2', 'mapaDetail2');
 // ---------- Mapa 3D de tanques ----------
 const TIER_HEX = { critico: 0xff4757, alto: 0xffb238, medio: 0xffd60a, bajo: 0x2dd4ee };
 
+let _smokeTexCache = null;
+function getSmokeTexture() {
+  if (_smokeTexCache) return _smokeTexCache;
+  const c = document.createElement('canvas');
+  c.width = 128; c.height = 128;
+  const ctx = c.getContext('2d');
+  const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+  grad.addColorStop(0, 'rgba(255,255,255,0.9)');
+  grad.addColorStop(0.4, 'rgba(255,255,255,0.45)');
+  grad.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 128, 128);
+  _smokeTexCache = new THREE.CanvasTexture(c);
+  return _smokeTexCache;
+}
+
+function addSmokePlume(scene, position, colorHex, smokeList) {
+  const tex = getSmokeTexture();
+  const n = 7;
+  for (let i = 0; i < n; i++) {
+    const mat = new THREE.SpriteMaterial({
+      map: tex, color: colorHex, transparent: true, opacity: 0,
+      depthWrite: false, blending: THREE.AdditiveBlending
+    });
+    const sprite = new THREE.Sprite(mat);
+    sprite.position.copy(position);
+    sprite.scale.setScalar(0.01);
+    scene.add(sprite);
+    smokeList.push({
+      sprite, base: position.clone(),
+      phase: i / n, speed: 0.16 + Math.random()*0.05,
+      drift: (Math.random()-0.5) * 0.5
+    });
+  }
+}
+
+function updateSmoke(smokeList, t) {
+  for (const p of smokeList) {
+    let local = (t * p.speed + p.phase) % 1;
+    p.sprite.position.x = p.base.x + Math.sin(local * Math.PI * 2) * 0.06 + p.drift * local;
+    p.sprite.position.y = p.base.y + local * 1.4;
+    p.sprite.position.z = p.base.z + Math.cos(local * Math.PI * 1.7) * 0.06;
+    const fade = Math.sin(local * Math.PI);
+    p.sprite.material.opacity = fade * 0.5;
+    p.sprite.scale.setScalar(0.18 + local * 0.55);
+  }
+}
+
 function makeTextSprite(text) {
   const c = document.createElement('canvas');
   c.width = 320; c.height = 72;
@@ -1373,7 +1421,7 @@ function makeAreaLabelSprite(text, colorHex) {
   return sprite;
 }
 
-function buildTank3D(scene, x, z, name, points, clickable) {
+function buildTank3D(scene, x, z, name, points, clickable, smokeList) {
   const radius = 1, height = 2.2;
   const group = new THREE.Group();
   group.position.set(x, 0, z);
@@ -1428,6 +1476,9 @@ function buildTank3D(scene, x, z, name, points, clickable) {
     marker.userData.baseScale = 1;
     group.add(marker);
     clickable.push(marker);
+
+    const worldPos = new THREE.Vector3(x + Math.cos(angle) * mr, topY + 0.12, z + Math.sin(angle) * mr);
+    addSmokePlume(scene, worldPos, TIER_HEX[pt.tier], smokeList);
   });
 
   scene.add(group);
@@ -1476,6 +1527,7 @@ function buildTankMap3D(canvasId, hintId, data) {
   Object.keys(tankArea).forEach(eq => tanksByArea[tankArea[eq].area].push(eq));
 
   const rowSpacing = 5.5, colSpacing = 3.6;
+  const smokeList = [];
   const AREA_PALETTE = ['#3fa9f5','#a78bfa','#4ade80','#fb923c','#f472b6','#ffd60a'];
   const clickable = [];
   areas.forEach((area, rowIndex) => {
@@ -1506,7 +1558,7 @@ function buildTankMap3D(canvasId, hintId, data) {
     scene.add(edgeLine);
 
     tanks.forEach((eq, i) => {
-      buildTank3D(scene, startX + i*colSpacing, z, eq, data.filter(d => d.equipo === eq), clickable);
+      buildTank3D(scene, startX + i*colSpacing, z, eq, data.filter(d => d.equipo === eq), clickable, smokeList);
     });
     const areaLabel = makeAreaLabelSprite(area, areaColor);
     areaLabel.position.set(startX - colSpacing*0.9, 0.4, z);
@@ -1567,8 +1619,10 @@ function buildTankMap3D(canvasId, hintId, data) {
     renderer.setSize(w, h, false);
   }
 
+  const clock = new THREE.Clock();
   function animate() {
     requestAnimationFrame(animate);
+    updateSmoke(smokeList, clock.getElapsedTime());
     raycaster.setFromCamera(mouseNDC, camera);
     const hits = raycaster.intersectObjects(clickable);
     if (hits.length) {
