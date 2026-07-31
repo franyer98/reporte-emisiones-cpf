@@ -3157,48 +3157,81 @@ function buildTankMap3D(canvasId, hintId, data) {
   areas.forEach(a => tanksByArea[a] = []);
   Object.keys(tankArea).forEach(eq => tanksByArea[tankArea[eq].area].push(eq));
 
-  const rowSpacing = 5.5, colSpacing = 3.6;
+  const colSpacing = 3.6, subRowSpacing = 3.6, areaGap = 2.6, radius3D = 1;
+  const PER_ROW = 3; // maximo de tanques por sub-fila: evita hileras muy largas
   const smokeList = [];
   const AREA_PALETTE = ['#3fa9f5','#a78bfa','#4ade80','#fb923c','#f472b6','#ffd60a'];
   const clickable = [];
+  let zCursor = 0, maxRowWidth = 0, layoutMinZ = Infinity, layoutMaxZ = -Infinity;
+
   areas.forEach((area, rowIndex) => {
     const tanks = tanksByArea[area];
-    const startX = -((tanks.length - 1) * colSpacing) / 2;
-    const z = rowIndex * rowSpacing;
+    const perRow = Math.min(PER_ROW, tanks.length);
+    const subRows = Math.ceil(tanks.length / perRow);
+    const areaDepth = (subRows - 1) * subRowSpacing;
+    const zCenter = zCursor + areaDepth/2;
     const areaColor = AREA_PALETTE[rowIndex % AREA_PALETTE.length];
 
+    const rowW = (perRow - 1) * colSpacing;
+    maxRowWidth = Math.max(maxRowWidth, rowW);
+
     // plataforma de piso coloreada, delimitando la zona de esta area
-    const padW = tanks.length * colSpacing + 1.6;
+    const padW = rowW + 2*radius3D + 1.8;
+    const padD = areaDepth + 2*radius3D + 1.4;
     const pad = new THREE.Mesh(
-      new THREE.PlaneGeometry(padW, rowSpacing * 0.82),
+      new THREE.PlaneGeometry(padW, padD),
       new THREE.MeshStandardMaterial({ color: areaColor, roughness: 1, transparent: true, opacity: 0.32, toneMapped: false })
     );
     pad.rotation.x = -Math.PI/2;
-    pad.position.set(0, 0, z);
+    pad.position.set(0, 0, zCenter);
     scene.add(pad);
     // borde de la plataforma (rectangulo delineado)
+    const z0 = zCenter - padD/2, z1 = zCenter + padD/2;
     const edgePts = [
-      new THREE.Vector3(-padW/2, 0.005, z - rowSpacing*0.41),
-      new THREE.Vector3(padW/2, 0.005, z - rowSpacing*0.41),
-      new THREE.Vector3(padW/2, 0.005, z + rowSpacing*0.41),
-      new THREE.Vector3(-padW/2, 0.005, z + rowSpacing*0.41),
-      new THREE.Vector3(-padW/2, 0.005, z - rowSpacing*0.41),
+      new THREE.Vector3(-padW/2, 0.005, z0),
+      new THREE.Vector3(padW/2, 0.005, z0),
+      new THREE.Vector3(padW/2, 0.005, z1),
+      new THREE.Vector3(-padW/2, 0.005, z1),
+      new THREE.Vector3(-padW/2, 0.005, z0),
     ];
     const edgeGeo = new THREE.BufferGeometry().setFromPoints(edgePts);
     const edgeLine = new THREE.Line(edgeGeo, new THREE.LineBasicMaterial({ color: areaColor, transparent: true, opacity: 0.95, toneMapped: false }));
     scene.add(edgeLine);
 
     tanks.forEach((eq, i) => {
-      buildTank3D(scene, startX + i*colSpacing, z, eq, data.filter(d => d.equipo === eq), clickable, smokeList);
+      const r = Math.floor(i / perRow), c = i % perRow;
+      const enEstaFila = Math.min(perRow, tanks.length - r*perRow);
+      const sx = -((enEstaFila - 1) * colSpacing) / 2;
+      buildTank3D(scene, sx + c*colSpacing, zCursor + r*subRowSpacing, eq,
+                  data.filter(d => d.equipo === eq), clickable, smokeList);
     });
+
     const areaLabel = makeAreaLabelSprite(area, areaColor);
-    areaLabel.position.set(startX - colSpacing*0.9, 0.4, z);
+    areaLabel.position.set(-padW/2 - 1.5, 0.4, zCenter);
     scene.add(areaLabel);
+
+    layoutMinZ = Math.min(layoutMinZ, z0);
+    layoutMaxZ = Math.max(layoutMaxZ, z1);
+    zCursor += areaDepth + areaGap + 2*radius3D;
   });
 
-  const totalDepth = rowSpacing * Math.max(areas.length - 1, 0);
-  const target = new THREE.Vector3(0, 1.1, totalDepth/2);
-  const startRadius = Math.max(10, totalDepth*0.9 + 8);
+  const totalDepth = Math.max(0, layoutMaxZ - layoutMinZ);
+  const target = new THREE.Vector3(0, 1.35, (layoutMinZ + layoutMaxZ) / 2);
+
+  // radio de encuadre segun ANCHO y PROFUNDIDAD reales (antes solo usaba profundidad,
+  // por eso una facilidad con muchos tanques en una fila quedaba fuera de cuadro)
+  const layoutW = maxRowWidth + 2*radius3D + 4.0;
+  const layoutD = totalDepth + 1.2;
+  const layoutH = 4.2;
+  const fitSphere = 0.5 * Math.sqrt(layoutW*layoutW + layoutD*layoutD + layoutH*layoutH);
+
+  function fitDistance() {
+    const vFov = camera.fov * Math.PI / 180;
+    const aspect = camera.aspect && isFinite(camera.aspect) ? camera.aspect : 2.2;
+    const hFov = 2 * Math.atan(Math.tan(vFov/2) * aspect);
+    const d = fitSphere / Math.sin(Math.max(0.2, Math.min(vFov, hFov)) / 2);
+    return Math.max(6, Math.min(58, d * 0.9));
+  }
 
   // luz principal centrada sobre la planta, para sombras coherentes
   keyLight.position.set(9, 15, 7 + totalDepth/2);
@@ -3236,7 +3269,7 @@ function buildTankMap3D(canvasId, hintId, data) {
     );
     controls.update();
   }
-  function updateCamera() { applyView(0.6, 1.32, startRadius); }
+  function updateCamera() { applyView(0.6, 1.30, fitDistance()); }
 
   const raycaster = new THREE.Raycaster();
   const mouseNDC = new THREE.Vector2(-10, -10);
@@ -3264,19 +3297,25 @@ function buildTankMap3D(canvasId, hintId, data) {
     viewBar.querySelectorAll('button').forEach(btn => {
       btn.addEventListener('click', () => {
         const v = btn.dataset.view;
-        if (v === 'iso') applyView(0.6, 1.32, startRadius);
-        else if (v === 'top') applyView(0.6, 0.22, startRadius*0.95);
-        else if (v === 'front') applyView(0, 1.45, startRadius*0.85);
-        else if (v === 'side') applyView(Math.PI/2, 1.45, startRadius*0.85);
+        if (v === 'iso') applyView(0.6, 1.30, fitDistance());
+        else if (v === 'top') applyView(0.6, 0.22, fitDistance()*0.92);
+        else if (v === 'front') applyView(0, 1.44, fitDistance()*0.95);
+        else if (v === 'side') applyView(Math.PI/2, 1.44, fitDistance()*0.95);
       });
     });
   }
+
+  // si el usuario ya movio la camara, no la reencuadramos por debajo de el
+  let userMoved = false;
+  controls.addEventListener('start', () => { userMoved = true; });
 
   function resize() {
     const w = wrap.clientWidth || 600, h = wrap.clientHeight || 460;
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
     renderer.setSize(w, h, false);
+    // al mostrarse por primera vez ya se conoce el tamano real: reencuadrar
+    if (!userMoved) updateCamera();
   }
 
   const clock = new THREE.Clock();
