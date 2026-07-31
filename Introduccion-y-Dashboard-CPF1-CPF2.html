@@ -1641,7 +1641,7 @@ function buildTankMap3D(canvasId, hintId, data) {
   const totalDepth = rowSpacing * Math.max(areas.length - 1, 0);
   const target = new THREE.Vector3(0, 1.1, totalDepth/2);
   let radius = Math.max(10, totalDepth*0.9 + 8);
-  let theta = 0.6, phi = 1.0;
+  let theta = 0.6, phi = 1.32;
 
   function updateCamera() {
     camera.position.x = target.x + radius * Math.sin(phi) * Math.sin(theta);
@@ -1661,7 +1661,7 @@ function buildTankMap3D(canvasId, hintId, data) {
     lastX = e.clientX; lastY = e.clientY;
     theta -= dx * 0.007;
     phi -= dy * 0.007;
-    phi = Math.max(0.25, Math.min(Math.PI/2 - 0.03, phi));
+    phi = Math.max(0.25, Math.min(Math.PI/2 + 0.12, phi));
     updateCamera();
   });
   canvas.addEventListener('wheel', e => {
