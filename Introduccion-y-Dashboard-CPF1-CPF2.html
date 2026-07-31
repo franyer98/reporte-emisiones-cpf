@@ -1445,18 +1445,34 @@ function createFixture(tipoPunto, tierHex) {
     }
     g.userData.outward = 0.24;
   } else if (tipo.includes('ESCOTILLA')) {
-    // Escotilla: tapa con bisagra y palanca, montada al ras del techo
-    const lid = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.035, 24), glowMat);
-    g.add(lid);
-    const rim = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.02, 8, 24), fixMat);
-    rim.rotation.x = Math.PI/2;
-    g.add(rim);
-    const hinge = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.03, 0.2), fixMat);
-    hinge.position.set(-0.16, 0.02, 0);
-    g.add(hinge);
-    const handle = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.025, 0.025), fixMat);
-    handle.position.set(0.06, 0.03, 0);
-    g.add(handle);
+    // Escotilla de medicion: tubo vertical alto, brida en la base sobre el techo,
+    // tapa abovedada con pernos arriba (ver foto de campo)
+    const baseFlange = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.035, 22), fixMat);
+    baseFlange.position.y = 0.018;
+    g.add(baseFlange);
+    for (let b = 0; b < 8; b++) {
+      const ang = (b/8) * Math.PI * 2;
+      const bolt = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.011, 0.05, 6), fixMat);
+      bolt.position.set(Math.cos(ang)*0.128, 0.03, Math.sin(ang)*0.128);
+      g.add(bolt);
+    }
+    const pipeH = 0.62;
+    const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.085, pipeH, 22), fixMat);
+    pipe.position.y = 0.035 + pipeH/2;
+    g.add(pipe);
+    const topFlange = new THREE.Mesh(new THREE.CylinderGeometry(0.125, 0.125, 0.04, 22), fixMat);
+    topFlange.position.y = 0.035 + pipeH + 0.02;
+    g.add(topFlange);
+    for (let b = 0; b < 8; b++) {
+      const ang = (b/8) * Math.PI * 2 + 0.2;
+      const bolt = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.055, 6), fixMat);
+      bolt.position.set(Math.cos(ang)*0.105, 0.035 + pipeH + 0.035, Math.sin(ang)*0.105);
+      g.add(bolt);
+    }
+    // tapa abovedada superior
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(0.105, 20, 12, 0, Math.PI*2, 0, Math.PI/2), glowMat);
+    dome.position.y = 0.035 + pipeH + 0.04;
+    g.add(dome);
     g.userData.outward = 0.02;
   } else {
     // Manhole de techo: cuello cilindrico soldado al techo + tapa embridada arriba (ver foto de campo)
@@ -1546,7 +1562,7 @@ function buildTank3D(scene, x, z, name, points, clickable, smokeList) {
       const roofYatR = 0.16 + height + roofH * (1 - mr/(radius*1.04));
       fixture.position.set(Math.cos(angle) * mr, roofYatR, Math.sin(angle) * mr);
       worldX = x + Math.cos(angle) * mr;
-      worldY = roofYatR + (tipo.includes('ESCOTILLA') ? 0.06 : 0.29);
+      worldY = roofYatR + (tipo.includes('ESCOTILLA') ? 0.75 : 0.29);
       worldZ = z + Math.sin(angle) * mr;
     }
 
