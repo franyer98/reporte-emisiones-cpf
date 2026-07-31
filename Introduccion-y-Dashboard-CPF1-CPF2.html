@@ -1459,20 +1459,27 @@ function createFixture(tipoPunto, tierHex) {
     g.add(handle);
     g.userData.outward = 0.02;
   } else {
-    // Manhole: tapa circular grande al ras del costado del tanque, con marco
-    const cover = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.19, 0.04, 28), glowMat);
-    cover.rotation.z = Math.PI/2;
-    cover.position.x = 0.02;
-    g.add(cover);
-    const frame = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.025, 8, 28), fixMat);
-    frame.rotation.y = Math.PI/2;
-    g.add(frame);
-    for (let b = 0; b < 8; b++) {
-      const ang = (b/8) * Math.PI * 2;
-      const bolt = new THREE.Mesh(new THREE.SphereGeometry(0.013, 6, 6), fixMat);
-      bolt.position.set(0.045, Math.cos(ang)*0.205, Math.sin(ang)*0.205);
+    // Manhole de techo: cuello cilindrico soldado al techo + tapa embridada arriba (ver foto de campo)
+    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.2, 24), fixMat);
+    neck.position.y = 0.1;
+    g.add(neck);
+    const flangeRing = new THREE.Mesh(new THREE.CylinderGeometry(0.21, 0.21, 0.035, 26), fixMat);
+    flangeRing.position.y = 0.2;
+    g.add(flangeRing);
+    const lid = new THREE.Mesh(new THREE.CylinderGeometry(0.185, 0.185, 0.045, 26), glowMat);
+    lid.position.y = 0.235;
+    g.add(lid);
+    for (let b = 0; b < 10; b++) {
+      const ang = (b/10) * Math.PI * 2;
+      const bolt = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.05, 6), fixMat);
+      bolt.position.set(Math.cos(ang)*0.195, 0.215, Math.sin(ang)*0.195);
       g.add(bolt);
     }
+    // asa / manija superior
+    const handle = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.012, 6, 14, Math.PI), fixMat);
+    handle.position.y = 0.258;
+    handle.rotation.x = -Math.PI/2;
+    g.add(handle);
     g.userData.outward = 0.05;
   }
   return g;
@@ -1500,7 +1507,7 @@ function buildTank3D(scene, x, z, name, points, clickable, smokeList) {
     group.add(ring);
   }
 
-  const roofH = height*0.3;
+  const roofH = height*0.12;
   const roofMat = new THREE.MeshStandardMaterial({ color: 0xc2c5c9, roughness: 0.4, metalness: 0.5 });
   const roof = new THREE.Mesh(new THREE.ConeGeometry(radius*1.04, roofH, 40), roofMat);
   roof.position.y = 0.16 + height + roofH/2 - 0.03;
@@ -1527,23 +1534,20 @@ function buildTank3D(scene, x, z, name, points, clickable, smokeList) {
     const fixture = createFixture(pt.punto, TIER_HEX[pt.tier]);
     let worldX, worldY, worldZ;
 
-    if (tipo.includes('ESCOTILLA')) {
-      // sobre el techo, cerca del apice, plana hacia arriba
-      const mr = radius * 0.4;
-      fixture.position.set(Math.cos(angle) * mr, topY, Math.sin(angle) * mr);
-      worldX = x + Math.cos(angle) * mr; worldY = topY + 0.15; worldZ = z + Math.sin(angle) * mr;
-    } else if (tipo.includes('BRIDA')) {
+    if (tipo.includes('BRIDA')) {
       // en el costado, altura baja (linea de tuberia)
       const fy = 0.16 + height * 0.24;
       fixture.position.set(Math.cos(angle) * radius, fy, Math.sin(angle) * radius);
       fixture.rotation.y = -angle;
       worldX = x + Math.cos(angle) * (radius + 0.24); worldY = fy; worldZ = z + Math.sin(angle) * (radius + 0.24);
     } else {
-      // manhole: en el costado, a media altura
-      const fy = 0.16 + height * 0.6;
-      fixture.position.set(Math.cos(angle) * radius, fy, Math.sin(angle) * radius);
-      fixture.rotation.y = -angle;
-      worldX = x + Math.cos(angle) * (radius + 0.05); worldY = fy; worldZ = z + Math.sin(angle) * (radius + 0.05);
+      // MANHOLE y ESCOTILLA: van sobre el techo del tanque (ver foto de campo)
+      const mr = radius * (tipo.includes('ESCOTILLA') ? 0.34 : 0.55);
+      const roofYatR = 0.16 + height + roofH * (1 - mr/(radius*1.04));
+      fixture.position.set(Math.cos(angle) * mr, roofYatR, Math.sin(angle) * mr);
+      worldX = x + Math.cos(angle) * mr;
+      worldY = roofYatR + (tipo.includes('ESCOTILLA') ? 0.06 : 0.29);
+      worldZ = z + Math.sin(angle) * mr;
     }
 
     fixture.userData.item = pt;
