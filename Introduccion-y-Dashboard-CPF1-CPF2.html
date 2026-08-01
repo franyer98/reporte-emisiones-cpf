@@ -1927,53 +1927,6 @@ THREE.OrbitControls = OrbitControls;
   .intro-cta p { font-size: 14px; color: var(--text-dim); max-width: 480px; margin: 0 auto 20px; }
   .intro-cta-btn { display: inline-block; background: #00693C; color: #fff; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 14px; padding: 12px 24px; border-radius: 999px; text-decoration: none; cursor: pointer; border: none; }
   .intro-cta-btn:hover { opacity: .9; }
-  .intro-unlock-row { display: none; gap: 8px; justify-content: center; margin-top: 16px; }
-  .intro-unlock-row.show { display: flex; }
-  .intro-unlock-row input {
-    background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px;
-    padding: 10px 14px; color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 13px;
-    width: 160px; outline: none; text-align: center;
-  }
-  .intro-unlock-row input:focus { border-color: var(--cool); }
-  .intro-unlock-row button {
-    background: #00693C; color: #fff; border: none; border-radius: 8px;
-    padding: 10px 18px; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; cursor: pointer;
-  }
-  .intro-unlock-error { display: none; color: var(--hot); font-size: 11.5px; margin-top: 10px; }
-  .intro-unlock-error.show { display: block; }
-
-  .intro-photo-card {
-    border-radius: 14px; overflow: hidden; border: 1px solid var(--border);
-    background: #000; position: relative; margin-bottom: 8px;
-  }
-  .intro-photo-card img { width: 100%; display: block; max-height: 320px; object-fit: cover; }
-  .intro-photo-badge {
-    position: absolute; top: 14px; right: 14px; background: rgba(255,71,87,.9); color: #fff;
-    font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 12px;
-    padding: 5px 11px; border-radius: 6px;
-  }
-  .intro-photo-caption {
-    background: var(--surface); border: 1px solid var(--border); border-top: none;
-    border-radius: 0 0 14px 14px; padding: 12px 16px; font-size: 12.5px; color: var(--text-dim);
-    margin-top: -1px;
-  }
-
-  .intro-gwp-visual { display: flex; align-items: center; justify-content: center; gap: 18px; margin: 22px 0; flex-wrap: wrap; }
-  .intro-gwp-col { display: flex; flex-direction: column; align-items: center; gap: 10px; }
-  .igwp-squares { display: grid; gap: 3px; }
-  .igwp-squares.ch4-grid { grid-template-columns: repeat(7, 11px); width: 89px; }
-  .igwp-sq { width: 11px; height: 11px; border-radius: 2px; }
-  .igwp-sq.co2 { background: var(--text-faint); width: 34px; height: 34px; border-radius: 5px; }
-  .igwp-sq.ch4 { background: var(--hot); }
-  .intro-gwp-label { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; text-align: center; line-height: 1.5; }
-  .intro-gwp-label span { display: block; font-weight: 400; color: var(--text-faint); font-size: 10.5px; }
-  .intro-gwp-eq { font-family: 'Space Grotesk', sans-serif; font-size: 22px; color: var(--text-faint); font-weight: 700; }
-
-  .intro-video-wrap {
-    border-radius: 10px; overflow: hidden; margin: 16px 0 8px; border: 1px solid var(--border); background: #000;
-  }
-  .intro-video-wrap video { width: 100%; display: block; max-height: 360px; }
-  .intro-video-caption { font-size: 11.5px; color: var(--text-faint); text-align: center; }
   @media (max-width: 600px) { .intro-glossary { grid-template-columns: 1fr; } }
 
 </style>
@@ -2125,12 +2078,7 @@ THREE.OrbitControls = OrbitControls;
 <div class="intro-cta">
   <h2>¿Listo para ver los datos reales?</h2>
   <p>25 puntos de fuga cuantificados, con evidencia fotográfica, gráficos y un simulador para calcular el CO2 equivalente de cualquier lectura.</p>
-  <button class="intro-cta-btn" id="introUnlockBtn">Acceder al Dashboard &#8594;</button>
-  <div class="intro-unlock-row" id="introUnlockRow">
-    <input type="password" id="introUnlockInput" placeholder="Clave de acceso">
-    <button id="introUnlockConfirm">Entrar</button>
-  </div>
-  <div class="intro-unlock-error" id="introUnlockError">Clave incorrecta.</div>
+  <button class="intro-cta-btn" id="introUnlockBtn">Ver el Dashboard &#8594;</button>
 </div>
 </div> <!-- /pageIntro -->
 
@@ -2484,29 +2432,78 @@ const getTooltipBase = () => ({
   displayColors: false,
 });
 
-// ---------- Plugin: valor visible al final de cada barra ----------
+const TIER_CSS = { critico: '#ff4757', alto: '#ffb238', medio: '#ffd60a', bajo: '#2dd4ee' };
+
+// ---------- Plugin: pista de fondo detras de cada barra ----------
+const barTrack = {
+  id: 'barTrack',
+  beforeDatasetsDraw(chart) {
+    if (chart.config.type !== 'bar' || chart.options.indexAxis !== 'y') return;
+    const { ctx, chartArea } = chart;
+    const meta = chart.getDatasetMeta(0);
+    ctx.save();
+    ctx.fillStyle = cv('--surface-2');
+    meta.data.forEach(bar => {
+      const h = bar.height;
+      const y = bar.y - h/2;
+      const r = h/2;
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(chartArea.left, y, chartArea.right - chartArea.left, h, r);
+      else ctx.rect(chartArea.left, y, chartArea.right - chartArea.left, h);
+      ctx.fill();
+    });
+    ctx.restore();
+  }
+};
+
+// ---------- Plugin: valor y severidad al final de cada barra ----------
+const TIER_TXT = { critico: 'CRÍTICO', alto: 'ALTO', medio: 'MEDIO', bajo: 'BAJO' };
 const barValueLabels = {
   id: 'barValueLabels',
   afterDatasetsDraw(chart) {
     if (chart.config.type !== 'bar' || chart.options.indexAxis !== 'y') return;
     const { ctx } = chart;
-    const labelColor = cv('--text');
-    chart.data.datasets.forEach((dataset, dsIndex) => {
-      const meta = chart.getDatasetMeta(dsIndex);
-      meta.data.forEach((bar, i) => {
-        const value = dataset.data[i];
-        ctx.save();
-        ctx.font = "700 11px 'JetBrains Mono', monospace";
-        ctx.fillStyle = labelColor;
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(value.toLocaleString('es-CO'), bar.x + 8, bar.y);
-        ctx.restore();
-      });
+    const items = chart.options.plugins.barValueLabels && chart.options.plugins.barValueLabels.items;
+    const meta = chart.getDatasetMeta(0);
+    meta.data.forEach((bar, i) => {
+      const value = chart.data.datasets[0].data[i];
+      const item = items ? items[i] : null;
+      let x = bar.x + 10;
+      ctx.save();
+      ctx.font = "700 12px 'JetBrains Mono', monospace";
+      ctx.fillStyle = cv('--text');
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      const txt = value.toLocaleString('es-CO');
+      ctx.fillText(txt, x, bar.y);
+      if (item && item.tier) {
+        x += ctx.measureText(txt).width + 8;
+        const label = TIER_TXT[item.tier];
+        ctx.font = "700 8.5px 'JetBrains Mono', monospace";
+        const w = ctx.measureText(label).width + 12, h = 15;
+        ctx.globalAlpha = 0.16;
+        ctx.fillStyle = TIER_CSS[item.tier];
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(x, bar.y - h/2, w, h, 7); else ctx.rect(x, bar.y - h/2, w, h);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = TIER_CSS[item.tier];
+        ctx.fillText(label, x + 6, bar.y + 0.5);
+      }
+      ctx.restore();
     });
   }
 };
-Chart.register(barValueLabels);
+Chart.register(barTrack, barValueLabels);
+
+// degradado horizontal para dar profundidad a cada barra
+function barGradient(ctx, area, hex) {
+  if (!area) return hex;
+  const g = ctx.createLinearGradient(area.left, 0, area.right, 0);
+  g.addColorStop(0, hex + '66');
+  g.addColorStop(1, hex);
+  return g;
+}
 
 // ---------- Lightbox: foto al hacer clic en una barra ----------
 function tierLabelLB(t) { return {critico:'CRÍTICO', alto:'ALTO', medio:'MEDIO', bajo:'BAJO'}[t]; }
@@ -2547,18 +2544,20 @@ new Chart(document.getElementById('chartPareto1'), {
     labels: PARETO1_LABELS,
     datasets: [{
       data: PARETO1_VALUES,
-      backgroundColor: PARETO1_COLORS,
-      borderRadius: 4,
-      barThickness: 22,
+      backgroundColor: (c) => barGradient(c.chart.ctx, c.chart.chartArea, PARETO1_COLORS[c.dataIndex]),
+      hoverBackgroundColor: (c) => PARETO1_COLORS[c.dataIndex],
+      borderRadius: 999,
+      borderSkipped: false,
+      barThickness: 26,
       categoryPercentage: 0.9,
-      barPercentage: 0.7,
+      barPercentage: 0.72,
     }]
   },
   options: {
     indexAxis: 'y',
     responsive: true,
     maintainAspectRatio: false,
-    layout: { padding: { right: 56 } },
+    layout: { padding: { right: 140, left: 4 } },
     animation: { duration: 900, easing: 'easeOutQuart' },
     onClick: (evt, elements) => {
       if (elements.length) openLightbox(DATA1.find(d => d.id === PARETO1_IDS[elements[0].index]));
@@ -2567,11 +2566,12 @@ new Chart(document.getElementById('chartPareto1'), {
       evt.native.target.style.cursor = elements.length ? 'pointer' : 'default';
     },
     scales: {
-      x: { type: 'logarithmic', grid: { color: cv('--surface-2') }, ticks: { callback: v => [10,100,1000,10000].includes(v) ? v.toLocaleString('es-CO') : '' }, title: { display: true, text: 'g/Hr (escala log)', color: cv('--text-faint'), font: {size:10} } },
-      y: { grid: { display: false }, ticks: { color: cv('--text'), font: { family: "'Inter', sans-serif", size: 11 } } }
+      x: { type: 'logarithmic', border: { display: false }, grid: { color: cv('--border'), drawTicks: false }, ticks: { padding: 6, callback: v => [10,100,1000,10000].includes(v) ? v.toLocaleString('es-CO') : '' }, title: { display: true, text: 'g/Hr (escala logarítmica)', color: cv('--text-faint'), font: {size:10} } },
+      y: { border: { display: false }, grid: { display: false }, ticks: { padding: 8, color: cv('--text'), font: { family: "'Space Grotesk', sans-serif", size: 12, weight: '600' } } }
     },
     plugins: {
       legend: { display: false },
+      barValueLabels: { items: AGG1.ids.map(id => DATA1.find(d => d.id === id)) },
       tooltip: { ...getTooltipBase(), callbacks: {
         title: (items) => { const d = DATA1.find(x => x.id === PARETO1_IDS[items[0].dataIndex]); return d ? `${d.equipo} · ${d.punto} · ${d.area}` : ''; },
         label: (ctx) => moneyG(ctx.raw)
@@ -2623,18 +2623,20 @@ new Chart(document.getElementById('chartPareto2'), {
     labels: PARETO2_LABELS,
     datasets: [{
       data: PARETO2_VALUES,
-      backgroundColor: PARETO2_COLORS,
-      borderRadius: 4,
-      barThickness: 22,
+      backgroundColor: (c) => barGradient(c.chart.ctx, c.chart.chartArea, PARETO2_COLORS[c.dataIndex]),
+      hoverBackgroundColor: (c) => PARETO2_COLORS[c.dataIndex],
+      borderRadius: 999,
+      borderSkipped: false,
+      barThickness: 26,
       categoryPercentage: 0.9,
-      barPercentage: 0.7,
+      barPercentage: 0.72,
     }]
   },
   options: {
     indexAxis: 'y',
     responsive: true,
     maintainAspectRatio: false,
-    layout: { padding: { right: 56 } },
+    layout: { padding: { right: 140, left: 4 } },
     animation: { duration: 900, easing: 'easeOutQuart' },
     onClick: (evt, elements) => {
       if (elements.length) openLightbox(DATA2.find(d => d.id === PARETO2_IDS[elements[0].index]));
@@ -2643,11 +2645,12 @@ new Chart(document.getElementById('chartPareto2'), {
       evt.native.target.style.cursor = elements.length ? 'pointer' : 'default';
     },
     scales: {
-      x: { type: 'logarithmic', grid: { color: cv('--surface-2') }, ticks: { callback: v => [10,100,1000,10000].includes(v) ? v.toLocaleString('es-CO') : '' }, title: { display: true, text: 'g/Hr (escala log)', color: cv('--text-faint'), font: {size:10} } },
-      y: { grid: { display: false }, ticks: { color: cv('--text'), font: { family: "'Inter', sans-serif", size: 11 } } }
+      x: { type: 'logarithmic', border: { display: false }, grid: { color: cv('--border'), drawTicks: false }, ticks: { padding: 6, callback: v => [10,100,1000,10000].includes(v) ? v.toLocaleString('es-CO') : '' }, title: { display: true, text: 'g/Hr (escala logarítmica)', color: cv('--text-faint'), font: {size:10} } },
+      y: { border: { display: false }, grid: { display: false }, ticks: { padding: 8, color: cv('--text'), font: { family: "'Space Grotesk', sans-serif", size: 12, weight: '600' } } }
     },
     plugins: {
       legend: { display: false },
+      barValueLabels: { items: AGG2.ids.map(id => DATA2.find(d => d.id === id)) },
       tooltip: { ...getTooltipBase(), callbacks: {
         title: (items) => { const d = DATA2.find(x => x.id === PARETO2_IDS[items[0].dataIndex]); return d ? `${d.equipo} · ${d.punto} · ${d.area}` : ''; },
         label: (ctx) => moneyG(ctx.raw)
@@ -3653,39 +3656,24 @@ window.addEventListener('resize', () => { if (map3d1) map3d1.resize(); if (map3d
 
 <script>
 (function() {
-  const PASSWORD = 'FRANYER';
   const btn = document.getElementById('introUnlockBtn');
-  const row = document.getElementById('introUnlockRow');
-  const input = document.getElementById('introUnlockInput');
-  const confirmBtn = document.getElementById('introUnlockConfirm');
-  const errorMsg = document.getElementById('introUnlockError');
   const pageIntro = document.getElementById('pageIntro');
   const pageDashboard = document.getElementById('pageDashboard');
   const menuToggle = document.getElementById('menuToggle');
 
-  btn.addEventListener('click', () => {
-    row.classList.add('show');
-    input.focus();
-  });
-
-  function tryUnlock() {
-    if (input.value.trim().toUpperCase() === PASSWORD) {
-      pageIntro.style.display = 'none';
-      pageDashboard.style.display = 'block';
-      menuToggle.style.display = 'flex';
-      window.scrollTo(0, 0);
-      // el mapa 3D (WebGL) se creo mientras el dashboard estaba oculto y no dibuja bien
-      // hasta que el contenedor sea visible - forzamos que se reconstruya/redimensione ya visible
-      setTimeout(() => {
-        if (typeof ensureMap3D1 === 'function') ensureMap3D1();
-        window.dispatchEvent(new Event('resize'));
-      }, 50);
-    } else {
-      errorMsg.classList.add('show');
-    }
+  function abrirDashboard() {
+    pageIntro.style.display = 'none';
+    pageDashboard.style.display = 'block';
+    menuToggle.style.display = 'flex';
+    window.scrollTo(0, 0);
+    // el mapa 3D (WebGL) se creo mientras el dashboard estaba oculto y no dibuja bien
+    // hasta que el contenedor sea visible - forzamos que se redimensione ya visible
+    setTimeout(() => {
+      if (typeof ensureMap3D1 === 'function') ensureMap3D1();
+      window.dispatchEvent(new Event('resize'));
+    }, 50);
   }
-  confirmBtn.addEventListener('click', tryUnlock);
-  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') tryUnlock(); });
+  btn.addEventListener('click', abrirDashboard);
 })();
 </script>
 
