@@ -3410,6 +3410,14 @@ function buildTankMap3D(canvasId, hintId, data) {
     if (!userMoved) updateCamera();
   }
 
+  // si el contenedor cambia de tamano (por ejemplo, estaba oculto al crearse),
+  // el lienzo se ajusta solo sin depender de quien lo abra
+  if (window.ResizeObserver) {
+    new ResizeObserver(() => {
+      if (wrap.clientWidth && wrap.clientWidth !== renderer.domElement.width) resize();
+    }).observe(wrap);
+  }
+
   const clock = new THREE.Clock();
   let paused = false, rafId = 0;
   function setPaused(v) {
@@ -3666,12 +3674,14 @@ window.addEventListener('resize', () => { if (map3d1) map3d1.resize(); if (map3d
     pageDashboard.style.display = 'block';
     menuToggle.style.display = 'flex';
     window.scrollTo(0, 0);
-    // el mapa 3D (WebGL) se creo mientras el dashboard estaba oculto y no dibuja bien
-    // hasta que el contenedor sea visible - forzamos que se redimensione ya visible
+    // el mapa 3D (WebGL) se creo mientras el dashboard estaba oculto, con el contenedor
+    // sin tamano real: hay que redimensionarlo ahora que ya es visible
     setTimeout(() => {
       if (typeof ensureMap3D1 === 'function') ensureMap3D1();
+      if (typeof map3d1 !== 'undefined' && map3d1) map3d1.resize();
+      if (typeof map3d2 !== 'undefined' && map3d2) map3d2.resize();
       window.dispatchEvent(new Event('resize'));
-    }, 50);
+    }, 60);
   }
   btn.addEventListener('click', abrirDashboard);
 })();
