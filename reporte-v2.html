@@ -3173,15 +3173,23 @@ function buildTank3D(scene, x, z, name, points, clickable, smokeList) {
   const railMat = new THREE.MeshStandardMaterial({ color: 0xe8b923, roughness: 0.5, metalness: 0.35 });
   const railY = 0.16 + height + 0.02;
   const railR = radius*0.99;
+  // la baranda deja una abertura donde llega la escalera (entrada al techo)
+  const aberturaAng = Math.PI;      // debe coincidir con el final de la espiral
+  const aberturaArco = 0.42;        // ancho del hueco, en radianes
+  const arcoRail = Math.PI*2 - aberturaArco;
   [0.34, 0.60].forEach(h => {
-    const rail = new THREE.Mesh(new THREE.TorusGeometry(railR, 0.018, 6, 44), railMat);
+    const rail = new THREE.Mesh(new THREE.TorusGeometry(railR, 0.018, 6, 44, arcoRail), railMat);
     rail.rotation.x = Math.PI/2;
+    rail.rotation.z = -(aberturaAng + aberturaArco/2);
     rail.position.y = railY + h;
     rail.castShadow = true;
     group.add(rail);
   });
   for (let p = 0; p < 12; p++) {
     const ang = (p/12) * Math.PI * 2;
+    // no poner parales dentro de la abertura
+    let dif = Math.abs(((ang - aberturaAng + Math.PI) % (Math.PI*2)) - Math.PI);
+    if (dif < aberturaArco/2) continue;
     const post = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.62, 6), railMat);
     post.position.set(Math.cos(ang)*railR, railY + 0.31, Math.sin(ang)*railR);
     post.castShadow = true;
@@ -3192,9 +3200,9 @@ function buildTank3D(scene, x, z, name, points, clickable, smokeList) {
   const ladderMat = new THREE.MeshStandardMaterial({ color: 0xe8b923, roughness: 0.55, metalness: 0.35 });
   const stairR = radius + 0.20;          // radio de la espiral
   const stairBase = 0.16;                // arranca sobre la base
-  const stairTop = 0.16 + height + 0.06; // llega al nivel del techo
-  const vueltas = 0.82;                  // fraccion de vuelta alrededor del tanque
-  const nPasos = 30;
+  const stairTop = 0.16 + height + 0.02; // termina al nivel del piso del techo
+  const vueltas = 0.5;                   // media vuelta: menos giro, mas realista
+  const nPasos = 22;
   const angTot = vueltas * Math.PI * 2;
   const anchoPeldano = 0.30;
 
@@ -3209,6 +3217,14 @@ function buildTank3D(scene, x, z, name, points, clickable, smokeList) {
     step.castShadow = true; step.receiveShadow = true;
     group.add(step);
   }
+
+  // descanso de llegada: plataforma que conecta la escalera con el techo
+  const angLlegada = angTot;
+  const descanso = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.04, 0.5), ladderMat);
+  descanso.position.set(Math.cos(angLlegada) * (radius + 0.04), stairTop, Math.sin(angLlegada) * (radius + 0.04));
+  descanso.rotation.y = -angLlegada;
+  descanso.castShadow = true; descanso.receiveShadow = true;
+  group.add(descanso);
 
   // pasamanos exterior e interior, siguiendo la misma espiral
   [stairR + anchoPeldano*0.45, stairR - anchoPeldano*0.45].forEach((rr, idx) => {
