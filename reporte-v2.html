@@ -3343,7 +3343,42 @@ function buildTankMap3D(canvasId, hintId, data) {
   rimLight.position.set(-9, 6, -8);
   scene.add(rimLight);
 
-  // suelo tipo concreto con manchas
+  // terreno verde alrededor de la planta (como en la vista aerea real)
+  const tC = document.createElement('canvas');
+  tC.width = tC.height = 256;
+  const tx = tC.getContext('2d');
+  tx.fillStyle = '#4a6b3a'; tx.fillRect(0, 0, 256, 256);
+  // parches de pasto con variacion de tono
+  for (let i = 0; i < 900; i++) {
+    const x = Math.random()*256, y = Math.random()*256, r = 8 + Math.random()*26;
+    const g1 = 90 + Math.random()*45, r1 = 55 + Math.random()*30, b1 = 40 + Math.random()*28;
+    const gr = tx.createRadialGradient(x, y, 0, x, y, r);
+    gr.addColorStop(0, `rgba(${r1|0},${g1|0},${b1|0},0.55)`);
+    gr.addColorStop(1, 'rgba(0,0,0,0)');
+    tx.fillStyle = gr;
+    tx.beginPath(); tx.arc(x, y, r, 0, Math.PI*2); tx.fill();
+  }
+  // textura fina de hierba
+  for (let i = 0; i < 6000; i++) {
+    const g2 = 85 + Math.random()*55;
+    tx.fillStyle = `rgba(${(48+Math.random()*30)|0},${g2|0},${(38+Math.random()*25)|0},${0.20 + Math.random()*0.35})`;
+    tx.fillRect(Math.random()*256, Math.random()*256, 1 + Math.random()*2, 1 + Math.random()*3);
+  }
+  const terrenoTex = new THREE.CanvasTexture(tC);
+  terrenoTex.wrapS = terrenoTex.wrapT = THREE.RepeatWrapping;
+  terrenoTex.repeat.set(26, 26);
+  if ('colorSpace' in terrenoTex) terrenoTex.colorSpace = THREE.SRGBColorSpace;
+  else if ('encoding' in terrenoTex) terrenoTex.encoding = THREE.sRGBEncoding;
+  const terreno = new THREE.Mesh(
+    new THREE.PlaneGeometry(220, 220),
+    new THREE.MeshStandardMaterial({ map: terrenoTex, color: 0x8fa87a, roughness: 1, metalness: 0 })
+  );
+  terreno.rotation.x = -Math.PI/2;
+  terreno.position.y = -0.05;
+  terreno.receiveShadow = true;
+  scene.add(terreno);
+
+  // explanada de concreto: solo el area operativa de la planta
   const gC = document.createElement('canvas');
   gC.width = gC.height = 256;
   const gx = gC.getContext('2d');
@@ -3355,9 +3390,8 @@ function buildTankMap3D(canvasId, hintId, data) {
   }
   const groundTex = new THREE.CanvasTexture(gC);
   groundTex.wrapS = groundTex.wrapT = THREE.RepeatWrapping;
-  groundTex.repeat.set(28, 28);
   const ground = new THREE.Mesh(
-    new THREE.PlaneGeometry(220, 220),
+    new THREE.PlaneGeometry(1, 1),
     new THREE.MeshStandardMaterial({ map: groundTex, color: 0x767c86, roughness: 0.97, metalness: 0.0 })
   );
   ground.rotation.x = -Math.PI/2;
@@ -3461,6 +3495,28 @@ function buildTankMap3D(canvasId, hintId, data) {
   const layoutD = totalDepth + 1.2;
   const layoutH = 4.2;
   fitSphere = 0.5 * Math.sqrt(layoutW*layoutW + layoutD*layoutD + layoutH*layoutH);
+
+  // la explanada de concreto se ajusta al tamano real de la planta
+  const expW = maxRowWidth + 2*radius3D*1.85 + 5.5;
+  const expD = totalDepth + 5.5;
+  ground.geometry.dispose();
+  ground.geometry = new THREE.PlaneGeometry(expW, expD);
+  ground.position.set(0, -0.02, (layoutMinZ + layoutMaxZ) / 2);
+  groundTex.repeat.set(expW/7, expD/7);
+  // franja de tierra entre el concreto y el pasto
+  if (!scene.userData.borde) {
+    const borde = new THREE.Mesh(
+      new THREE.PlaneGeometry(1, 1),
+      new THREE.MeshStandardMaterial({ color: 0x8a6f4e, roughness: 1, metalness: 0 })
+    );
+    borde.rotation.x = -Math.PI/2;
+    scene.add(borde);
+    scene.userData.borde = borde;
+  }
+  const borde = scene.userData.borde;
+  borde.geometry.dispose();
+  borde.geometry = new THREE.PlaneGeometry(expW + 2.6, expD + 2.6);
+  borde.position.set(0, -0.035, (layoutMinZ + layoutMaxZ) / 2);
 
   // luz principal centrada sobre la planta, para sombras coherentes
   keyLight.position.set(9, 15, 7 + totalDepth/2);
