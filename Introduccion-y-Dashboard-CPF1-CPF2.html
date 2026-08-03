@@ -1755,6 +1755,31 @@ THREE.OrbitControls = OrbitControls;
     white-space: nowrap; transform: translate(-50%, -120%); box-shadow: 0 6px 16px rgba(0,0,0,.3);
   }
   .mapa3d-hint b { font-family: 'Space Grotesk', sans-serif; font-size: 13px; display: block; margin-bottom: 2px; }
+  .card-periodo {
+    font-family: 'JetBrains Mono', monospace; font-size: 11.5px; font-weight: 700;
+    color: var(--mid); margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border);
+  }
+
+  .period-global {
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    margin: 16px 0 4px;
+  }
+  .pg-label {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .09em;
+    color: var(--text-faint); margin-right: 4px;
+  }
+  .period-global button {
+    background: var(--surface); color: var(--text-dim); border: 1px solid var(--border);
+    border-radius: 999px; padding: 7px 14px; font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px; cursor: pointer; transition: all .15s ease;
+  }
+  .period-global button:hover { color: var(--text); border-color: var(--cool); }
+  .period-global button.active { background: var(--cool); color: #08090b; font-weight: 700; border-color: var(--cool); }
+  @media (max-width: 620px) {
+    .period-global button { padding: 6px 11px; font-size: 10.5px; }
+    .pg-label { width: 100%; margin-bottom: 2px; }
+  }
+
   .total3d {
     position: absolute; top: 12px; left: 12px; z-index: 6;
     background: rgba(18,21,26,.86); border: 1px solid var(--border);
@@ -2130,6 +2155,14 @@ THREE.OrbitControls = OrbitControls;
   <div class="wrap">
     <div class="eyebrow"><span class="dot"></span>INSPECCIÓN TERMOGRÁFICA (FLIR) · EMISIONES FUGITIVAS</div>
     <div class="hero-num" id="kpiTotal">58.38 kg/Hr</div>
+    <div class="period-global" id="periodGlobal">
+      <span class="pg-label">VER DATOS COMO</span>
+      <button data-period="hora" class="active">Tasa medida</button>
+      <button data-period="mes">Al mes</button>
+      <button data-period="trim">Al trimestre</button>
+      <button data-period="sem">Al semestre</button>
+      <button data-period="anio">Al año</button>
+    </div>
     <div class="hero-tags">
       <span class="hero-tag direct">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
@@ -2421,22 +2454,37 @@ applyAggregates();
 const n2 = (v, d) => v.toFixed(d);
 
 function critRowsHTML(crit) {
-  return crit.map(c => `<div class="fcard-row"><span class="k">${c.area}</span>`
-    + `<span class="v">${c.equipo} <small>${c.tasa.toLocaleString('es-CO')} g/Hr · ${c.pct}%</small></span></div>`).join('');
+  const P = PERIODO_GLOBAL;
+  return crit.map(c => {
+    const val = (P === 'hora') ? c.tasa.toLocaleString('es-CO') + ' g/Hr' : masaAcumulada(c.tasa, P);
+    return `<div class="fcard-row"><span class="k">${c.area}</span>`
+      + `<span class="v">${c.equipo} <small>${val} · ${c.pct}%</small></span></div>`;
+  }).join('');
 }
+
+let PERIODO_GLOBAL = 'hora';
 
 function updateKPIs() {
   const t1 = AGG1.total, t2 = AGG2.total, tt = t1 + t2;
   const co2 = t1 * K_CO2EQ[1] + t2 * K_CO2EQ[2];
   const set = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
-  set('kpiTotal', n2(tt/1000, 2) + ' kg/Hr');
+  const P = PERIODO_GLOBAL, esTasa = (P === 'hora');
+  const et = esTasa ? '' : ' ' + PERIODOS[P].etiqueta;
+
+  set('kpiTotal', esTasa ? n2(tt/1000, 2) + ' kg/Hr' : masaAcumulada(tt, P));
   set('kpiCo2', co2.toLocaleString('es-CO', { maximumFractionDigits: 0 }));
-  set('kpiSub', `de gas fugitivo detectado entre dos facilidades — <b>CPF-1</b> (${AGG1.nPuntos} puntos, ${n2(t1/1000,2)} kg/Hr)`
-    + ` y <b>CPF-2</b> (${AGG2.nPuntos} puntos, ${n2(t2/1000,2)} kg/Hr) — equivalente a <b>${n2(tt/1000*24/1000,2)} toneladas/día</b>.`);
+  set('kpiSub', esTasa
+    ? `de gas fugitivo detectado entre dos facilidades — <b>CPF-1</b> (${AGG1.nPuntos} puntos, ${n2(t1/1000,2)} kg/Hr)`
+      + ` y <b>CPF-2</b> (${AGG2.nPuntos} puntos, ${n2(t2/1000,2)} kg/Hr) — equivalente a <b>${n2(tt/1000*24/1000,2)} toneladas/día</b>.`
+    : `de gas fugitivo proyectado${et} entre dos facilidades — <b>CPF-1</b> (${AGG1.nPuntos} puntos, ${masaAcumulada(t1, P)})`
+      + ` y <b>CPF-2</b> (${AGG2.nPuntos} puntos, ${masaAcumulada(t2, P)}) — a partir de una tasa medida de <b>${n2(tt/1000,2)} kg/Hr</b>.`);
   set('kpiTotPuntos', AGG1.nPuntos + AGG2.nPuntos);
-  set('kpiTotSub', `${n2(tt/1000,2)} kg/Hr · ${n2(tt/1000*24/1000,2)} t/día`);
-  set('kpiF1Puntos', AGG1.nPuntos); set('kpiF1Sub', `${n2(t1/1000,2)} kg/Hr medidos`);
-  set('kpiF2Puntos', AGG2.nPuntos); set('kpiF2Sub', `${n2(t2/1000,2)} kg/Hr medidos`);
+  set('kpiTotSub', esTasa ? `${n2(tt/1000,2)} kg/Hr · ${n2(tt/1000*24/1000,2)} t/día`
+                          : `${masaAcumulada(tt, P)}${et}`);
+  set('kpiF1Puntos', AGG1.nPuntos);
+  set('kpiF1Sub', esTasa ? `${n2(t1/1000,2)} kg/Hr medidos` : `${masaAcumulada(t1, P)}${et}`);
+  set('kpiF2Puntos', AGG2.nPuntos);
+  set('kpiF2Sub', esTasa ? `${n2(t2/1000,2)} kg/Hr medidos` : `${masaAcumulada(t2, P)}${et}`);
   set('kpiF1Crit', critRowsHTML(AGG1.critByArea));
   set('kpiF2Crit', critRowsHTML(AGG2.critByArea));
   set('tabN1', AGG1.nPuntos); set('tabN2', AGG2.nPuntos);
@@ -2767,6 +2815,7 @@ function renderGrid1() {
         <div class="card-eq">${d.equipo}</div>
         <div class="card-meta">${d.area} · ${d.punto} · ${d.elemento}</div>
         <div class="card-desc">${d.hallazgo}</div>
+        <div class="card-periodo">${PERIODO_GLOBAL === 'hora' ? d.tasa.toLocaleString('es-CO') + ' g/Hr' : masaAcumulada(d.tasa, PERIODO_GLOBAL) + ' ' + PERIODOS[PERIODO_GLOBAL].etiqueta}</div>
       </div>
     `;
     el.appendChild(card);
@@ -2801,6 +2850,7 @@ function renderGrid2() {
         <div class="card-eq">${d.equipo}</div>
         <div class="card-meta">${d.area} · ${d.punto} · ${d.elemento}</div>
         <div class="card-desc">${d.hallazgo}</div>
+        <div class="card-periodo">${PERIODO_GLOBAL === 'hora' ? d.tasa.toLocaleString('es-CO') + ' g/Hr' : masaAcumulada(d.tasa, PERIODO_GLOBAL) + ' ' + PERIODOS[PERIODO_GLOBAL].etiqueta}</div>
       </div>
     `;
     el.appendChild(card);
@@ -2809,6 +2859,23 @@ function renderGrid2() {
 
 renderFilters1(); renderGrid1();
 renderFilters2(); renderGrid2();
+
+// ---------- Control global de periodo ----------
+(function() {
+  const bar = document.getElementById('periodGlobal');
+  if (!bar) return;
+  bar.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      bar.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      PERIODO_GLOBAL = btn.dataset.period;
+      updateKPIs();
+      renderGrid1(); renderGrid2();
+      // los mapas 3D siguen el mismo periodo
+      [map3d1, map3d2].forEach(m => { if (m && m.setPeriodo) m.setPeriodo(PERIODO_GLOBAL); });
+    });
+  });
+})();
 
 // ---------- Mapa por area ----------
 function tierLabelMapa(t) { return {critico:'CRÍTICO', alto:'ALTO', medio:'MEDIO', bajo:'BAJO'}[t]; }
@@ -3697,20 +3764,25 @@ function buildTankMap3D(canvasId, hintId, data, totalId) {
   }
 
   const periodBar = wrap.querySelector('.period3d-bar');
+
+  function setPeriodo(p) {
+    if (!PERIODOS[p]) return;
+    periodo = p;
+    if (periodBar) {
+      periodBar.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.period === p));
+    }
+    // el humo crece con el periodo: se siente el volumen acumulado
+    const f = Math.min(2.2, 0.85 + Math.log10(PERIODOS[p].horas + 1) * 0.42);
+    smokeList.forEach(pl => { pl.escala = f; });
+    actualizarTotal();
+  }
+
   if (periodBar) {
     periodBar.querySelectorAll('button').forEach(btn => {
-      btn.addEventListener('click', () => {
-        periodBar.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        periodo = btn.dataset.period;
-        // el humo crece con el periodo: se siente el volumen acumulado
-        const f = Math.min(2.2, 0.85 + Math.log10(PERIODOS[periodo].horas + 1) * 0.42);
-        smokeList.forEach(pl => { pl.escala = f; });
-        actualizarTotal();
-      });
+      btn.addEventListener('click', () => setPeriodo(btn.dataset.period));
     });
   }
-  actualizarTotal();
+  setPeriodo(typeof PERIODO_GLOBAL !== 'undefined' ? PERIODO_GLOBAL : 'hora');
 
   const viewBar = wrap.querySelector('.view3d-bar');
   if (viewBar) {
@@ -3801,7 +3873,7 @@ function buildTankMap3D(canvasId, hintId, data, totalId) {
   }
 
   return {
-    resize, camera, scene, rebuild, setPaused,
+    resize, camera, scene, rebuild, setPaused, setPeriodo,
     get clickable() { return clickable; }
   };
 }
