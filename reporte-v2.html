@@ -1755,6 +1755,31 @@ THREE.OrbitControls = OrbitControls;
     white-space: nowrap; transform: translate(-50%, -120%); box-shadow: 0 6px 16px rgba(0,0,0,.3);
   }
   .mapa3d-hint b { font-family: 'Space Grotesk', sans-serif; font-size: 13px; display: block; margin-bottom: 2px; }
+  .period3d-bar {
+    position: absolute; bottom: 12px; left: 12px; z-index: 6;
+    display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
+    background: rgba(18,21,26,.86); border: 1px solid var(--border);
+    border-radius: 9px; padding: 6px 8px; backdrop-filter: blur(6px);
+    max-width: calc(100% - 24px);
+  }
+  html[data-theme="light"] .period3d-bar { background: rgba(255,255,255,.90); }
+  .p3d-label {
+    font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: .08em;
+    color: var(--text-faint); margin-right: 2px;
+  }
+  .period3d-bar button {
+    background: transparent; color: var(--text-dim); border: 1px solid transparent;
+    border-radius: 6px; padding: 5px 9px; font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px; cursor: pointer; transition: all .15s ease;
+  }
+  .period3d-bar button:hover { color: var(--text); border-color: var(--border); }
+  .period3d-bar button.active { background: var(--cool); color: #08090b; font-weight: 700; border-color: var(--cool); }
+  @media (max-width: 620px) {
+    .period3d-bar { bottom: 8px; left: 8px; padding: 5px 6px; gap: 3px; }
+    .period3d-bar button { padding: 4px 7px; font-size: 9.5px; }
+    .p3d-label { display: none; }
+  }
+
   .view3d-bar {
     position: absolute; top: 12px; right: 12px; z-index: 6; display: flex; gap: 6px; flex-wrap: wrap;
     justify-content: flex-end; max-width: calc(100% - 24px);
@@ -2148,7 +2173,7 @@ THREE.OrbitControls = OrbitControls;
   <section id="mapa3d">
     <div class="wrap">
       <div class="section-head"><h2>Vista 3D de tanques</h2><div class="section-note">ARRASTRA: ROTAR · 2 DEDOS / CLIC DER: MOVER · RUEDA: ZOOM</div></div>
-      <div class="mapa3d-wrap"><canvas id="canvas3d1"></canvas><div class="mapa3d-hint" id="hint3d1"></div><div class="view3d-bar"><button data-view="iso">Isométrica</button><button data-view="top">Superior</button><button data-view="front">Frontal</button><button data-view="side">Lateral</button></div></div>
+      <div class="mapa3d-wrap"><canvas id="canvas3d1"></canvas><div class="mapa3d-hint" id="hint3d1"></div><div class="period3d-bar"><span class="p3d-label">ACUMULADO</span><button data-period="hora" class="active">Hora</button><button data-period="mes">Mes</button><button data-period="trim">Trimestre</button><button data-period="sem">Semestre</button><button data-period="anio">Año</button></div><div class="view3d-bar"><button data-view="iso">Isométrica</button><button data-view="top">Superior</button><button data-view="front">Frontal</button><button data-view="side">Lateral</button></div></div>
     </div>
   </section>
   <section id="ranking">
@@ -2201,7 +2226,7 @@ THREE.OrbitControls = OrbitControls;
   <section id="mapa3d2">
     <div class="wrap">
       <div class="section-head"><h2>Vista 3D de tanques</h2><div class="section-note">ARRASTRA: ROTAR · 2 DEDOS / CLIC DER: MOVER · RUEDA: ZOOM</div></div>
-      <div class="mapa3d-wrap"><canvas id="canvas3d2"></canvas><div class="mapa3d-hint" id="hint3d2"></div><div class="view3d-bar"><button data-view="iso">Isométrica</button><button data-view="top">Superior</button><button data-view="front">Frontal</button><button data-view="side">Lateral</button></div></div>
+      <div class="mapa3d-wrap"><canvas id="canvas3d2"></canvas><div class="mapa3d-hint" id="hint3d2"></div><div class="period3d-bar"><span class="p3d-label">ACUMULADO</span><button data-period="hora" class="active">Hora</button><button data-period="mes">Mes</button><button data-period="trim">Trimestre</button><button data-period="sem">Semestre</button><button data-period="anio">Año</button></div><div class="view3d-bar"><button data-view="iso">Isométrica</button><button data-view="top">Superior</button><button data-view="front">Frontal</button><button data-view="side">Lateral</button></div></div>
     </div>
   </section>
   <section id="ranking2">
@@ -2832,6 +2857,23 @@ buildMapa(DATA2, 'mapaGrid2', 'mapaDetail2');
 // ---------- Mapa 3D de tanques ----------
 const TIER_HEX = { critico: 0xff4757, alto: 0xffb238, medio: 0xffd60a, bajo: 0x2dd4ee };
 
+// ---------- Periodos: proyeccion de la tasa medida en el tiempo ----------
+const PERIODOS = {
+  hora: { horas: 1,    etiqueta: 'por hora' },
+  mes:  { horas: 730,  etiqueta: 'al mes' },      // 365*24/12
+  trim: { horas: 2190, etiqueta: 'al trimestre' },
+  sem:  { horas: 4380, etiqueta: 'al semestre' },
+  anio: { horas: 8760, etiqueta: 'al año' },
+};
+
+// convierte g/Hr al acumulado del periodo, con la unidad mas legible
+function masaAcumulada(gramosPorHora, periodo) {
+  const g = gramosPorHora * PERIODOS[periodo].horas;
+  if (g >= 1e6) return (g/1e6).toLocaleString('es-CO', {maximumFractionDigits: 2}) + ' ton';
+  if (g >= 1000) return (g/1000).toLocaleString('es-CO', {maximumFractionDigits: 1}) + ' kg';
+  return Math.round(g).toLocaleString('es-CO') + ' g';
+}
+
 let _concreteCache = null;
 function getConcreteTexture() {
   if (_concreteCache) return _concreteCache;
@@ -2997,13 +3039,14 @@ function addSmokePlume(scene, position, colorHex, smokeList) {
 
 function updateSmoke(smokeList, t) {
   for (const p of smokeList) {
+    const k = p.escala || 1;                 // crece segun el periodo elegido
     let local = (t * p.speed + p.phase) % 1;
     p.sprite.position.x = p.base.x + Math.sin(local * Math.PI * 2) * 0.06 + p.drift * local;
-    p.sprite.position.y = p.base.y + local * 1.4;
+    p.sprite.position.y = p.base.y + local * 1.4 * k;
     p.sprite.position.z = p.base.z + Math.cos(local * Math.PI * 1.7) * 0.06;
     const fade = Math.sin(local * Math.PI);
     p.sprite.material.opacity = fade * 0.62;
-    p.sprite.scale.setScalar(0.18 + local * 0.55);
+    p.sprite.scale.setScalar((0.18 + local * 0.55) * k);
   }
 }
 
@@ -3617,6 +3660,22 @@ function buildTankMap3D(canvasId, hintId, data) {
   });
 
   // botones de vista predefinida
+  // ---- periodo de acumulacion ----
+  let periodo = 'hora';
+  const periodBar = wrap.querySelector('.period3d-bar');
+  if (periodBar) {
+    periodBar.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        periodBar.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        periodo = btn.dataset.period;
+        // el humo crece con el periodo: se siente el volumen acumulado
+        const f = Math.min(2.2, 0.85 + Math.log10(PERIODOS[periodo].horas + 1) * 0.42);
+        smokeList.forEach(pl => { pl.escala = f; });
+      });
+    });
+  }
+
   const viewBar = wrap.querySelector('.view3d-bar');
   if (viewBar) {
     viewBar.querySelectorAll('button').forEach(btn => {
@@ -3675,7 +3734,10 @@ function buildTankMap3D(canvasId, hintId, data) {
         hovered.scale.setScalar(1.5);
       }
       const item = obj.userData.item;
-      hintEl.innerHTML = `<b>${item.equipo}</b>${item.punto} · ${item.tasa.toLocaleString('es-CO')} g/Hr`;
+      const acum = masaAcumulada(item.tasa, periodo);
+      hintEl.innerHTML = periodo === 'hora'
+        ? `<b>${item.equipo}</b>${item.punto} · ${item.tasa.toLocaleString('es-CO')} g/Hr`
+        : `<b>${item.equipo}</b>${item.punto} · ${acum} ${PERIODOS[periodo].etiqueta}`;
       const rect = wrap.getBoundingClientRect();
       const p = obj.position.clone();
       obj.parent.localToWorld(p);
