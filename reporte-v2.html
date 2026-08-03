@@ -3299,9 +3299,12 @@ function buildTankMap3D(canvasId, hintId, data) {
   const wrap = canvas.parentElement;
 
   const scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(0x11151b, 30, 78);
+  // cielo propio del visor: no depende del tema claro/oscuro de la pagina
+  const SKY_HEX = 0x8fb6d6;
+  scene.background = new THREE.Color(SKY_HEX);
+  scene.fog = new THREE.Fog(SKY_HEX, 40, 120);
   const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 200);
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
