@@ -3223,13 +3223,39 @@ function buildTank3D(scene, x, z, name, points, clickable, smokeList) {
     group.add(step);
   }
 
-  // descanso de llegada: plataforma que conecta la escalera con el techo
+  // descanso de llegada: puente que une el final de la espiral con el borde del techo.
+  // debe cubrir desde el radio de la escalera (stairR) hasta dentro del techo (railR),
+  // si no, la escalera queda "flotando" sin conexion visible.
   const angLlegada = angTot;
-  const descanso = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.04, 0.5), ladderMat);
-  descanso.position.set(Math.cos(angLlegada) * (radius + 0.04), stairTop, Math.sin(angLlegada) * (radius + 0.04));
+  const rDentro = radius * 0.86;                 // un poco adentro del techo
+  const largoPuente = (stairR + anchoPeldano/2) - rDentro + 0.06;
+  const rMedio = (stairR + anchoPeldano/2 + rDentro) / 2;
+  const descanso = new THREE.Mesh(new THREE.BoxGeometry(largoPuente, 0.045, 0.52), ladderMat);
+  descanso.position.set(Math.cos(angLlegada) * rMedio, stairTop, Math.sin(angLlegada) * rMedio);
   descanso.rotation.y = -angLlegada;
   descanso.castShadow = true; descanso.receiveShadow = true;
   group.add(descanso);
+
+  // barandillas del puente de llegada, a ambos lados
+  [-1, 1].forEach(lado => {
+    const perp = angLlegada + Math.PI/2;
+    const off = 0.26 * lado;
+    [0.42, 0.80].forEach(hOff => {
+      const barra = new THREE.Mesh(new THREE.BoxGeometry(largoPuente, 0.03, 0.03), ladderMat);
+      barra.position.set(Math.cos(angLlegada)*rMedio + Math.cos(perp)*off, stairTop + hOff,
+                         Math.sin(angLlegada)*rMedio + Math.sin(perp)*off);
+      barra.rotation.y = -angLlegada;
+      barra.castShadow = true;
+      group.add(barra);
+    });
+    [-largoPuente/2 + 0.05, largoPuente/2 - 0.05].forEach(dl => {
+      const poste = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.82, 6), ladderMat);
+      poste.position.set(Math.cos(angLlegada)*(rMedio + dl) + Math.cos(perp)*off, stairTop + 0.41,
+                         Math.sin(angLlegada)*(rMedio + dl) + Math.sin(perp)*off);
+      poste.castShadow = true;
+      group.add(poste);
+    });
+  });
 
   // pasamanos exterior e interior, siguiendo la misma espiral
   [stairR + anchoPeldano*0.45, stairR - anchoPeldano*0.45].forEach((rr, idx) => {
