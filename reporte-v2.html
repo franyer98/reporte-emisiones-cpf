@@ -3188,17 +3188,56 @@ function buildTank3D(scene, x, z, name, points, clickable, smokeList) {
     group.add(post);
   }
 
+  // Escalera tipo caracol: rodea el cuerpo del tanque en espiral hasta el techo
   const ladderMat = new THREE.MeshStandardMaterial({ color: 0xe8b923, roughness: 0.55, metalness: 0.35 });
-  const ladder = new THREE.Mesh(new THREE.BoxGeometry(0.09, height, 0.16), ladderMat);
-  ladder.position.set(radius + 0.06, 0.16 + height/2, 0);
-  ladder.castShadow = true;
-  group.add(ladder);
-  for (let r = 0; r < 5; r++) {
-    const rung = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.03, 0.16), ladderMat);
-    rung.position.set(radius + 0.06, 0.3 + r*(height/5), 0);
-    rung.castShadow = true;
-    group.add(rung);
+  const stairR = radius + 0.20;          // radio de la espiral
+  const stairBase = 0.16;                // arranca sobre la base
+  const stairTop = 0.16 + height + 0.06; // llega al nivel del techo
+  const vueltas = 0.82;                  // fraccion de vuelta alrededor del tanque
+  const nPasos = 30;
+  const angTot = vueltas * Math.PI * 2;
+  const anchoPeldano = 0.30;
+
+  for (let i = 0; i < nPasos; i++) {
+    const t = i / (nPasos - 1);
+    const a = t * angTot;
+    const y = stairBase + t * (stairTop - stairBase);
+    // peldano: se orienta segun la tangente de la espiral
+    const step = new THREE.Mesh(new THREE.BoxGeometry(anchoPeldano, 0.035, 0.18), ladderMat);
+    step.position.set(Math.cos(a) * stairR, y, Math.sin(a) * stairR);
+    step.rotation.y = -a;
+    step.castShadow = true; step.receiveShadow = true;
+    group.add(step);
   }
+
+  // pasamanos exterior e interior, siguiendo la misma espiral
+  [stairR + anchoPeldano*0.45, stairR - anchoPeldano*0.45].forEach((rr, idx) => {
+    [0.42, 0.80].forEach(hOff => {
+      const pts = [];
+      for (let i = 0; i <= 60; i++) {
+        const t = i / 60;
+        const a = t * angTot;
+        const y = stairBase + t * (stairTop - stairBase) + hOff;
+        pts.push(new THREE.Vector3(Math.cos(a) * rr, y, Math.sin(a) * rr));
+      }
+      const curve = new THREE.CatmullRomCurve3(pts);
+      const rail = new THREE.Mesh(new THREE.TubeGeometry(curve, 60, 0.022, 6, false), ladderMat);
+      rail.castShadow = true;
+      group.add(rail);
+    });
+    // parales verticales del pasamanos
+    if (idx === 0) {
+      for (let i = 0; i <= 8; i++) {
+        const t = i / 8;
+        const a = t * angTot;
+        const y = stairBase + t * (stairTop - stairBase);
+        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.82, 6), ladderMat);
+        post.position.set(Math.cos(a) * rr, y + 0.41, Math.sin(a) * rr);
+        post.castShadow = true;
+        group.add(post);
+      }
+    }
+  });
 
   const label = makeTextSprite(name);
   label.position.set(0, 0.16 + height + roofH + 0.55, 0);
