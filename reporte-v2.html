@@ -3178,12 +3178,17 @@ function buildTank3D(scene, x, z, name, points, clickable, smokeList) {
   const aberturaArco = 0.42;        // ancho del hueco, en radianes
   const arcoRail = Math.PI*2 - aberturaArco;
   [0.34, 0.60].forEach(h => {
+    // el anillo se construye en el plano XY y luego se acuesta; para que el hueco
+    // quede exactamente donde llega la escalera, se arma en un grupo y se gira ese grupo
+    const holder = new THREE.Group();
     const rail = new THREE.Mesh(new THREE.TorusGeometry(railR, 0.018, 6, 44, arcoRail), railMat);
     rail.rotation.x = Math.PI/2;
-    rail.rotation.z = -(aberturaAng + aberturaArco/2);
-    rail.position.y = railY + h;
     rail.castShadow = true;
-    group.add(rail);
+    holder.add(rail);
+    // el arco empieza en 0 y avanza; centramos el hueco restante en la abertura
+    holder.rotation.y = -(aberturaArco/2 + arcoRail) - aberturaAng + Math.PI/2 - (33.3 * Math.PI/180);
+    holder.position.y = railY + h;
+    group.add(holder);
   });
   for (let p = 0; p < 12; p++) {
     const ang = (p/12) * Math.PI * 2;
