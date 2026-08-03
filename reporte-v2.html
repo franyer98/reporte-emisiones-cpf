@@ -3188,7 +3188,7 @@ function buildTank3D(scene, x, z, name, points, clickable, smokeList) {
     group.add(post);
   }
 
-  const ladderMat = new THREE.MeshStandardMaterial({ color: 0x7b8088, roughness: 0.65, metalness: 0.6 });
+  const ladderMat = new THREE.MeshStandardMaterial({ color: 0xe8b923, roughness: 0.55, metalness: 0.35 });
   const ladder = new THREE.Mesh(new THREE.BoxGeometry(0.09, height, 0.16), ladderMat);
   ladder.position.set(radius + 0.06, 0.16 + height/2, 0);
   ladder.castShadow = true;
