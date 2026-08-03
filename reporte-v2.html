@@ -3211,21 +3211,16 @@ function buildTank3D(scene, x, z, name, points, clickable, smokeList) {
     const fixture = createFixture(pt.punto, TIER_HEX[pt.tier]);
     let worldX, worldY, worldZ;
 
-    if (tipo.includes('BRIDA')) {
-      // en el costado, altura baja (linea de tuberia)
-      const fy = 0.16 + height * 0.24;
-      fixture.position.set(Math.cos(angle) * radius, fy, Math.sin(angle) * radius);
-      fixture.rotation.y = -angle;
-      worldX = x + Math.cos(angle) * (radius + 0.24); worldY = fy; worldZ = z + Math.sin(angle) * (radius + 0.24);
-    } else {
-      // MANHOLE y ESCOTILLA: van sobre el techo del tanque (ver foto de campo)
-      const mr = radius * (tipo.includes('ESCOTILLA') ? 0.34 : 0.55);
-      const roofYatR = 0.16 + height + roofH * (1 - mr/(radius*1.04));
-      fixture.position.set(Math.cos(angle) * mr, roofYatR, Math.sin(angle) * mr);
-      worldX = x + Math.cos(angle) * mr;
-      worldY = roofYatR + (tipo.includes('ESCOTILLA') ? 0.75 : 0.29);
-      worldZ = z + Math.sin(angle) * mr;
-    }
+    // todas las facilidades van sobre el techo del tanque (ver fotos de campo)
+    const esEscotilla = tipo.includes('ESCOTILLA');
+    const esBrida = tipo.includes('BRIDA');
+    const mr = radius * (esEscotilla ? 0.34 : (esBrida ? 0.70 : 0.55));
+    const roofYatR = 0.16 + height + roofH * (1 - mr/(radius*1.04));
+    fixture.position.set(Math.cos(angle) * mr, roofYatR, Math.sin(angle) * mr);
+    if (esBrida) fixture.rotation.z = -Math.PI/2;   // la brida apunta hacia arriba
+    worldX = x + Math.cos(angle) * mr;
+    worldY = roofYatR + (esEscotilla ? 0.75 : (esBrida ? 0.30 : 0.29));
+    worldZ = z + Math.sin(angle) * mr;
 
     fixture.userData.item = pt;
     fixture.userData.baseScale = 1;
