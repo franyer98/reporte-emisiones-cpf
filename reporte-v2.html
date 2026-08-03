@@ -3335,7 +3335,7 @@ function buildTankMap3D(canvasId, hintId, data) {
   areas.forEach(a => tanksByArea[a] = []);
   Object.keys(tankArea).forEach(eq => tanksByArea[tankArea[eq].area].push(eq));
 
-  const colSpacing = 4.5, subRowSpacing = 4.5, areaGap = 2.2, radius3D = 1;
+  const colSpacing = 4.5, subRowSpacing = 4.5, areaGap = 9.0, radius3D = 1;
   const PER_ROW = 3; // maximo de tanques por sub-fila: evita hileras muy largas
   const AREA_PALETTE = ['#3fa9f5','#a78bfa','#4ade80','#fb923c','#f472b6','#ffd60a'];
   let zCursor = 0, maxRowWidth = 0, layoutMinZ = Infinity, layoutMaxZ = -Infinity;
@@ -3383,7 +3383,8 @@ function buildTankMap3D(canvasId, hintId, data) {
     });
 
     const areaLabel = makeAreaLabelSprite(area, areaColor);
-    areaLabel.position.set(-padW/2 - 1.5, 0.4, zCenter);
+    areaLabel.scale.set(4.2, 0.8, 1);
+    areaLabel.position.set(0, 1.1, z0 - 1.1);
     contentGroup.add(areaLabel);
 
     layoutMinZ = Math.min(layoutMinZ, z0);
