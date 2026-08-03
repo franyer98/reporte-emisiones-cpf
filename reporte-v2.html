@@ -2832,6 +2832,94 @@ buildMapa(DATA2, 'mapaGrid2', 'mapaDetail2');
 // ---------- Mapa 3D de tanques ----------
 const TIER_HEX = { critico: 0xff4757, alto: 0xffb238, medio: 0xffd60a, bajo: 0x2dd4ee };
 
+let _concreteCache = null;
+function getConcreteTexture() {
+  if (_concreteCache) return _concreteCache;
+  const c = document.createElement('canvas');
+  c.width = 512; c.height = 512;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#9a9c9b';
+  ctx.fillRect(0, 0, 512, 512);
+  // grano del concreto
+  for (let i = 0; i < 9000; i++) {
+    const v = 128 + Math.random()*58;
+    ctx.fillStyle = `rgba(${v|0},${v|0},${(v-3)|0},${0.10 + Math.random()*0.30})`;
+    ctx.fillRect(Math.random()*512, Math.random()*512, 1 + Math.random()*2.5, 1 + Math.random()*2.5);
+  }
+  // manchas de humedad
+  for (let i = 0; i < 22; i++) {
+    const x = Math.random()*512, y = Math.random()*512, r = 22 + Math.random()*60;
+    const gr = ctx.createRadialGradient(x, y, 0, x, y, r);
+    gr.addColorStop(0, 'rgba(96,98,96,0.16)');
+    gr.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = gr;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
+  }
+  // juntas de dilatacion
+  ctx.strokeStyle = 'rgba(88,90,88,0.55)';
+  ctx.lineWidth = 2.5;
+  for (let i = 1; i < 4; i++) {
+    ctx.beginPath(); ctx.moveTo(i*128, 0); ctx.lineTo(i*128, 512); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, i*128); ctx.lineTo(512, i*128); ctx.stroke();
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  if ('colorSpace' in tex) tex.colorSpace = THREE.SRGBColorSpace;
+  else if ('encoding' in tex) tex.encoding = THREE.sRGBEncoding;
+  _concreteCache = tex;
+  return tex;
+}
+
+// Dique de contencion: muro perimetral de concreto + piso, alrededor de cada tanque
+function buildDike3D(group, radius) {
+  const half = radius * 1.85;      // media longitud del recinto
+  const wallH = 0.62;              // altura del muro
+  const wallT = 0.14;              // espesor
+  const tex = getConcreteTexture();
+
+  const floorTex = tex.clone();
+  floorTex.needsUpdate = true;
+  floorTex.repeat.set(2.2, 2.2);
+  const floor = new THREE.Mesh(
+    new THREE.BoxGeometry(half*2, 0.06, half*2),
+    new THREE.MeshStandardMaterial({ map: floorTex, color: 0xb9bcba, roughness: 0.96, metalness: 0.02 })
+  );
+  floor.position.y = 0.03;
+  floor.receiveShadow = true;
+  group.add(floor);
+
+  const wallMat = new THREE.MeshStandardMaterial({ map: tex, color: 0xc2c5c3, roughness: 0.93, metalness: 0.02 });
+  const capMat = new THREE.MeshStandardMaterial({ color: 0xd6d8d6, roughness: 0.88, metalness: 0.02 });
+  const muros = [
+    { w: half*2 + wallT*2, d: wallT, x: 0, z: -half },
+    { w: half*2 + wallT*2, d: wallT, x: 0, z:  half },
+    { w: wallT, d: half*2, x: -half, z: 0 },
+    { w: wallT, d: half*2, x:  half, z: 0 },
+  ];
+  muros.forEach(m => {
+    const wall = new THREE.Mesh(new THREE.BoxGeometry(m.w, wallH, m.d), wallMat);
+    wall.position.set(m.x, wallH/2, m.z);
+    wall.castShadow = true; wall.receiveShadow = true;
+    group.add(wall);
+    // remate superior del muro
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(m.w + 0.04, 0.05, m.d + 0.04), capMat);
+    cap.position.set(m.x, wallH + 0.02, m.z);
+    cap.castShadow = true;
+    group.add(cap);
+  });
+
+  // escalones de acceso sobre el muro frontal
+  const stepMat = new THREE.MeshStandardMaterial({ color: 0xd0d2d0, roughness: 0.9 });
+  [0, 1, 2].forEach(i => {
+    const step = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.06, 0.22), stepMat);
+    step.position.set(radius*0.5, 0.16 + i*0.2, half + 0.16 + i*0.12);
+    step.castShadow = true; step.receiveShadow = true;
+    group.add(step);
+  });
+
+  return half;
+}
+
 let _tankSkinCache = null;
 function getTankSkinTexture() {
   if (_tankSkinCache) return _tankSkinCache;
@@ -3041,6 +3129,9 @@ function buildTank3D(scene, x, z, name, points, clickable, smokeList) {
   const group = new THREE.Group();
   group.position.set(x, 0, z);
 
+  // dique de contencion en concreto alrededor del tanque
+  buildDike3D(group, radius);
+
   const baseMat = new THREE.MeshStandardMaterial({ color: 0x4a4f57, roughness: 0.95, metalness: 0.15 });
   const base = new THREE.Mesh(new THREE.CylinderGeometry(radius*1.1, radius*1.14, 0.16, 32), baseMat);
   base.position.y = 0.08;
@@ -3249,7 +3340,7 @@ function buildTankMap3D(canvasId, hintId, data) {
   areas.forEach(a => tanksByArea[a] = []);
   Object.keys(tankArea).forEach(eq => tanksByArea[tankArea[eq].area].push(eq));
 
-  const colSpacing = 3.6, subRowSpacing = 3.6, areaGap = 2.6, radius3D = 1;
+  const colSpacing = 4.5, subRowSpacing = 4.5, areaGap = 2.2, radius3D = 1;
   const PER_ROW = 3; // maximo de tanques por sub-fila: evita hileras muy largas
   const AREA_PALETTE = ['#3fa9f5','#a78bfa','#4ade80','#fb923c','#f472b6','#ffd60a'];
   let zCursor = 0, maxRowWidth = 0, layoutMinZ = Infinity, layoutMaxZ = -Infinity;
@@ -3266,23 +3357,23 @@ function buildTankMap3D(canvasId, hintId, data) {
     maxRowWidth = Math.max(maxRowWidth, rowW);
 
     // plataforma de piso coloreada, delimitando la zona de esta area
-    const padW = rowW + 2*radius3D + 1.8;
-    const padD = areaDepth + 2*radius3D + 1.4;
+    const padW = rowW + 2*radius3D*1.85 + 1.4;
+    const padD = areaDepth + 2*radius3D*1.85 + 1.4;
     const pad = new THREE.Mesh(
       new THREE.PlaneGeometry(padW, padD),
       new THREE.MeshStandardMaterial({ color: areaColor, roughness: 1, transparent: true, opacity: 0.32, toneMapped: false })
     );
     pad.rotation.x = -Math.PI/2;
-    pad.position.set(0, 0, zCenter);
+    pad.position.set(0, -0.01, zCenter);
     contentGroup.add(pad);
     // borde de la plataforma (rectangulo delineado)
     const z0 = zCenter - padD/2, z1 = zCenter + padD/2;
     const edgePts = [
-      new THREE.Vector3(-padW/2, 0.005, z0),
-      new THREE.Vector3(padW/2, 0.005, z0),
-      new THREE.Vector3(padW/2, 0.005, z1),
-      new THREE.Vector3(-padW/2, 0.005, z1),
-      new THREE.Vector3(-padW/2, 0.005, z0),
+      new THREE.Vector3(-padW/2, -0.005, z0),
+      new THREE.Vector3(padW/2, -0.005, z0),
+      new THREE.Vector3(padW/2, -0.005, z1),
+      new THREE.Vector3(-padW/2, -0.005, z1),
+      new THREE.Vector3(-padW/2, -0.005, z0),
     ];
     const edgeGeo = new THREE.BufferGeometry().setFromPoints(edgePts);
     const edgeLine = new THREE.Line(edgeGeo, new THREE.LineBasicMaterial({ color: areaColor, transparent: true, opacity: 0.95, toneMapped: false }));
@@ -3310,7 +3401,7 @@ function buildTankMap3D(canvasId, hintId, data) {
 
   // radio de encuadre segun ANCHO y PROFUNDIDAD reales (antes solo usaba profundidad,
   // por eso una facilidad con muchos tanques en una fila quedaba fuera de cuadro)
-  const layoutW = maxRowWidth + 2*radius3D + 4.0;
+  const layoutW = maxRowWidth + 2*radius3D*1.85 + 4.0;
   const layoutD = totalDepth + 1.2;
   const layoutH = 4.2;
   fitSphere = 0.5 * Math.sqrt(layoutW*layoutW + layoutD*layoutD + layoutH*layoutH);
