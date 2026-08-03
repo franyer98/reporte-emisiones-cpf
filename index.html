@@ -3175,26 +3175,27 @@ function buildTank3D(scene, x, z, name, points, clickable, smokeList) {
   const railR = radius*0.99;
   // la baranda deja una abertura donde llega la escalera (entrada al techo)
   const aberturaAng = Math.PI;      // debe coincidir con el final de la espiral
-  const aberturaArco = 0.42;        // ancho del hueco, en radianes
+  const aberturaArco = 0.80;        // ancho del hueco, en radianes (~46 grados)
   const arcoRail = Math.PI*2 - aberturaArco;
+  // el pasamanos se traza punto por punto: el hueco queda exactamente donde
+  // llega la escalera, sin depender de rotaciones del toroide
   [0.34, 0.60].forEach(h => {
-    // el anillo se construye en el plano XY y luego se acuesta; para que el hueco
-    // quede exactamente donde llega la escalera, se arma en un grupo y se gira ese grupo
-    const holder = new THREE.Group();
-    const rail = new THREE.Mesh(new THREE.TorusGeometry(railR, 0.018, 6, 44, arcoRail), railMat);
-    rail.rotation.x = Math.PI/2;
+    const pts = [];
+    const nSeg = 60;
+    for (let i = 0; i <= nSeg; i++) {
+      const a = aberturaAng + aberturaArco/2 + (i/nSeg) * arcoRail;
+      pts.push(new THREE.Vector3(Math.cos(a)*railR, railY + h, Math.sin(a)*railR));
+    }
+    const curve = new THREE.CatmullRomCurve3(pts, false);
+    const rail = new THREE.Mesh(new THREE.TubeGeometry(curve, nSeg, 0.018, 6, false), railMat);
     rail.castShadow = true;
-    holder.add(rail);
-    // el arco empieza en 0 y avanza; centramos el hueco restante en la abertura
-    holder.rotation.y = -(aberturaArco/2 + arcoRail) - aberturaAng + Math.PI/2 - (33.3 * Math.PI/180);
-    holder.position.y = railY + h;
-    group.add(holder);
+    group.add(rail);
   });
   for (let p = 0; p < 12; p++) {
     const ang = (p/12) * Math.PI * 2;
     // no poner parales dentro de la abertura
-    let dif = Math.abs(((ang - aberturaAng + Math.PI) % (Math.PI*2)) - Math.PI);
-    if (dif < aberturaArco/2) continue;
+    let dif = Math.abs(((ang - aberturaAng + Math.PI) % (Math.PI*2) + Math.PI*2) % (Math.PI*2) - Math.PI);
+    if (dif < aberturaArco/2 + 0.10) continue;
     const post = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.62, 6), railMat);
     post.position.set(Math.cos(ang)*railR, railY + 0.31, Math.sin(ang)*railR);
     post.castShadow = true;
