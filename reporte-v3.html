@@ -3302,7 +3302,7 @@ function buildTankMap3D(canvasId, hintId, data) {
   // cielo propio del visor: no depende del tema claro/oscuro de la pagina
   const SKY_HEX = 0x8fb6d6;
   scene.background = new THREE.Color(SKY_HEX);
-  scene.fog = new THREE.Fog(SKY_HEX, 40, 120);
+  scene.fog = new THREE.Fog(SKY_HEX, 90, 320);
   const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 200);
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -3369,11 +3369,11 @@ function buildTankMap3D(canvasId, hintId, data) {
   }
   const terrenoTex = new THREE.CanvasTexture(tC);
   terrenoTex.wrapS = terrenoTex.wrapT = THREE.RepeatWrapping;
-  terrenoTex.repeat.set(26, 26);
+  terrenoTex.repeat.set(70, 70);
   if ('colorSpace' in terrenoTex) terrenoTex.colorSpace = THREE.SRGBColorSpace;
   else if ('encoding' in terrenoTex) terrenoTex.encoding = THREE.sRGBEncoding;
   const terreno = new THREE.Mesh(
-    new THREE.PlaneGeometry(220, 220),
+    new THREE.PlaneGeometry(600, 600),
     new THREE.MeshStandardMaterial({ map: terrenoTex, color: 0x8fa87a, roughness: 1, metalness: 0 })
   );
   terreno.rotation.x = -Math.PI/2;
@@ -3553,7 +3553,7 @@ function buildTankMap3D(canvasId, hintId, data) {
   controls.minDistance = 4;
   controls.maxDistance = 60;
   controls.minPolarAngle = 0.18;
-  controls.maxPolarAngle = Math.PI/2 + 0.10;
+  controls.maxPolarAngle = Math.PI/2 - 0.05;   // no dejar que la camara se hunda bajo el suelo
   // click izq = rotar · click der / 2 dedos = mover · rueda / pellizco = zoom
   controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
   controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
