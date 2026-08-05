@@ -1665,10 +1665,10 @@ THREE.OrbitControls = OrbitControls;
   .card-photo { position: relative; aspect-ratio: 4/3; overflow:hidden; background:#000; }
   .card-photo img { width:100%; height:100%; object-fit: cover; display:block; filter: contrast(1.05); }
   .badge { position:absolute; top:10px; left:10px; font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; letter-spacing:.06em; padding: 4px 9px; border-radius: 5px; backdrop-filter: blur(4px); }
-  .badge.critico { background: rgba(255,71,87,.85); color:#fff; }
-  .badge.alto { background: rgba(255,178,56,.88); color:#1a1200; }
-  .badge.medio { background: rgba(255,214,10,.85); color:#1a1200; }
-  .badge.bajo { background: rgba(45,212,238,.85); color:#00232a; }
+  .badge.critico { background: rgba(255,17,48,.95); color:#fff; }
+  .badge.alto { background: rgba(255,122,0,.95); color:#1a1200; }
+  .badge.medio { background: rgba(255,229,0,.95); color:#1a1200; }
+  .badge.bajo { background: rgba(0,229,255,.95); color:#00232a; }
   .badge.campo { background: rgba(224,138,79,.88); color:#1a0f06; }
   .card-rate { position:absolute; bottom:10px; left:10px; font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:700; color:#fff; background: rgba(0,0,0,.55); padding: 4px 9px; border-radius: 5px; backdrop-filter: blur(4px); }
   .card-body { padding: 16px 16px 18px; }
@@ -1941,10 +1941,10 @@ THREE.OrbitControls = OrbitControls;
   .lightbox-content img { width: 100%; display: block; background: #000; }
   .lightbox-info { padding: 18px 20px 22px; }
   .lightbox-badge { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: .06em; padding: 4px 10px; border-radius: 5px; margin-bottom: 10px; }
-  .lightbox-badge.critico { background: rgba(255,71,87,.85); color: #fff; }
-  .lightbox-badge.alto { background: rgba(255,178,56,.88); color: #1a1200; }
-  .lightbox-badge.medio { background: rgba(255,214,10,.85); color: #1a1200; }
-  .lightbox-badge.bajo { background: rgba(45,212,238,.85); color: #00232a; }
+  .lightbox-badge.critico { background: rgba(255,17,48,.95); color: #fff; }
+  .lightbox-badge.alto { background: rgba(255,122,0,.95); color: #1a1200; }
+  .lightbox-badge.medio { background: rgba(255,229,0,.95); color: #1a1200; }
+  .lightbox-badge.bajo { background: rgba(0,229,255,.95); color: #00232a; }
   .lightbox-eq { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 22px; }
   .lightbox-meta { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--text-faint); text-transform: uppercase; letter-spacing: .04em; margin: 6px 0 14px; }
   .lightbox-desc { font-size: 14px; color: var(--text-dim); line-height: 1.6; }
@@ -2523,7 +2523,7 @@ const getTooltipBase = () => ({
   displayColors: false,
 });
 
-const TIER_CSS = { critico: '#ff4757', alto: '#ffb238', medio: '#ffd60a', bajo: '#2dd4ee' };
+const TIER_CSS = { critico: '#ff1130', alto: '#ff7a00', medio: '#ffe500', bajo: '#00e5ff' };
 
 // ---------- Plugin: pista de fondo detras de cada barra ----------
 const barTrack = {
@@ -2676,7 +2676,7 @@ new Chart(document.getElementById('chartAreaDonut1'), {
   type: 'doughnut',
   data: {
     labels: AREA_TASA_LABELS,
-    datasets: [{ data: AREA_TASA_VALUES, backgroundColor: ['#ff4757','#ffb238','#2dd4ee'], borderColor: cv('--surface'), borderWidth: 3 }]
+    datasets: [{ data: AREA_TASA_VALUES, backgroundColor: ['#ff1130','#ff7a00','#00e5ff'], borderColor: cv('--surface'), borderWidth: 3 }]
   },
   options: {
     responsive: true, maintainAspectRatio: false,
@@ -2940,7 +2940,7 @@ buildMapa(DATA1, 'mapaGrid1', 'mapaDetail1');
 buildMapa(DATA2, 'mapaGrid2', 'mapaDetail2');
 
 // ---------- Mapa 3D de tanques ----------
-const TIER_HEX = { critico: 0xff4757, alto: 0xffb238, medio: 0xffd60a, bajo: 0x2dd4ee };
+const TIER_HEX = { critico: 0xff1130, alto: 0xff7a00, medio: 0xffe500, bajo: 0x00e5ff };
 
 // ---------- Periodos: proyeccion de la tasa medida en el tiempo ----------
 const PERIODOS = {
@@ -3104,7 +3104,7 @@ function getSmokeTexture() {
 
 function addSmokePlume(scene, position, colorHex, smokeList) {
   const tex = getSmokeTexture();
-  const n = 7;
+  const n = 9;
   for (let i = 0; i < n; i++) {
     const mat = new THREE.SpriteMaterial({
       map: tex, color: colorHex, transparent: true, opacity: 0,
@@ -3130,7 +3130,7 @@ function updateSmoke(smokeList, t) {
     p.sprite.position.y = p.base.y + local * 1.4 * k;
     p.sprite.position.z = p.base.z + Math.cos(local * Math.PI * 1.7) * 0.06;
     const fade = Math.sin(local * Math.PI);
-    p.sprite.material.opacity = fade * 0.62;
+    p.sprite.material.opacity = fade * 0.82;
     p.sprite.scale.setScalar((0.18 + local * 0.55) * k);
   }
 }
@@ -3174,7 +3174,7 @@ function makeAreaLabelSprite(text, colorHex) {
 function createFixture(tipoPunto, tierHex) {
   const tipo = (tipoPunto || '').toUpperCase();
   const fixMat = new THREE.MeshStandardMaterial({ color: 0x8a8f96, roughness: 0.55, metalness: 0.55 });
-  const glowMat = new THREE.MeshStandardMaterial({ color: tierHex, emissive: tierHex, emissiveIntensity: 1.35, roughness: 0.3, toneMapped: false });
+  const glowMat = new THREE.MeshStandardMaterial({ color: tierHex, emissive: tierHex, emissiveIntensity: 2.1, roughness: 0.25, toneMapped: false });
   const g = new THREE.Group();
 
   if (tipo.includes('BRIDA')) {
