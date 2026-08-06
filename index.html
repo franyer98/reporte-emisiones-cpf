@@ -3285,16 +3285,17 @@ function getTankSkinWithLogo() {
   // el logo se dibuja al cargar y se refresca la textura
   const img = new Image();
   img.onload = () => {
-    // el logo ocupa buena parte de la cara del tanque, para que se lea desde lejos
-    const anchoLogo = 880, altoLogo = anchoLogo * (img.height / img.width);
+    // dos copias en caras opuestas, sin traslaparse: la textura mide 2048 y
+    // cada logo 780, asi cada copia queda dentro de su mitad (1024)
+    const anchoLogo = 780, altoLogo = anchoLogo * (img.height / img.width);
     const y = 256 - altoLogo/2;
-    // cuatro copias repartidas, para verlo desde cualquier angulo
-    [90, 602, 1114, 1626].forEach(x => {
+    const margen = (1024 - anchoLogo) / 2;   // centrado en cada mitad
+    [margen, 1024 + margen].forEach(x => {
       ctx.save();
       // franja blanca de fondo: da contraste sobre el acero
       ctx.globalAlpha = 0.55;
       ctx.fillStyle = '#ffffff';
-      ctx.fillRect(x - 24, y - 18, anchoLogo + 48, altoLogo + 36);
+      ctx.fillRect(x - 20, y - 16, anchoLogo + 40, altoLogo + 32);
       ctx.globalAlpha = 1;
       ctx.drawImage(img, x, y, anchoLogo, altoLogo);
       ctx.restore();
