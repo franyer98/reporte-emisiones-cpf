@@ -3285,12 +3285,17 @@ function getTankSkinWithLogo() {
   // el logo se dibuja al cargar y se refresca la textura
   const img = new Image();
   img.onload = () => {
-    const anchoLogo = 380, altoLogo = anchoLogo * (img.height / img.width);
+    // el logo ocupa buena parte de la cara del tanque, para que se lea desde lejos
+    const anchoLogo = 880, altoLogo = anchoLogo * (img.height / img.width);
     const y = 256 - altoLogo/2;
-    // dos copias opuestas, para que se vea desde cualquier angulo
-    [340, 1364].forEach(x => {
+    // cuatro copias repartidas, para verlo desde cualquier angulo
+    [90, 602, 1114, 1626].forEach(x => {
       ctx.save();
-      ctx.globalAlpha = 0.94;
+      // franja blanca de fondo: da contraste sobre el acero
+      ctx.globalAlpha = 0.55;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x - 24, y - 18, anchoLogo + 48, altoLogo + 36);
+      ctx.globalAlpha = 1;
       ctx.drawImage(img, x, y, anchoLogo, altoLogo);
       ctx.restore();
     });
@@ -3743,7 +3748,7 @@ function buildTankMap3D(canvasId, hintId, data, totalId) {
     const aspect = camera.aspect && isFinite(camera.aspect) ? camera.aspect : 2.2;
     const hFov = 2 * Math.atan(Math.tan(vFov/2) * aspect);
     const d = fitSphere / Math.sin(Math.max(0.2, Math.min(vFov, hFov)) / 2);
-    return Math.max(6, Math.min(58, d * 0.9));
+    return Math.max(6, Math.min(58, d * 0.62));   // mas cerca: se aprecia el detalle de los tanques
   }
 
   canvas.style.touchAction = 'none';
