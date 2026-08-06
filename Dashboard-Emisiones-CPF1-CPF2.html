@@ -3254,8 +3254,10 @@ function createFixture(tipoPunto, tierHex) {
 
 
 let _tankLogoCache = null;
-function getTankSkinWithLogo() {
-  if (_tankLogoCache) return _tankLogoCache;
+function getTankSkinWithLogo(nombreTanque) {
+  if (!window._tankTexPorNombre) window._tankTexPorNombre = {};
+  const clave = nombreTanque || '_';
+  if (window._tankTexPorNombre[clave]) return window._tankTexPorNombre[clave];
   const c = document.createElement('canvas');
   c.width = 2048; c.height = 512;
   const ctx = c.getContext('2d');
@@ -3280,7 +3282,7 @@ function getTankSkinWithLogo() {
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
   if ('colorSpace' in tex) tex.colorSpace = THREE.SRGBColorSpace;
   else if ('encoding' in tex) tex.encoding = THREE.sRGBEncoding;
-  _tankLogoCache = tex;
+  window._tankTexPorNombre[clave] = tex;
 
   // el logo se dibuja al cargar y se refresca la textura
   const img = new Image();
@@ -3299,6 +3301,23 @@ function getTankSkinWithLogo() {
       ctx.globalAlpha = 1;
       ctx.drawImage(img, x, y, anchoLogo, altoLogo);
       ctx.restore();
+
+      // numero de tanque rotulado sobre el cuerpo, encima del logo
+      if (nombreTanque) {
+        ctx.save();
+        ctx.font = '700 112px "Space Grotesk", Arial, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const cx = x + anchoLogo/2, cy = y - 78;
+        const w = ctx.measureText(nombreTanque).width;
+        ctx.globalAlpha = 0.5;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(cx - w/2 - 26, cy - 66, w + 52, 132);
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = '#0f2d24';
+        ctx.fillText(nombreTanque, cx, cy);
+        ctx.restore();
+      }
     });
     tex.needsUpdate = true;
   };
@@ -3321,7 +3340,7 @@ function buildTank3D(scene, x, z, name, points, clickable, smokeList) {
   group.add(base);
 
   const bodyMat = new THREE.MeshStandardMaterial({
-    map: getTankSkinWithLogo(), color: 0xf2f4f6, roughness: 0.52, metalness: 0.82
+    map: getTankSkinWithLogo(name), color: 0xf2f4f6, roughness: 0.52, metalness: 0.82
   });
   const body = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, height, 48), bodyMat);
   body.position.y = 0.16 + height/2;
