@@ -3137,19 +3137,28 @@ function updateSmoke(smokeList, t) {
 
 function makeTextSprite(text) {
   const c = document.createElement('canvas');
-  c.width = 320; c.height = 72;
+  c.width = 512; c.height = 128;
   const ctx = c.getContext('2d');
-  ctx.font = "700 40px 'Space Grotesk', Arial, sans-serif";
+  // placa con fondo: el rotulo del tanque debe leerse a cualquier distancia
+  const r = 22, pad = 8;
+  ctx.fillStyle = 'rgba(12,16,20,0.88)';
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(pad, pad, 512-pad*2, 128-pad*2, r);
+  else ctx.rect(pad, pad, 512-pad*2, 128-pad*2);
+  ctx.fill();
+  ctx.strokeStyle = '#ffd60a';
+  ctx.lineWidth = 4;
+  ctx.stroke();
+  ctx.font = "700 62px 'Space Grotesk', Arial, sans-serif";
   ctx.fillStyle = '#ffffff';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.shadowColor = 'rgba(0,0,0,0.8)';
-  ctx.shadowBlur = 6;
-  ctx.fillText(text, 160, 36);
+  ctx.fillText(text, 256, 66);
   const tex = new THREE.CanvasTexture(c);
+  if ('colorSpace' in tex) tex.colorSpace = THREE.SRGBColorSpace;
   const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, toneMapped: false });
   const sprite = new THREE.Sprite(mat);
-  sprite.scale.set(2.4, 0.55, 1);
+  sprite.scale.set(3.6, 0.9, 1);
   return sprite;
 }
 
