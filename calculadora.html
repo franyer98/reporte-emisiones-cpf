@@ -99,6 +99,23 @@
     border-radius:0 10px 10px 0;padding:13px 15px;font-size:13px;color:var(--dim);margin-top:16px
   }
   .nota b{color:var(--ambar)}
+  .comp-grid{display:flex;gap:10px;flex-wrap:wrap}
+  .comp-grid label{
+    flex:1;min-width:130px;display:flex;flex-direction:column;gap:6px;
+    font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--faint);letter-spacing:.06em
+  }
+  .comp-grid input{
+    background:var(--surface2);border:2px solid var(--border);border-radius:9px;
+    padding:11px 12px;color:var(--text);font-family:'JetBrains Mono',monospace;
+    font-size:15px;font-weight:700;outline:none;width:100%
+  }
+  .comp-grid input:focus{border-color:var(--ambar)}
+  .sep{
+    text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;
+    letter-spacing:.16em;color:var(--faint);margin:26px 0 14px
+  }
+  .sep span{background:var(--bg);padding:0 14px;position:relative;z-index:1}
+  .sep:before{content:'';display:block;border-top:1px solid var(--border);margin-bottom:-8px}
   .pie{text-align:center;color:var(--faint);font-size:11px;margin-top:26px;font-family:'JetBrains Mono',monospace}
 </style>
 </head>
@@ -107,7 +124,7 @@
 
   <div class="kicker">EMISIONES FUGITIVAS · CÁMARA OGI/FLIR</div>
   <h1>De g/Hr a toneladas</h1>
-  <div class="sub">Escribe la tasa que midió la cámara y sigue el procedimiento paso a paso.</div>
+  <div class="sub">Escribe la tasa que midió la cámara y sigue el procedimiento paso a paso, hasta llegar al CO<sub>2</sub> equivalente.</div>
 
   <div class="panel">
     <div class="lbl">TASA MEDIDA EN CAMPO</div>
@@ -129,6 +146,30 @@
     <div class="et" id="finEt">RESULTADO</div>
     <div class="val" id="finVal">—</div>
     <div class="eq" id="finEq"></div>
+  </div>
+
+
+  <div class="panel">
+    <div class="lbl">COMPOSICIÓN DEL GAS · CROMATOGRAFÍA DE LABORATORIO</div>
+    <div class="comp-grid">
+      <label>% másico CH4<input type="number" id="mCH4" value="61.3285" step="0.0001"></label>
+      <label>% másico CO2<input type="number" id="mCO2" value="12.1814" step="0.0001"></label>
+      <label>% másico TOC<input type="number" id="mTOC" value="61.3740" step="0.0001"></label>
+    </div>
+    <div class="presets" id="presetsComp"></div>
+    <div class="lbl" style="margin:16px 0 8px">POTENCIAL DE CALENTAMIENTO (GWP) DEL METANO</div>
+    <div class="periodos" id="gwpSel">
+      <button data-g="25">25 · IPCC AR4</button>
+      <button data-g="28" class="on">28 · IPCC AR5</button>
+    </div>
+  </div>
+
+  <div class="panel" id="pasosB"></div>
+
+  <div class="final" style="border-color:var(--ambar);background:linear-gradient(135deg,rgba(245,197,24,.14),rgba(184,134,11,.08))">
+    <div class="et" id="geiEt">GASES DE EFECTO INVERNADERO</div>
+    <div class="val" id="geiVal" style="color:var(--ambar)">—</div>
+    <div class="eq" id="geiEq"></div>
   </div>
 
   <div class="panel" style="margin-top:16px">
@@ -218,7 +259,9 @@ function render() {
     },
   ];
 
-  document.getElementById('pasos').innerHTML = pasos.map((p, i) => `
+  document.getElementById('pasos').innerHTML =
+    '<div class="sep"><span>PARTE A · MASA DE GAS FUGADO</span></div>' +
+    pasos.map((p, i) => `
     <div class="paso" style="animation-delay:${i * 0.07}s">
       <div class="bolita">${i + 1}</div>
       <div class="cuerpo">
@@ -246,7 +289,98 @@ function render() {
         <td>${num(t, 2)}</td>
       </tr>`;
     }).join('');
+
+  renderCO2eq(tasa);
 }
+
+
+// ---------- PARTE B: de la masa de gas al CO2 equivalente ----------
+const CROMATOS = [
+  {n:'CPF-2 · 300-TK-0301', ch4:61.3285, co2:12.1814, toc:61.3740},
+  {n:'CPF-2 · 300-TK-0201', ch4:64.8158, co2:20.4234, toc:64.9217},
+  {n:'CPF-1 · TK-690',      ch4:29.6509, co2:11.6041, toc:29.7834},
+];
+let GWP = 28;
+
+const pc = document.getElementById('presetsComp');
+CROMATOS.forEach(c => {
+  const b = document.createElement('button');
+  b.textContent = c.n;
+  b.onclick = () => {
+    document.getElementById('mCH4').value = c.ch4;
+    document.getElementById('mCO2').value = c.co2;
+    document.getElementById('mTOC').value = c.toc;
+    render();
+  };
+  pc.appendChild(b);
+});
+
+document.querySelectorAll('#gwpSel button').forEach(b => {
+  b.onclick = () => {
+    GWP = parseInt(b.dataset.g, 10);
+    document.querySelectorAll('#gwpSel button').forEach(x => x.classList.toggle('on', x === b));
+    render();
+  };
+});
+
+function renderCO2eq(tasa) {
+  const mCH4 = parseFloat(document.getElementById('mCH4').value) || 0;
+  const mCO2 = parseFloat(document.getElementById('mCO2').value) || 0;
+  const mTOC = parseFloat(document.getElementById('mTOC').value) || 1;
+
+  const ch4gh = tasa * mCH4 / mTOC;
+  const co2gh = tasa * mCO2 / mTOC;
+  const tCH4  = ch4gh * 8760 / 1e6;
+  const tCO2  = co2gh * 8760 / 1e6;
+  const gei   = tCO2 + tCH4 * GWP;
+
+  const pasos = [
+    {
+      t: 'Separar el metano del resto del gas',
+      e: 'La cámara mide todos los compuestos orgánicos (TOC) juntos. La cromatografía dice qué parte de eso es metano.',
+      op: `${num(tasa)} g/Hr × ${mCH4} ÷ ${mTOC} = <span class="r">${num(ch4gh, 2)} g/Hr de CH4</span>`
+    },
+    {
+      t: 'Separar también el CO2',
+      e: 'El gas trae CO2 propio, que cuenta directo en el inventario sin multiplicarse.',
+      op: `${num(tasa)} g/Hr × ${mCO2} ÷ ${mTOC} = <span class="r">${num(co2gh, 2)} g/Hr de CO2</span>`
+    },
+    {
+      t: 'Llevar cada componente a toneladas al año',
+      e: 'Misma conversión de la Parte A: multiplicar por 8.760 horas y dividir entre 1.000.000.',
+      op: `CH4: <span class="r">${num(tCH4, 3)} ton/año</span>&nbsp;&nbsp;·&nbsp;&nbsp;CO2: <span class="r">${num(tCO2, 3)} ton/año</span>`
+    },
+    {
+      t: 'Convertir el metano a su equivalente en CO2',
+      e: `Cada tonelada de metano calienta como ${GWP} toneladas de CO2. Ese factor es el GWP definido por el IPCC.`,
+      op: `${num(tCH4, 3)} ton CH4 × ${GWP} = <span class="r">${num(tCH4 * GWP, 3)} ton CO2eq</span>`
+    },
+    {
+      t: 'Sumar ambos aportes',
+      e: 'El CO2 propio del gas más el metano ya convertido. Ese es el valor que se reporta.',
+      op: `${num(tCO2, 3)} + ${num(tCH4 * GWP, 3)} = <span class="r">${num(gei, 2)} ton CO2eq/año</span>`
+    },
+  ];
+
+  document.getElementById('pasosB').innerHTML =
+    '<div class="sep"><span>PARTE B · HASTA EL CO2 EQUIVALENTE</span></div>' +
+    pasos.map((p, i) => `
+      <div class="paso" style="animation-delay:${i * 0.06}s">
+        <div class="bolita" style="border-color:var(--ambar);color:var(--ambar)">${i + 5}</div>
+        <div class="cuerpo">
+          <div class="titulo">${p.t}</div>
+          <div class="explica">${p.e}</div>
+          <div class="op">${p.op}</div>
+        </div>
+      </div>`).join('');
+
+  document.getElementById('geiEt').textContent = 'GEI · TON CO2eq / AÑO  (GWP ' + GWP + ')';
+  document.getElementById('geiVal').textContent = num(gei, 2);
+  document.getElementById('geiEq').textContent =
+    'de los cuales ' + num(tCH4 * GWP, 1) + ' vienen del metano y ' + num(tCO2, 1) + ' del CO2 propio';
+}
+
+['mCH4','mCO2','mTOC'].forEach(id => document.getElementById(id).addEventListener('input', render));
 
 document.getElementById('tasa').addEventListener('input', render);
 render();
