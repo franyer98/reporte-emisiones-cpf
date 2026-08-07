@@ -1665,10 +1665,10 @@ THREE.OrbitControls = OrbitControls;
   .card-photo { position: relative; aspect-ratio: 4/3; overflow:hidden; background:#000; }
   .card-photo img { width:100%; height:100%; object-fit: cover; display:block; filter: contrast(1.05); }
   .badge { position:absolute; top:10px; left:10px; font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; letter-spacing:.06em; padding: 4px 9px; border-radius: 5px; backdrop-filter: blur(4px); }
-  .badge.critico { background: rgba(255,17,48,.95); color:#fff; }
-  .badge.alto { background: rgba(255,122,0,.95); color:#1a1200; }
-  .badge.medio { background: rgba(255,229,0,.95); color:#1a1200; }
-  .badge.bajo { background: rgba(0,229,255,.95); color:#00232a; }
+  .badge.critico { background: rgba(224,32,32,.95); color:#fff; }
+  .badge.alto { background: rgba(224,32,32,.95); color:#fff; }
+  .badge.medio { background: rgba(245,197,24,.95); color:#1a1200; }
+  .badge.bajo { background: rgba(33,160,56,.95); color:#fff; }
   .badge.campo { background: rgba(224,138,79,.88); color:#1a0f06; }
   .card-rate { position:absolute; bottom:10px; left:10px; font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:700; color:#fff; background: rgba(0,0,0,.55); padding: 4px 9px; border-radius: 5px; backdrop-filter: blur(4px); }
   .card-body { padding: 16px 16px 18px; }
@@ -1941,10 +1941,10 @@ THREE.OrbitControls = OrbitControls;
   .lightbox-content img { width: 100%; display: block; background: #000; }
   .lightbox-info { padding: 18px 20px 22px; }
   .lightbox-badge { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: .06em; padding: 4px 10px; border-radius: 5px; margin-bottom: 10px; }
-  .lightbox-badge.critico { background: rgba(255,17,48,.95); color: #fff; }
-  .lightbox-badge.alto { background: rgba(255,122,0,.95); color: #1a1200; }
-  .lightbox-badge.medio { background: rgba(255,229,0,.95); color: #1a1200; }
-  .lightbox-badge.bajo { background: rgba(0,229,255,.95); color: #00232a; }
+  .lightbox-badge.critico { background: rgba(224,32,32,.95); color: #fff; }
+  .lightbox-badge.alto { background: rgba(224,32,32,.95); color: #fff; }
+  .lightbox-badge.medio { background: rgba(245,197,24,.95); color: #1a1200; }
+  .lightbox-badge.bajo { background: rgba(33,160,56,.95); color: #fff; }
   .lightbox-eq { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 22px; }
   .lightbox-meta { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--text-faint); text-transform: uppercase; letter-spacing: .04em; margin: 6px 0 14px; }
   .lightbox-desc { font-size: 14px; color: var(--text-dim); line-height: 1.6; }
@@ -2394,7 +2394,7 @@ let DATA2 = [{"id": 1, "campo": "RUBIALES", "area": "FWKOS", "equipo": "300-TK-0
 const EQUIPO_PALETTE_JS = ["#ff4757", "#ffb238", "#ffd60a", "#2dd4ee", "#3fa9f5", "#a78bfa", "#f472b6", "#4ade80", "#fb923c", "#94a3b8"];
 const K_CO2EQ = { 1: 0.24760223983966112, 2: 0.24698816042558724 };
 
-function tierOf(t) { return t >= 5000 ? 'critico' : t >= 500 ? 'alto' : t >= 100 ? 'medio' : 'bajo'; }
+function tierOf(t) { return t >= 500 ? 'alto' : t >= 100 ? 'medio' : 'bajo'; }
 
 let PARETO1_LABELS, PARETO1_VALUES, PARETO1_COLORS, PARETO1_IDS;
 let PARETO2_LABELS, PARETO2_VALUES, PARETO2_COLORS, PARETO2_IDS;
@@ -2496,7 +2496,7 @@ function updateKPIs() {
   });
 }
 
-function tierLabel(t) { return {critico:'CRÍTICO', alto:'ALTO', medio:'MEDIO', bajo:'BAJO'}[t]; }
+function tierLabel(t) { return {alto:'ALTO', medio:'MEDIO', bajo:'BAJO'}[t]; }
 
 // ---------- Tabs ----------
 document.querySelectorAll('.tab').forEach(tab => {
@@ -2523,7 +2523,7 @@ const getTooltipBase = () => ({
   displayColors: false,
 });
 
-const TIER_CSS = { critico: '#ff1130', alto: '#ff7a00', medio: '#ffe500', bajo: '#00e5ff' };
+const TIER_CSS = { alto: '#e02020', medio: '#f5c518', bajo: '#21a038' };
 
 // ---------- Plugin: pista de fondo detras de cada barra ----------
 const barTrack = {
@@ -2548,7 +2548,7 @@ const barTrack = {
 };
 
 // ---------- Plugin: valor y severidad al final de cada barra ----------
-const TIER_TXT = { critico: 'CRÍTICO', alto: 'ALTO', medio: 'MEDIO', bajo: 'BAJO' };
+const TIER_TXT = { alto: 'ALTO', medio: 'MEDIO', bajo: 'BAJO' };
 const barValueLabels = {
   id: 'barValueLabels',
   afterDatasetsDraw(chart) {
@@ -2597,7 +2597,7 @@ function barGradient(ctx, area, hex) {
 }
 
 // ---------- Lightbox: foto al hacer clic en una barra ----------
-function tierLabelLB(t) { return {critico:'CRÍTICO', alto:'ALTO', medio:'MEDIO', bajo:'BAJO'}[t]; }
+function tierLabelLB(t) { return {alto:'ALTO', medio:'MEDIO', bajo:'BAJO'}[t]; }
 function openLightbox(item) {
   document.getElementById('lightboxImg').src = item.img;
   const badge = document.getElementById('lightboxBadge');
@@ -2676,7 +2676,7 @@ new Chart(document.getElementById('chartAreaDonut1'), {
   type: 'doughnut',
   data: {
     labels: AREA_TASA_LABELS,
-    datasets: [{ data: AREA_TASA_VALUES, backgroundColor: ['#ff1130','#ff7a00','#00e5ff'], borderColor: cv('--surface'), borderWidth: 3 }]
+    datasets: [{ data: AREA_TASA_VALUES, backgroundColor: ['#3fa9f5','#a78bfa','#fb923c'], borderColor: cv('--surface'), borderWidth: 3 }]
   },
   options: {
     responsive: true, maintainAspectRatio: false,
@@ -2878,7 +2878,7 @@ renderFilters2(); renderGrid2();
 })();
 
 // ---------- Mapa por area ----------
-function tierLabelMapa(t) { return {critico:'CRÍTICO', alto:'ALTO', medio:'MEDIO', bajo:'BAJO'}[t]; }
+function tierLabelMapa(t) { return {alto:'ALTO', medio:'MEDIO', bajo:'BAJO'}[t]; }
 
 function buildMapa(data, gridId, detailId) {
   const gridEl = document.getElementById(gridId);
@@ -2920,7 +2920,7 @@ function buildMapa(data, gridId, detailId) {
           <div class="mapa-point-eq">${d.equipo}</div>
           <div class="mapa-point-meta">${d.punto} · ${d.elemento}</div>
         </div>
-        <div class="mapa-point-tasa" style="color:${ {critico:'var(--hot)',alto:'var(--mid)',medio:'#ffd60a',bajo:'var(--cool)'}[d.tier] }">${d.tasa.toLocaleString('es-CO')} g/Hr</div>
+        <div class="mapa-point-tasa" style="color:${ {alto:'#e02020',medio:'#f5c518',bajo:'#21a038'}[d.tier] }">${d.tasa.toLocaleString('es-CO')} g/Hr</div>
       </div>
     `).join('');
     detailEl.querySelectorAll('.mapa-point-row').forEach(row => {
@@ -2940,7 +2940,7 @@ buildMapa(DATA1, 'mapaGrid1', 'mapaDetail1');
 buildMapa(DATA2, 'mapaGrid2', 'mapaDetail2');
 
 // ---------- Mapa 3D de tanques ----------
-const TIER_HEX = { critico: 0xff1130, alto: 0xff7a00, medio: 0xffe500, bajo: 0x00e5ff };
+const TIER_HEX = { alto: 0xe02020, medio: 0xf5c518, bajo: 0x21a038 };
 
 // ---------- Periodos: proyeccion de la tasa medida en el tiempo ----------
 const PERIODOS = {
