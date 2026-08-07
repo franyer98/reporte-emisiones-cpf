@@ -1717,6 +1717,27 @@ THREE.OrbitControls = OrbitControls;
   .sim-lock-error { display: none; color: var(--hot); font-size: 11.5px; margin-top: 10px; }
   .sim-lock-error.show { display: block; }
 
+  /* ---------- COMPOSICION: donut con total y lista ---------- */
+  .donut-box { display: flex; flex-direction: column; gap: 14px; }
+  .donut-canvas { position: relative; }
+  .donut-center {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; pointer-events: none; text-align: center;
+  }
+  .dc-val { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 21px; color: var(--text); line-height: 1.1; }
+  .dc-lbl { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--text-faint); letter-spacing: .1em; margin-top: 2px; }
+  .donut-list { display: flex; flex-direction: column; gap: 7px; }
+  .dl-row { display: grid; grid-template-columns: 10px 1fr auto auto; gap: 9px; align-items: center; }
+  .dl-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dl-name { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-dim); text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dl-val { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; font-weight: 700; color: var(--text); white-space: nowrap; }
+  .dl-pct { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: var(--text-faint); min-width: 34px; text-align: right; }
+  @media (max-width: 620px) {
+    .dc-val { font-size: 17px; }
+    .dl-name { font-size: 10px; }
+    .dl-val { font-size: 10.5px; }
+  }
+
   /* ---------- TABLA DE PRIORIZACION ---------- */
   .prio-lead {
     background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--hot);
@@ -2291,20 +2312,46 @@ THREE.OrbitControls = OrbitControls;
   </section>
   <section id="composicion">
     <div class="wrap">
-      <div class="section-head"><h2>Composición de la fuga</h2><div class="section-note">DISTRIBUCIÓN DEL VOLUMEN TOTAL (g/Hr)</div></div>
+      <div class="section-head"><h2>Composición de la fuga</h2><div class="section-note">CÓMO SE REPARTE EL VOLUMEN TOTAL</div></div>
       <div class="chart-grid two">
         <div class="chart-card">
-          <h3>Por área</h3><div class="chart-sub">% del total de kg/Hr</div>
-          <canvas id="chartAreaDonut1"></canvas>
+          <h3>Por área</h3><div class="chart-sub">participación de cada zona</div>
+          <div class="donut-box">
+            <div class="donut-canvas">
+              <canvas id="chartAreaDonut1"></canvas>
+              <div class="donut-center" id="centroArea1"><span class="dc-val">—</span><span class="dc-lbl">total</span></div>
+            </div>
+            <div class="donut-list" id="listaArea1"></div>
+          </div>
         </div>
         <div class="chart-card">
-          <h3>Por equipo</h3><div class="chart-sub">% del total de kg/Hr</div>
-          <canvas id="chartEqDonut1"></canvas>
+          <h3>Por equipo</h3><div class="chart-sub">participación de cada tanque</div>
+          <div class="donut-box">
+            <div class="donut-canvas">
+              <canvas id="chartEqDonut1"></canvas>
+              <div class="donut-center" id="centroEq1"><span class="dc-val">—</span><span class="dc-lbl">total</span></div>
+            </div>
+            <div class="donut-list" id="listaEq1"></div>
+          </div>
         </div>
       </div>
     </div>
   </section>
-  </div>
+  <section id="accion">
+    <div class="wrap">
+      <div class="banner">
+        <div class="banner-num" id="banner1Num">70%</div>
+        <div class="banner-text" id="banner1Text"><b>3 de los 14 puntos concentran el 70% de toda la fuga detectada en CPF-1</b> — los dos manholes de TK-901B (FWKOS y PROCESOS) y el manhole de TK-901C. Intervenir estos tres puntos primero reduce la mayor parte del volumen fugado con el menor esfuerzo.</div>
+      </div>
+    </div>
+  </section>
+  <section id="detalle">
+    <div class="wrap">
+      <div class="section-head"><h2>Detalle por punto de inspección</h2><div class="section-note">CON EVIDENCIA FOTOGRÁFICA (FLIR)</div></div>
+      <div class="grid" id="grid1"></div>
+    </div>
+  </section>
+</div>
 
 <!-- ============ PANEL CPF-2 ============ -->
 <div class="panel t2" id="panel-t2">
@@ -2331,20 +2378,48 @@ THREE.OrbitControls = OrbitControls;
   </section>
   <section id="composicion2">
     <div class="wrap">
-      <div class="section-head"><h2>Composición de la fuga</h2><div class="section-note">DISTRIBUCIÓN DEL VOLUMEN TOTAL (g/Hr)</div></div>
+      <div class="section-head"><h2>Composición de la fuga</h2><div class="section-note">CÓMO SE REPARTE EL VOLUMEN TOTAL</div></div>
       <div class="chart-grid two">
         <div class="chart-card">
-          <h3>Por área</h3><div class="chart-sub">% del total de kg/Hr</div>
-          <canvas id="chartAreaDonut2"></canvas>
+          <h3>Por área</h3><div class="chart-sub">participación de cada zona</div>
+          <div class="donut-box">
+            <div class="donut-canvas">
+              <canvas id="chartAreaDonut2"></canvas>
+              <div class="donut-center" id="centroArea2"><span class="dc-val">—</span><span class="dc-lbl">total</span></div>
+            </div>
+            <div class="donut-list" id="listaArea2"></div>
+          </div>
         </div>
         <div class="chart-card">
-          <h3>Por equipo</h3><div class="chart-sub">% del total de kg/Hr</div>
-          <canvas id="chartEq2"></canvas>
+          <h3>Por equipo</h3><div class="chart-sub">participación de cada tanque</div>
+          <div class="donut-box">
+            <div class="donut-canvas">
+              <canvas id="chartEq2"></canvas>
+              <div class="donut-center" id="centroEq2"><span class="dc-val">—</span><span class="dc-lbl">total</span></div>
+            </div>
+            <div class="donut-list" id="listaEq2"></div>
+          </div>
         </div>
       </div>
     </div>
   </section>
-  <div class="lightbox" id="lightbox">
+  <section id="accion2">
+    <div class="wrap">
+      <div class="banner cpf2">
+        <div class="banner-num" id="banner2Num">67%</div>
+        <div class="banner-text" id="banner2Text"><b>3 de los 11 puntos concentran el 67% de toda la fuga detectada en CPF-2</b> — los dos hallazgos de mayor tasa en 300-TK-0103 (brida de instrumentación y manhole) y el manhole de 300-TK-0201. TK-0103 concentra más de la mitad del volumen total de esta facilidad.</div>
+      </div>
+    </div>
+  </section>
+  <section id="detalle2">
+    <div class="wrap">
+      <div class="section-head"><h2>Detalle por punto — CPF-2</h2><div class="section-note">CON EVIDENCIA FOTOGRÁFICA (FLIR)</div></div>
+      <div class="grid" id="grid2"></div>
+    </div>
+  </section>
+</div>
+
+<div class="lightbox" id="lightbox">
   <div class="lightbox-backdrop" id="lightboxBackdrop"></div>
   <div class="lightbox-content">
     <button class="lightbox-close" id="lightboxClose">✕</button>
@@ -2665,7 +2740,7 @@ new Chart(document.getElementById('chartAreaDonut1'), {
     responsive: true, maintainAspectRatio: false,
     animation: { duration: 900 },
     plugins: {
-      legend: { position: 'bottom', labels: { color: cv('--text-dim'), font: { family: "'Inter', sans-serif", size: 11 }, padding: 14, usePointStyle: true, pointStyle: 'circle' } },
+      legend: { display: false },
       tooltip: { ...getTooltipBase(), callbacks: { label: (ctx) => `${ctx.label}: ${moneyG(ctx.raw)} (${(ctx.raw/AREA_TASA_VALUES.reduce((a,b)=>a+b,0)*100).toFixed(0)}%)` } }
     },
     cutout: '68%'
@@ -2701,7 +2776,7 @@ new Chart(document.getElementById('chartAreaDonut2'), {
     responsive: true, maintainAspectRatio: false,
     animation: { duration: 900 },
     plugins: {
-      legend: { position: 'bottom', labels: { color: cv('--text-dim'), font: { family: "'Inter', sans-serif", size: 11 }, padding: 14, usePointStyle: true, pointStyle: 'circle' } },
+      legend: { display: false },
       tooltip: { ...getTooltipBase(), callbacks: { label: (ctx) => `${ctx.label}: ${moneyG(ctx.raw)} (${(ctx.raw/AREA2_VALUES.reduce((a,b)=>a+b,0)*100).toFixed(0)}%)` } }
     },
     cutout: '68%'
@@ -2801,7 +2876,76 @@ function renderPrioridad(data, areaActiva, contenedorId, leadId) {
   });
 }
 
-function renderGrid1() { renderPrioridad(DATA1, active1, 'prio1', 'prioLead1'); }
+
+
+// Composicion: total al centro del donut y lista de valores siempre visible
+function renderComposicion() {
+  const conf = [
+    { n: 1, agg: () => AGG1 }, { n: 2, agg: () => AGG2 }
+  ];
+  conf.forEach(({ n, agg }) => {
+    const a = agg();
+    if (!a) return;
+    const fmt = (g) => PERIODO_GLOBAL === 'hora'
+      ? (g >= 1000 ? (g/1000).toFixed(2) + ' kg/Hr' : g.toLocaleString('es-CO') + ' g/Hr')
+      : masaAcumulada(g, PERIODO_GLOBAL);
+
+    const pintar = (centroId, listaId, labels, values, colors) => {
+      const total = values.reduce((x, y) => x + y, 0) || 1;
+      const centro = document.getElementById(centroId);
+      if (centro) {
+        centro.querySelector('.dc-val').textContent = fmt(total);
+        centro.querySelector('.dc-lbl').textContent = PERIODO_GLOBAL === 'hora' ? 'TOTAL' : PERIODOS[PERIODO_GLOBAL].etiqueta.toUpperCase();
+      }
+      const lista = document.getElementById(listaId);
+      if (!lista) return;
+      lista.innerHTML = labels.map((lab, i) => {
+        const pct = Math.round(values[i] / total * 100);
+        return `<div class="dl-row">
+          <span class="dl-dot" style="background:${colors[i]}"></span>
+          <span class="dl-name" title="${lab}">${lab}</span>
+          <span class="dl-val">${fmt(values[i])}</span>
+          <span class="dl-pct">${pct}%</span>
+        </div>`;
+      }).join('');
+    };
+
+    const coloresArea = ['#3fa9f5', '#a78bfa', '#fb923c', '#f472b6', '#4ade80', '#ffd60a'];
+    pintar('centroArea' + n, 'listaArea' + n, a.areaLabels, a.areaValues, coloresArea);
+    pintar('centroEq' + n, 'listaEq' + n, a.eqLabels, a.eqValues, a.eqColors);
+  });
+}
+
+// Tarjetas con evidencia fotografica (seccion "Detalle por punto")
+function renderTarjetas(data, areaActiva, gridId) {
+  const el = document.getElementById(gridId);
+  if (!el) return;
+  el.innerHTML = '';
+  const list = [...(areaActiva === 'Todas' ? data : data.filter(d => d.area === areaActiva))]
+                 .sort((a, b) => b.tasa - a.tasa);
+  list.forEach(d => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="card-photo">
+        <img src="${d.img}" alt="Evidencia ${d.equipo}" loading="lazy">
+        <div class="badge ${d.tier}">${severidadTexto(d.tier)}</div>
+      </div>
+      <div class="card-body">
+        <div class="card-eq">${d.equipo}</div>
+        <div class="card-meta">${d.area} · ${d.punto} · ${d.elemento}</div>
+        <div class="card-desc">${d.hallazgo}</div>
+        <div class="card-periodo">${PERIODO_GLOBAL === 'hora'
+          ? d.tasa.toLocaleString('es-CO') + ' g/Hr'
+          : masaAcumulada(d.tasa, PERIODO_GLOBAL) + ' ' + PERIODOS[PERIODO_GLOBAL].etiqueta}</div>
+      </div>
+    `;
+    card.addEventListener('click', () => openLightbox(d));
+    el.appendChild(card);
+  });
+}
+
+function renderGrid1() { renderPrioridad(DATA1, active1, 'prio1', 'prioLead1'); renderTarjetas(DATA1, active1, 'grid1'); }
 function renderFilters1() {
   const el = document.getElementById('filters1'); el.innerHTML = '';
   areas1.forEach(a => {
@@ -2825,10 +2969,11 @@ function renderFilters2() {
     el.appendChild(c);
   });
 }
-function renderGrid2() { renderPrioridad(DATA2, active2, 'prio2', 'prioLead2'); }
+function renderGrid2() { renderPrioridad(DATA2, active2, 'prio2', 'prioLead2'); renderTarjetas(DATA2, active2, 'grid2'); }
 
 renderFilters1(); renderGrid1();
 renderFilters2(); renderGrid2();
+renderComposicion();
 
 // ---------- Control global de periodo ----------
 (function() {
@@ -2841,6 +2986,7 @@ renderFilters2(); renderGrid2();
       PERIODO_GLOBAL = btn.dataset.period;
       updateKPIs();
       renderGrid1(); renderGrid2();
+      renderComposicion();
       // los mapas 3D siguen el mismo periodo
       [map3d1, map3d2].forEach(m => { if (m && m.setPeriodo) m.setPeriodo(PERIODO_GLOBAL); });
     });
