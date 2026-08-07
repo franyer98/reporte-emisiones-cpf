@@ -1717,6 +1717,60 @@ THREE.OrbitControls = OrbitControls;
   .sim-lock-error { display: none; color: var(--hot); font-size: 11.5px; margin-top: 10px; }
   .sim-lock-error.show { display: block; }
 
+  /* ---------- TABLA DE PRIORIZACION ---------- */
+  .prio-lead {
+    background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--hot);
+    border-radius: 10px; padding: 13px 16px; margin-bottom: 16px;
+    font-size: 14px; line-height: 1.6; color: var(--text-dim);
+  }
+  .prio-lead b { color: var(--text); }
+  .prio-table { display: flex; flex-direction: column; gap: 8px; }
+  .prio-row {
+    display: grid; grid-template-columns: 30px 54px 1fr auto; gap: 13px; align-items: center;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 11px;
+    padding: 11px 14px; cursor: pointer; transition: border-color .15s ease, transform .15s ease;
+  }
+  .prio-row:hover { border-color: var(--cool); transform: translateX(2px); }
+  .prio-rank {
+    font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700;
+    color: var(--text-faint); text-align: center;
+  }
+  .prio-thumb { width: 54px; height: 54px; object-fit: cover; border-radius: 7px; background: #000; }
+  .prio-main { min-width: 0; }
+  .prio-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+  .prio-eq { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 14.5px; }
+  .prio-pt {
+    font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
+    color: var(--text-faint); text-transform: uppercase;
+  }
+  .prio-barwrap { height: 7px; background: var(--surface-2); border-radius: 99px; overflow: hidden; }
+  .prio-bar { height: 100%; border-radius: 99px; transition: width .4s ease; }
+  .prio-bar.alto { background: linear-gradient(90deg, #ff6b6b, #e02020); }
+  .prio-bar.medio { background: linear-gradient(90deg, #ffe07a, #f5c518); }
+  .prio-bar.bajo { background: linear-gradient(90deg, #5ed17c, #21a038); }
+  .prio-area {
+    font-family: 'JetBrains Mono', monospace; font-size: 9.5px;
+    color: var(--text-faint); margin-top: 5px; letter-spacing: .05em;
+  }
+  .prio-nums { text-align: right; white-space: nowrap; }
+  .prio-val { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 14px; color: var(--text); }
+  .prio-val small { font-size: 9.5px; font-weight: 400; color: var(--text-faint); }
+  .prio-acum {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--cool); margin-top: 3px;
+  }
+  .prio-vacio {
+    text-align: center; padding: 28px; color: var(--text-faint);
+    font-family: 'JetBrains Mono', monospace; font-size: 13px;
+  }
+  @media (max-width: 620px) {
+    .prio-row { grid-template-columns: 22px 42px 1fr auto; gap: 9px; padding: 9px 11px; }
+    .prio-thumb { width: 42px; height: 42px; }
+    .prio-eq { font-size: 13px; }
+    .prio-val { font-size: 12.5px; }
+    .prio-acum { font-size: 9px; }
+    .prio-lead { font-size: 13px; padding: 11px 13px; }
+  }
+
   /* ---------- MAPA POR AREA ---------- */
   .mapa-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 14px; margin-bottom: 4px; }
   .mapa-tile {
@@ -2229,8 +2283,10 @@ THREE.OrbitControls = OrbitControls;
   </section>
   <section id="ranking">
     <div class="wrap">
-      <div class="section-head"><h2>Ranking de severidad</h2><div class="section-note">TASA DE FUGA POR PUNTO (g/Hr) · TOCA UNA BARRA PARA VER LA FOTO</div></div>
-      <div class="chart-card tall"><div class="chart-canvas-wrap" style="height:666px"><canvas id="chartPareto1"></canvas></div></div>
+      <div class="section-head"><h2>Prioridad de intervención</h2><div class="section-note">ORDENADO POR TASA · TOCA UNA FILA PARA VER LA EVIDENCIA</div></div>
+      <div class="prio-lead" id="prioLead1"></div>
+      <div class="filters" id="filters1"></div>
+      <div class="prio-table" id="prio1"></div>
     </div>
   </section>
   <section id="composicion">
@@ -2248,22 +2304,7 @@ THREE.OrbitControls = OrbitControls;
       </div>
     </div>
   </section>
-  <section id="accion">
-    <div class="wrap">
-      <div class="banner">
-        <div class="banner-num" id="banner1Num">70%</div>
-        <div class="banner-text" id="banner1Text"><b>3 de los 14 puntos concentran el 70% de toda la fuga detectada en CPF-1</b> — los dos manholes de TK-901B (FWKOS y PROCESOS) y el manhole de TK-901C. Intervenir estos tres puntos primero reduce la mayor parte del volumen fugado con el menor esfuerzo.</div>
-      </div>
-    </div>
-  </section>
-  <section id="detalle">
-    <div class="wrap">
-      <div class="section-head"><h2>Detalle por punto de inspección</h2><div class="section-note">CON EVIDENCIA FOTOGRÁFICA (FLIR)</div></div>
-      <div class="filters" id="filters1"></div>
-      <div class="grid" id="grid1"></div>
-    </div>
-  </section>
-</div>
+  </div>
 
 <!-- ============ PANEL CPF-2 ============ -->
 <div class="panel t2" id="panel-t2">
@@ -2282,8 +2323,10 @@ THREE.OrbitControls = OrbitControls;
   </section>
   <section id="ranking2">
     <div class="wrap">
-      <div class="section-head"><h2>Ranking de severidad — CPF-2</h2><div class="section-note">TASA DE FUGA POR PUNTO (g/Hr) · TOCA UNA BARRA PARA VER LA FOTO</div></div>
-      <div class="chart-card tall"><div class="chart-canvas-wrap" style="height:534px"><canvas id="chartPareto2"></canvas></div></div>
+      <div class="section-head"><h2>Prioridad de intervención — CPF-2</h2><div class="section-note">ORDENADO POR TASA · TOCA UNA FILA PARA VER LA EVIDENCIA</div></div>
+      <div class="prio-lead" id="prioLead2"></div>
+      <div class="filters" id="filters2"></div>
+      <div class="prio-table" id="prio2"></div>
     </div>
   </section>
   <section id="composicion2">
@@ -2301,24 +2344,7 @@ THREE.OrbitControls = OrbitControls;
       </div>
     </div>
   </section>
-  <section id="accion2">
-    <div class="wrap">
-      <div class="banner cpf2">
-        <div class="banner-num" id="banner2Num">67%</div>
-        <div class="banner-text" id="banner2Text"><b>3 de los 11 puntos concentran el 67% de toda la fuga detectada en CPF-2</b> — los dos hallazgos de mayor tasa en 300-TK-0103 (brida de instrumentación y manhole) y el manhole de 300-TK-0201. TK-0103 concentra más de la mitad del volumen total de esta facilidad.</div>
-      </div>
-    </div>
-  </section>
-  <section id="detalle2">
-    <div class="wrap">
-      <div class="section-head"><h2>Detalle por punto — CPF-2</h2><div class="section-note">CON EVIDENCIA FOTOGRÁFICA (FLIR)</div></div>
-      <div class="filters" id="filters2"></div>
-      <div class="grid" id="grid2"></div>
-    </div>
-  </section>
-</div>
-
-<div class="lightbox" id="lightbox">
+  <div class="lightbox" id="lightbox">
   <div class="lightbox-backdrop" id="lightboxBackdrop"></div>
   <div class="lightbox-content">
     <button class="lightbox-close" id="lightboxClose">✕</button>
@@ -2628,49 +2654,6 @@ function initCharts() {
   Chart.defaults.color = cv('--text-dim');
   Chart.defaults.borderColor = cv('--border');
 
-// ---------- CPF-1: Pareto (horizontal bar, log scale) ----------
-new Chart(document.getElementById('chartPareto1'), {
-  type: 'bar',
-  data: {
-    labels: PARETO1_LABELS,
-    datasets: [{
-      data: PARETO1_VALUES,
-      backgroundColor: (c) => barGradient(c.chart.ctx, c.chart.chartArea, PARETO1_COLORS[c.dataIndex]),
-      hoverBackgroundColor: (c) => PARETO1_COLORS[c.dataIndex],
-      borderRadius: 999,
-      borderSkipped: false,
-      barThickness: 26,
-      categoryPercentage: 0.9,
-      barPercentage: 0.72,
-    }]
-  },
-  options: {
-    indexAxis: 'y',
-    responsive: true,
-    maintainAspectRatio: false,
-    layout: { padding: { right: 140, left: 4 } },
-    animation: { duration: 900, easing: 'easeOutQuart' },
-    onClick: (evt, elements) => {
-      if (elements.length) openLightbox(DATA1.find(d => d.id === PARETO1_IDS[elements[0].index]));
-    },
-    onHover: (evt, elements) => {
-      evt.native.target.style.cursor = elements.length ? 'pointer' : 'default';
-    },
-    scales: {
-      x: { type: 'logarithmic', border: { display: false }, grid: { color: cv('--border'), drawTicks: false }, ticks: { padding: 6, callback: v => [10,100,1000,10000].includes(v) ? v.toLocaleString('es-CO') : '' }, title: { display: true, text: 'g/Hr (escala logarítmica)', color: cv('--text-faint'), font: {size:10} } },
-      y: { border: { display: false }, grid: { display: false }, ticks: { padding: 8, color: cv('--text'), font: { family: "'Space Grotesk', sans-serif", size: 12, weight: '600' } } }
-    },
-    plugins: {
-      legend: { display: false },
-      barValueLabels: { items: AGG1.ids.map(id => DATA1.find(d => d.id === id)) },
-      tooltip: { ...getTooltipBase(), callbacks: {
-        title: (items) => { const d = DATA1.find(x => x.id === PARETO1_IDS[items[0].dataIndex]); return d ? `${d.equipo} · ${d.punto} · ${d.area}` : ''; },
-        label: (ctx) => moneyG(ctx.raw)
-      } }
-    }
-  }
-});
-
 // ---------- CPF-1: donut por área ----------
 new Chart(document.getElementById('chartAreaDonut1'), {
   type: 'doughnut',
@@ -2704,49 +2687,6 @@ new Chart(document.getElementById('chartEqDonut1'), {
       tooltip: { ...getTooltipBase(), callbacks: { label: (ctx) => `${ctx.label}: ${moneyG(ctx.raw)} (${(ctx.raw/EQ_TASA_VALUES.reduce((a,b)=>a+b,0)*100).toFixed(0)}%)` } }
     },
     cutout: '60%'
-  }
-});
-
-// ---------- CPF-2: Pareto (horizontal bar, log scale) ----------
-new Chart(document.getElementById('chartPareto2'), {
-  type: 'bar',
-  data: {
-    labels: PARETO2_LABELS,
-    datasets: [{
-      data: PARETO2_VALUES,
-      backgroundColor: (c) => barGradient(c.chart.ctx, c.chart.chartArea, PARETO2_COLORS[c.dataIndex]),
-      hoverBackgroundColor: (c) => PARETO2_COLORS[c.dataIndex],
-      borderRadius: 999,
-      borderSkipped: false,
-      barThickness: 26,
-      categoryPercentage: 0.9,
-      barPercentage: 0.72,
-    }]
-  },
-  options: {
-    indexAxis: 'y',
-    responsive: true,
-    maintainAspectRatio: false,
-    layout: { padding: { right: 140, left: 4 } },
-    animation: { duration: 900, easing: 'easeOutQuart' },
-    onClick: (evt, elements) => {
-      if (elements.length) openLightbox(DATA2.find(d => d.id === PARETO2_IDS[elements[0].index]));
-    },
-    onHover: (evt, elements) => {
-      evt.native.target.style.cursor = elements.length ? 'pointer' : 'default';
-    },
-    scales: {
-      x: { type: 'logarithmic', border: { display: false }, grid: { color: cv('--border'), drawTicks: false }, ticks: { padding: 6, callback: v => [10,100,1000,10000].includes(v) ? v.toLocaleString('es-CO') : '' }, title: { display: true, text: 'g/Hr (escala logarítmica)', color: cv('--text-faint'), font: {size:10} } },
-      y: { border: { display: false }, grid: { display: false }, ticks: { padding: 8, color: cv('--text'), font: { family: "'Space Grotesk', sans-serif", size: 12, weight: '600' } } }
-    },
-    plugins: {
-      legend: { display: false },
-      barValueLabels: { items: AGG2.ids.map(id => DATA2.find(d => d.id === id)) },
-      tooltip: { ...getTooltipBase(), callbacks: {
-        title: (items) => { const d = DATA2.find(x => x.id === PARETO2_IDS[items[0].dataIndex]); return d ? `${d.equipo} · ${d.punto} · ${d.area}` : ''; },
-        label: (ctx) => moneyG(ctx.raw)
-      } }
-    }
   }
 });
 
@@ -2800,29 +2740,79 @@ function renderFilters1() {
     el.appendChild(c);
   });
 }
-function renderGrid1() {
-  const el = document.getElementById('grid1'); el.innerHTML = '';
-  const list = [...(active1 === 'Todas' ? DATA1 : DATA1.filter(d => d.area === active1))].sort((a,b) => b.tasa - a.tasa);
-  list.forEach(d => {
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.innerHTML = `
-      <div class="card-photo">
-        <img src="${d.img}" alt="Evidencia ${d.equipo}" loading="lazy">
-        <div class="badge ${d.tier}">${tierLabel(d.tier)}</div>
-      </div>
-      <div class="card-body">
-        <div class="card-eq">${d.equipo}</div>
-        <div class="card-meta">${d.area} · ${d.punto} · ${d.elemento}</div>
-        <div class="card-desc">${d.hallazgo}</div>
-        <div class="card-periodo">${PERIODO_GLOBAL === 'hora' ? d.tasa.toLocaleString('es-CO') + ' g/Hr' : masaAcumulada(d.tasa, PERIODO_GLOBAL) + ' ' + PERIODOS[PERIODO_GLOBAL].etiqueta}</div>
-      </div>
-    `;
-    el.appendChild(card);
+function severidadTexto(t) { return {alto:'ALTO', medio:'MEDIO', bajo:'BAJO'}[t]; }
+
+// Tabla de priorizacion: ordena por tasa y muestra el aporte acumulado,
+// para responder "¿por donde empiezo?"
+function renderPrioridad(data, areaActiva, contenedorId, leadId) {
+  const cont = document.getElementById(contenedorId);
+  if (!cont) return;
+  const todos = [...data].sort((a, b) => b.tasa - a.tasa);
+  const totalGeneral = todos.reduce((acc, d) => acc + d.tasa, 0) || 1;
+  const lista = areaActiva === 'Todas' ? todos : todos.filter(d => d.area === areaActiva);
+  const maxTasa = todos.length ? todos[0].tasa : 1;
+
+  // frase de arranque: cuantos puntos concentran el 70% de la fuga
+  const lead = document.getElementById(leadId);
+  if (lead) {
+    let acumulado = 0, n = 0;
+    for (const d of todos) { acumulado += d.tasa; n++; if (acumulado / totalGeneral >= 0.7) break; }
+    const pct = Math.round(acumulado / totalGeneral * 100);
+    const equipos = [...new Set(todos.slice(0, n).map(d => d.equipo))].join(', ');
+    lead.innerHTML = `<b>${n} de ${todos.length} puntos concentran el ${pct}% de la fuga</b>`
+      + ` — en ${equipos}. Intervenirlos primero elimina la mayor parte del volumen con el menor esfuerzo.`;
+  }
+
+  let acum = 0;
+  const filasHTML = todos.map((d, i) => {
+    acum += d.tasa;
+    const pctAcum = Math.round(acum / totalGeneral * 100);
+    if (areaActiva !== 'Todas' && d.area !== areaActiva) return '';
+    const valor = PERIODO_GLOBAL === 'hora'
+      ? d.tasa.toLocaleString('es-CO') + ' <small>g/Hr</small>'
+      : masaAcumulada(d.tasa, PERIODO_GLOBAL) + ' <small>' + PERIODOS[PERIODO_GLOBAL].etiqueta + '</small>';
+    const ancho = Math.max(3, d.tasa / maxTasa * 100);
+    return `
+      <div class="prio-row" data-id="${d.id}">
+        <div class="prio-rank">${i + 1}</div>
+        <img class="prio-thumb" src="${d.img}" alt="Evidencia ${d.equipo}" loading="lazy">
+        <div class="prio-main">
+          <div class="prio-top">
+            <span class="prio-eq">${d.equipo}</span>
+            <span class="prio-pt">${d.punto}${d.elemento ? ' · ' + d.elemento : ''}</span>
+            <span class="badge ${d.tier}">${severidadTexto(d.tier)}</span>
+          </div>
+          <div class="prio-barwrap"><div class="prio-bar ${d.tier}" style="width:${ancho}%"></div></div>
+          <div class="prio-area">${d.area}</div>
+        </div>
+        <div class="prio-nums">
+          <div class="prio-val">${valor}</div>
+          <div class="prio-acum">${pctAcum}% acum.</div>
+        </div>
+      </div>`;
+  }).join('');
+
+  cont.innerHTML = filasHTML || '<div class="prio-vacio">Sin puntos en esta área</div>';
+  cont.querySelectorAll('.prio-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const item = data.find(x => x.id === parseInt(row.dataset.id, 10));
+      if (item) openLightbox(item);
+    });
   });
 }
 
-// ---------- Filters + grid (CPF-2) ----------
+function renderGrid1() { renderPrioridad(DATA1, active1, 'prio1', 'prioLead1'); }
+function renderFilters1() {
+  const el = document.getElementById('filters1'); el.innerHTML = '';
+  areas1.forEach(a => {
+    const c = document.createElement('button');
+    c.className = 'chip' + (a === active1 ? ' active' : '');
+    c.textContent = a;
+    c.onclick = () => { active1 = a; renderFilters1(); renderGrid1(); };
+    el.appendChild(c);
+  });
+}
+
 let areas2 = ['Todas', ...new Set(DATA2.map(d=>d.area))];
 let active2 = 'Todas';
 function renderFilters2() {
@@ -2835,27 +2825,7 @@ function renderFilters2() {
     el.appendChild(c);
   });
 }
-function renderGrid2() {
-  const el = document.getElementById('grid2'); el.innerHTML = '';
-  const list = [...(active2 === 'Todas' ? DATA2 : DATA2.filter(d => d.area === active2))].sort((a,b) => b.tasa - a.tasa);
-  list.forEach(d => {
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.innerHTML = `
-      <div class="card-photo">
-        <img src="${d.img}" alt="Evidencia ${d.equipo}" loading="lazy">
-        <div class="badge ${d.tier}">${tierLabel(d.tier)}</div>
-      </div>
-      <div class="card-body">
-        <div class="card-eq">${d.equipo}</div>
-        <div class="card-meta">${d.area} · ${d.punto} · ${d.elemento}</div>
-        <div class="card-desc">${d.hallazgo}</div>
-        <div class="card-periodo">${PERIODO_GLOBAL === 'hora' ? d.tasa.toLocaleString('es-CO') + ' g/Hr' : masaAcumulada(d.tasa, PERIODO_GLOBAL) + ' ' + PERIODOS[PERIODO_GLOBAL].etiqueta}</div>
-      </div>
-    `;
-    el.appendChild(card);
-  });
-}
+function renderGrid2() { renderPrioridad(DATA2, active2, 'prio2', 'prioLead2'); }
 
 renderFilters1(); renderGrid1();
 renderFilters2(); renderGrid2();
