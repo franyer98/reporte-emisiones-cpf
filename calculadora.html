@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>De g/Hr a toneladas — Procedimiento paso a paso</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0d10; --surface:#141a20; --surface2:#1c242c; --border:#28323c;
+    --text:#eef2f5; --dim:#9aa7b4; --faint:#65717e;
+    --verde:#21a038; --ambar:#f5c518; --cool:#2dd4ee;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;
+    padding:22px 16px 60px;line-height:1.55;
+  }
+  .wrap{max-width:760px;margin:0 auto}
+
+  .kicker{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.16em;color:var(--verde);font-weight:700}
+  h1{font-family:'Space Grotesk',sans-serif;font-size:clamp(23px,5vw,32px);margin:6px 0 4px;letter-spacing:-.02em}
+  .sub{color:var(--dim);font-size:14px;margin-bottom:26px}
+
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:16px}
+  .lbl{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;color:var(--faint);margin-bottom:9px}
+
+  .campo{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  input[type=number]{
+    flex:1;min-width:180px;background:var(--surface2);border:2px solid var(--border);
+    border-radius:10px;padding:15px 16px;color:var(--text);
+    font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;outline:none;
+  }
+  input[type=number]:focus{border-color:var(--cool)}
+  .unidad{font-family:'JetBrains Mono',monospace;font-size:16px;color:var(--dim)}
+
+  .presets{display:flex;gap:7px;flex-wrap:wrap;margin-top:14px}
+  .presets button{
+    background:transparent;border:1px solid var(--border);color:var(--dim);
+    border-radius:99px;padding:7px 13px;font-family:'JetBrains Mono',monospace;
+    font-size:11px;cursor:pointer;transition:.15s
+  }
+  .presets button:hover{border-color:var(--cool);color:var(--text)}
+
+  .periodos{display:flex;gap:7px;flex-wrap:wrap;margin-top:6px}
+  .periodos button{
+    flex:1;min-width:88px;background:var(--surface2);border:1px solid var(--border);
+    color:var(--dim);border-radius:10px;padding:11px 8px;cursor:pointer;
+    font-family:'JetBrains Mono',monospace;font-size:12px;transition:.15s
+  }
+  .periodos button:hover{color:var(--text)}
+  .periodos button.on{background:var(--cool);color:#06222a;border-color:var(--cool);font-weight:700}
+
+  .paso{
+    display:flex;gap:15px;padding:18px 0;border-bottom:1px dashed var(--border);
+    opacity:0;transform:translateY(10px);animation:entra .45s ease forwards;
+  }
+  .paso:last-child{border-bottom:none}
+  @keyframes entra{to{opacity:1;transform:none}}
+  .bolita{
+    flex:none;width:30px;height:30px;border-radius:50%;background:var(--surface2);
+    border:2px solid var(--verde);color:var(--verde);display:flex;align-items:center;
+    justify-content:center;font-weight:700;font-size:13px;font-family:'JetBrains Mono',monospace
+  }
+  .cuerpo{flex:1;min-width:0}
+  .titulo{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;margin-bottom:3px}
+  .explica{color:var(--dim);font-size:13px;margin-bottom:10px}
+  .op{
+    background:var(--bg);border:1px solid var(--border);border-radius:9px;
+    padding:13px 15px;font-family:'JetBrains Mono',monospace;font-size:14px;
+    overflow-x:auto;white-space:nowrap
+  }
+  .op .r{color:var(--verde);font-weight:700}
+  .op .g{color:var(--ambar)}
+
+  .final{
+    background:linear-gradient(135deg,rgba(33,160,56,.16),rgba(45,212,238,.10));
+    border:1px solid var(--verde);border-radius:14px;padding:22px;text-align:center;margin-top:8px
+  }
+  .final .et{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.14em;color:var(--dim)}
+  .final .val{font-family:'Space Grotesk',sans-serif;font-size:clamp(30px,8vw,46px);font-weight:700;color:var(--verde);line-height:1.1;margin:6px 0}
+  .final .eq{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--dim)}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:4px}
+  th{
+    text-align:left;padding:9px 10px;font-family:'JetBrains Mono',monospace;
+    font-size:10px;letter-spacing:.08em;color:var(--faint);border-bottom:1px solid var(--border)
+  }
+  td{padding:10px;border-bottom:1px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:13px}
+  td:last-child,th:last-child{text-align:right}
+  tr:last-child td{border-bottom:none}
+  tr.destacada td{color:var(--verde);font-weight:700;background:rgba(33,160,56,.07)}
+
+  .nota{
+    background:rgba(245,197,24,.08);border-left:3px solid var(--ambar);
+    border-radius:0 10px 10px 0;padding:13px 15px;font-size:13px;color:var(--dim);margin-top:16px
+  }
+  .nota b{color:var(--ambar)}
+  .pie{text-align:center;color:var(--faint);font-size:11px;margin-top:26px;font-family:'JetBrains Mono',monospace}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="kicker">EMISIONES FUGITIVAS · CÁMARA OGI/FLIR</div>
+  <h1>De g/Hr a toneladas</h1>
+  <div class="sub">Escribe la tasa que midió la cámara y sigue el procedimiento paso a paso.</div>
+
+  <div class="panel">
+    <div class="lbl">TASA MEDIDA EN CAMPO</div>
+    <div class="campo">
+      <input type="number" id="tasa" value="13000" min="0" step="1">
+      <span class="unidad">g/Hr</span>
+    </div>
+    <div class="presets" id="presets"></div>
+  </div>
+
+  <div class="panel">
+    <div class="lbl">PERIODO A CALCULAR</div>
+    <div class="periodos" id="periodos"></div>
+  </div>
+
+  <div class="panel" id="pasos"></div>
+
+  <div class="final">
+    <div class="et" id="finEt">RESULTADO</div>
+    <div class="val" id="finVal">—</div>
+    <div class="eq" id="finEq"></div>
+  </div>
+
+  <div class="panel" style="margin-top:16px">
+    <div class="lbl">EL MISMO DATO EN TODOS LOS PERIODOS</div>
+    <table id="tablaTodos"></table>
+  </div>
+
+  <div class="nota">
+    <b>Supuesto:</b> el cálculo asume que la fuga se mantiene al mismo caudal durante todo el periodo,
+    sin intervención. Es el mismo supuesto de la ficha oficial GOP-F-006 al proyectar Ton CH4/año.
+  </div>
+
+  <div class="pie">Inspección termográfica FLIR/OGI · CPF-1 y CPF-2</div>
+</div>
+
+<script>
+const PERIODOS = [
+  {id:'hora', nombre:'Hora',      horas:1,    origen:'dato directo de la cámara'},
+  {id:'mes',  nombre:'Mes',       horas:730,  origen:'8.760 ÷ 12'},
+  {id:'trim', nombre:'Trimestre', horas:2190, origen:'8.760 ÷ 4'},
+  {id:'sem',  nombre:'Semestre',  horas:4380, origen:'8.760 ÷ 2'},
+  {id:'anio', nombre:'Año',       horas:8760, origen:'365 días × 24 horas'},
+];
+
+const EJEMPLOS = [
+  {n:'TK-901B · manhole', v:13000},
+  {n:'TK-901C · manhole', v:10000},
+  {n:'TK-901A · manhole', v:7600},
+  {n:'TK-902 · escotilla', v:19},
+  {n:'CPF-1 completo', v:46278},
+  {n:'CPF-2 completo', v:12100},
+];
+
+let periodoActivo = 'anio';
+const num = (x, d=0) => x.toLocaleString('es-CO', {minimumFractionDigits:d, maximumFractionDigits:d});
+
+// presets
+const presets = document.getElementById('presets');
+EJEMPLOS.forEach(e => {
+  const b = document.createElement('button');
+  b.textContent = e.n;
+  b.onclick = () => { document.getElementById('tasa').value = e.v; render(); };
+  presets.appendChild(b);
+});
+
+// periodos
+const cont = document.getElementById('periodos');
+PERIODOS.forEach(p => {
+  const b = document.createElement('button');
+  b.textContent = p.nombre;
+  b.dataset.id = p.id;
+  b.onclick = () => { periodoActivo = p.id; render(); };
+  cont.appendChild(b);
+});
+
+function render() {
+  const tasa = parseFloat(document.getElementById('tasa').value) || 0;
+  const P = PERIODOS.find(p => p.id === periodoActivo);
+
+  cont.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.id === periodoActivo));
+
+  const gramos = tasa * P.horas;
+  const ton = gramos / 1e6;
+  const kg = gramos / 1000;
+
+  // ---- pasos ----
+  const pasos = [
+    {
+      t: 'Punto de partida: la lectura de la cámara',
+      e: 'La cámara OGI/FLIR entrega un caudal — cuántos gramos escapan cada hora. Todavía no es una cantidad total.',
+      op: `<span class="g">${num(tasa)}</span> g/Hr`
+    },
+    {
+      t: `Cuántas horas tiene el periodo "${P.nombre}"`,
+      e: `Se parte de que 1 año = 365 × 24 = 8.760 horas. Para este periodo: ${P.origen}.`,
+      op: `${P.nombre} = <span class="g">${num(P.horas)}</span> horas`
+    },
+    {
+      t: 'Extender la tasa a todo el periodo',
+      e: 'Se multiplica el caudal por las horas. El resultado queda en gramos.',
+      op: `${num(tasa)} g/Hr × ${num(P.horas)} h = <span class="r">${num(gramos)} g</span>`
+    },
+    {
+      t: 'Convertir los gramos a toneladas',
+      e: 'Se divide entre 1.000.000, porque 1 tonelada tiene 1.000.000 de gramos.',
+      op: `${num(gramos)} g ÷ 1.000.000 = <span class="r">${num(ton, 2)} ton</span>`
+    },
+  ];
+
+  document.getElementById('pasos').innerHTML = pasos.map((p, i) => `
+    <div class="paso" style="animation-delay:${i * 0.07}s">
+      <div class="bolita">${i + 1}</div>
+      <div class="cuerpo">
+        <div class="titulo">${p.t}</div>
+        <div class="explica">${p.e}</div>
+        <div class="op">${p.op}</div>
+      </div>
+    </div>`).join('');
+
+  // ---- resultado ----
+  document.getElementById('finEt').textContent = 'MASA FUGADA · ' + P.nombre.toUpperCase();
+  document.getElementById('finVal').textContent = num(ton, 2) + ' ton';
+  document.getElementById('finEq').textContent =
+    'equivale a ' + num(kg, 1) + ' kg  ·  ' + num(gramos) + ' g';
+
+  // ---- tabla comparativa ----
+  document.getElementById('tablaTodos').innerHTML =
+    '<tr><th>Periodo</th><th>Horas</th><th>Operación</th><th>Toneladas</th></tr>' +
+    PERIODOS.map(p => {
+      const t = tasa * p.horas / 1e6;
+      return `<tr class="${p.id === periodoActivo ? 'destacada' : ''}">
+        <td>${p.nombre}</td>
+        <td>${num(p.horas)}</td>
+        <td>${num(tasa)} × ${num(p.horas)} ÷ 1.000.000</td>
+        <td>${num(t, 2)}</td>
+      </tr>`;
+    }).join('');
+}
+
+document.getElementById('tasa').addEventListener('input', render);
+render();
+</script>
+</body>
+</html>
