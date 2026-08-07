@@ -1730,7 +1730,15 @@ THREE.OrbitControls = OrbitControls;
   .dc-val { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 21px; color: var(--text); line-height: 1.1; }
   .dc-lbl { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--text-faint); letter-spacing: .1em; margin-top: 2px; }
   .donut-list { display: flex; flex-direction: column; gap: 7px; }
-  .dl-row { display: grid; grid-template-columns: 10px 1fr auto auto; gap: 9px; align-items: center; }
+  .dl-row {
+    display: grid; grid-template-columns: 10px 1fr auto auto; gap: 9px 9px;
+    align-items: center; padding: 5px 0;
+  }
+  .dl-track {
+    grid-column: 2 / -1; height: 5px; background: var(--surface-2);
+    border-radius: 99px; overflow: hidden; margin-top: -2px;
+  }
+  .dl-fill { display: block; height: 100%; border-radius: 99px; opacity: .85; transition: width .5s ease; }
   .dl-dot { width: 10px; height: 10px; border-radius: 50%; }
   .dl-name { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-dim); text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .dl-val { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; font-weight: 700; color: var(--text); white-space: nowrap; }
@@ -2729,6 +2737,18 @@ function destroyCharts() {
     if (c) c.destroy();
   });
 }
+
+// Degradado por segmento: da profundidad a los arcos del donut
+function arcoDegradado(ctx, area, hex) {
+  if (!area) return hex;
+  const r = Math.min(area.right - area.left, area.bottom - area.top) / 2;
+  const cx = (area.left + area.right) / 2, cy = (area.top + area.bottom) / 2;
+  const g = ctx.createRadialGradient(cx, cy, r * 0.6, cx, cy, r);
+  g.addColorStop(0, hex + 'aa');
+  g.addColorStop(1, hex);
+  return g;
+}
+
 function initCharts() {
   destroyCharts();
   Chart.defaults.font.family = "'JetBrains Mono', monospace";
@@ -2740,16 +2760,16 @@ new Chart(document.getElementById('chartAreaDonut1'), {
   type: 'doughnut',
   data: {
     labels: AREA_TASA_LABELS,
-    datasets: [{ data: AREA_TASA_VALUES, backgroundColor: ['#3fa9f5','#a78bfa','#fb923c'], borderColor: cv('--surface'), borderWidth: 3 }]
+    datasets: [{ data: AREA_TASA_VALUES, backgroundColor: (c) => arcoDegradado(c.chart.ctx, c.chart.chartArea, ['#3fa9f5','#a78bfa','#fb923c'][c.dataIndex]), borderWidth: 0, borderRadius: 9, spacing: 4, hoverOffset: 12 }]
   },
   options: {
     responsive: true, maintainAspectRatio: false,
-    animation: { duration: 900 },
+    animation: { animateRotate: true, animateScale: true, duration: 1100, easing: 'easeOutQuart' },
     plugins: {
       legend: { display: false },
       tooltip: { ...getTooltipBase(), callbacks: { label: (ctx) => `${ctx.label}: ${moneyG(ctx.raw)} (${(ctx.raw/AREA_TASA_VALUES.reduce((a,b)=>a+b,0)*100).toFixed(0)}%)` } }
     },
-    cutout: '68%'
+    cutout: '74%'
   }
 });
 
@@ -2758,13 +2778,13 @@ new Chart(document.getElementById('chartEqDonut1'), {
   type: 'doughnut',
   data: {
     labels: EQ_TASA_LABELS,
-    datasets: [{ data: EQ_TASA_VALUES, backgroundColor: EQ_TASA_COLORS, borderColor: cv('--surface'), borderWidth: 3 }]
+    datasets: [{ data: EQ_TASA_VALUES, backgroundColor: (c) => arcoDegradado(c.chart.ctx, c.chart.chartArea, EQ_TASA_COLORS[c.dataIndex]), borderWidth: 0, borderRadius: 9, spacing: 4, hoverOffset: 12 }]
   },
   options: {
     responsive: true, maintainAspectRatio: false,
-    animation: { duration: 900 },
+    animation: { animateRotate: true, animateScale: true, duration: 1100, easing: 'easeOutQuart' },
     plugins: {
-      legend: { position: 'bottom', labels: { color: cv('--text-dim'), font: { family: "'Inter', sans-serif", size: 10.5 }, padding: 10, usePointStyle: true, pointStyle: 'circle', boxWidth: 8 } },
+      legend: { display: false },
       tooltip: { ...getTooltipBase(), callbacks: { label: (ctx) => `${ctx.label}: ${moneyG(ctx.raw)} (${(ctx.raw/EQ_TASA_VALUES.reduce((a,b)=>a+b,0)*100).toFixed(0)}%)` } }
     },
     cutout: '60%'
@@ -2776,16 +2796,16 @@ new Chart(document.getElementById('chartAreaDonut2'), {
   type: 'doughnut',
   data: {
     labels: AREA2_LABELS,
-    datasets: [{ data: AREA2_VALUES, backgroundColor: ['#e08a4f','#8b96a3'], borderColor: cv('--surface'), borderWidth: 3 }]
+    datasets: [{ data: AREA2_VALUES, backgroundColor: (c) => arcoDegradado(c.chart.ctx, c.chart.chartArea, ['#3fa9f5','#a78bfa'][c.dataIndex]), borderWidth: 0, borderRadius: 9, spacing: 4, hoverOffset: 12 }]
   },
   options: {
     responsive: true, maintainAspectRatio: false,
-    animation: { duration: 900 },
+    animation: { animateRotate: true, animateScale: true, duration: 1100, easing: 'easeOutQuart' },
     plugins: {
       legend: { display: false },
       tooltip: { ...getTooltipBase(), callbacks: { label: (ctx) => `${ctx.label}: ${moneyG(ctx.raw)} (${(ctx.raw/AREA2_VALUES.reduce((a,b)=>a+b,0)*100).toFixed(0)}%)` } }
     },
-    cutout: '68%'
+    cutout: '74%'
   }
 });
 
@@ -2794,13 +2814,13 @@ new Chart(document.getElementById('chartEq2'), {
   type: 'doughnut',
   data: {
     labels: EQ2_LABELS,
-    datasets: [{ data: EQ2_VALUES, backgroundColor: EQ2_COLORS, borderColor: cv('--surface'), borderWidth: 3 }]
+    datasets: [{ data: EQ2_VALUES, backgroundColor: (c) => arcoDegradado(c.chart.ctx, c.chart.chartArea, EQ2_COLORS[c.dataIndex]), borderWidth: 0, borderRadius: 9, spacing: 4, hoverOffset: 12 }]
   },
   options: {
     responsive: true, maintainAspectRatio: false,
-    animation: { duration: 900 },
+    animation: { animateRotate: true, animateScale: true, duration: 1100, easing: 'easeOutQuart' },
     plugins: {
-      legend: { position: 'bottom', labels: { color: cv('--text-dim'), font: { family: "'Inter', sans-serif", size: 10.5 }, padding: 10, usePointStyle: true, pointStyle: 'circle', boxWidth: 8 } },
+      legend: { display: false },
       tooltip: { ...getTooltipBase(), callbacks: { label: (ctx) => `${ctx.label}: ${moneyG(ctx.raw)} (${(ctx.raw/EQ2_VALUES.reduce((a,b)=>a+b,0)*100).toFixed(0)}%)` } }
     },
     cutout: '60%'
@@ -2905,13 +2925,16 @@ function renderComposicion() {
       }
       const lista = document.getElementById(listaId);
       if (!lista) return;
+      const maxVal = Math.max(...values, 1);
       lista.innerHTML = labels.map((lab, i) => {
         const pct = Math.round(values[i] / total * 100);
+        const ancho = Math.max(2, values[i] / maxVal * 100);
         return `<div class="dl-row">
           <span class="dl-dot" style="background:${colors[i]}"></span>
           <span class="dl-name" title="${lab}">${lab}</span>
           <span class="dl-val">${fmt(values[i])}</span>
           <span class="dl-pct">${pct}%</span>
+          <span class="dl-track"><span class="dl-fill" style="width:${ancho}%;background:${colors[i]}"></span></span>
         </div>`;
       }).join('');
     };
