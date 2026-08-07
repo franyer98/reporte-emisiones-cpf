@@ -3334,7 +3334,7 @@ function getTankSkinWithLogo(nombreTanque) {
   return tex;
 }
 
-function buildTank3D(scene, x, z, name, points, clickable, smokeList) {
+function buildTank3D(scene, x, z, name, points, clickable, smokeList, tanques) {
   const radius = 1, height = 2.2;
   const group = new THREE.Group();
   group.position.set(x, 0, z);
@@ -3499,9 +3499,14 @@ function buildTank3D(scene, x, z, name, points, clickable, smokeList) {
     group.add(post);
   }
 
-  const label = makeTextSprite(name);
-  label.position.set(0, 0.16 + height + roofH + 0.55, 0);
-  group.add(label);
+  // sin etiqueta flotante: el nombre se ve al pasar el cursor sobre el tanque
+  group.userData.tankInfo = {
+    nombre: name,
+    puntos: points.slice().sort((a, b) => b.tasa - a.tasa),
+    total: points.reduce((acc, r) => acc + r.tasa, 0),
+    alturaTope: 0.16 + height + roofH + 0.35
+  };
+  tanques.push(group);
 
   const topY = 0.16 + height + roofH*0.55;
   points.forEach((pt, i) => {
@@ -3643,7 +3648,7 @@ function buildTankMap3D(canvasId, hintId, data, totalId) {
 
   const contentGroup = new THREE.Group();
   scene.add(contentGroup);
-  let clickable = [], smokeList = [], target = new THREE.Vector3(0, 1.35, 0), fitSphere = 10;
+  let clickable = [], smokeList = [], tanques = [], target = new THREE.Vector3(0, 1.35, 0), fitSphere = 10;
 
   function clearContent() {
     for (let i = contentGroup.children.length - 1; i >= 0; i--) {
@@ -3654,7 +3659,7 @@ function buildTankMap3D(canvasId, hintId, data, totalId) {
       });
       contentGroup.remove(o);
     }
-    clickable = []; smokeList = [];
+    clickable = []; smokeList = []; tanques = [];
   }
 
   function buildContent(data) {
@@ -3715,7 +3720,7 @@ function buildTankMap3D(canvasId, hintId, data, totalId) {
       const enEstaFila = Math.min(perRow, tanks.length - r*perRow);
       const sx = -((enEstaFila - 1) * colSpacing) / 2;
       buildTank3D(contentGroup, sx + c*colSpacing, zCursor + r*subRowSpacing, eq,
-                  data.filter(d => d.equipo === eq), clickable, smokeList);
+                  data.filter(d => d.equipo === eq), clickable, smokeList, tanques);
     });
 
     const areaLabel = makeAreaLabelSprite(area, areaColor);
@@ -3810,7 +3815,7 @@ function buildTankMap3D(canvasId, hintId, data, totalId) {
 
   const raycaster = new THREE.Raycaster();
   const mouseNDC = new THREE.Vector2(-10, -10);
-  let hovered = null;
+  let hovered = null, hoveredTank = null;
 
   // distinguir "arrastrar para mover la camara" de "click para abrir la foto"
   let downX = 0, downY = 0, movedWhileDown = 0;
@@ -3825,7 +3830,12 @@ function buildTankMap3D(canvasId, hintId, data, totalId) {
   canvas.addEventListener('pointerleave', () => { mouseNDC.set(-10, -10); });
   canvas.addEventListener('click', () => {
     if (movedWhileDown > 6) return;
-    if (hovered) openLightbox(hovered.userData.item);
+    if (hovered) { openLightbox(hovered.userData.item); return; }
+    // clic en el cuerpo: abre la fuga principal de ese tanque
+    if (hoveredTank) {
+      const info = hoveredTank.userData.tankInfo;
+      if (info && info.puntos.length) openLightbox(info.puntos[0]);
+    }
   });
 
   // botones de vista predefinida
@@ -3916,6 +3926,8 @@ function buildTankMap3D(canvasId, hintId, data, totalId) {
     updateSmoke(smokeList, clock.getElapsedTime());
     raycaster.setFromCamera(mouseNDC, camera);
     const hits = raycaster.intersectObjects(clickable, true);
+    // si no se apunta a un accesorio, se prueba con el cuerpo del tanque
+    const hitsTanque = hits.length ? [] : raycaster.intersectObjects(tanques, true);
     if (hits.length) {
       let obj = hits[0].object;
       while (obj && !obj.userData.item) obj = obj.parent;
@@ -3925,6 +3937,7 @@ function buildTankMap3D(canvasId, hintId, data, totalId) {
         hovered = obj;
         hovered.scale.setScalar(1.5);
       }
+      hoveredTank = null;
       const item = obj.userData.item;
       const acum = masaAcumulada(item.tasa, periodo);
       hintEl.innerHTML = periodo === 'hora'
@@ -3938,8 +3951,30 @@ function buildTankMap3D(canvasId, hintId, data, totalId) {
       hintEl.style.top = ((-p.y*0.5+0.5) * rect.height) + 'px';
       hintEl.style.display = 'block';
       canvas.style.cursor = 'pointer';
+    } else if (hitsTanque.length) {
+      // cuerpo del tanque: muestra el resumen del equipo
+      let g = hitsTanque[0].object;
+      while (g && !g.userData.tankInfo) g = g.parent;
+      if (!g) { renderer.render(scene, camera); return; }
+      if (hovered) { hovered.scale.setScalar(1); hovered = null; }
+      hoveredTank = g;
+      const info = g.userData.tankInfo;
+      const n = info.puntos.length;
+      const val = periodo === 'hora'
+        ? info.total.toLocaleString('es-CO') + ' g/Hr'
+        : masaAcumulada(info.total, periodo) + ' ' + PERIODOS[periodo].etiqueta;
+      hintEl.innerHTML = `<b>${info.nombre}</b>${n} punto${n === 1 ? '' : 's'} · ${val}`;
+      const rect = wrap.getBoundingClientRect();
+      const p = new THREE.Vector3(0, info.alturaTope, 0);
+      g.localToWorld(p);
+      p.project(camera);
+      hintEl.style.left = ((p.x*0.5+0.5) * rect.width) + 'px';
+      hintEl.style.top = ((-p.y*0.5+0.5) * rect.height) + 'px';
+      hintEl.style.display = 'block';
+      canvas.style.cursor = 'pointer';
     } else {
       if (hovered) { hovered.scale.setScalar(1); hovered = null; }
+      hoveredTank = null;
       hintEl.style.display = 'none';
       canvas.style.cursor = 'grab';
     }
