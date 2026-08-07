@@ -3936,7 +3936,9 @@ function buildTankMap3D(canvasId, hintId, data, totalId) {
   controls.enableDamping = true;      // inercia: movimiento suave
   controls.dampingFactor = 0.075;
   controls.rotateSpeed = 0.55;
-  controls.zoomSpeed = 0.9;
+  // OrbitControls avanza un paso fijo por muesca de rueda (ignora la magnitud del evento):
+  // con el valor por defecto hacian falta ~52 giros para acercarse del todo
+  controls.zoomSpeed = 3.5;
   controls.panSpeed = 0.7;
   controls.screenSpacePanning = true; // paneo intuitivo (arrastra la escena)
   controls.minDistance = 4;
@@ -3946,6 +3948,7 @@ function buildTankMap3D(canvasId, hintId, data, totalId) {
   // click izq = rotar · click der / 2 dedos = mover · rueda / pellizco = zoom
   controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
   controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
+  controls.keyPanSpeed = 24;
 
   function applyView(theta, phi, radius) {
     controls.target.copy(target);
