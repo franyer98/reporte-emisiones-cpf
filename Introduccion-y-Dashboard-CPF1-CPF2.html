@@ -1912,6 +1912,58 @@ THREE.OrbitControls = OrbitControls;
     .p3d-label { display: none; }
   }
 
+  /* ---------- CURVA DE REPARACION ---------- */
+  .curva-panel {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 18px 20px; margin-bottom: 16px;
+  }
+  .curva-ctrl { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .curva-ctrl label {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    letter-spacing: .1em; color: var(--text-faint);
+  }
+  .curva-ctrl input[type=range] {
+    flex: 1; min-width: 180px; -webkit-appearance: none; appearance: none;
+    background: transparent; height: 22px; cursor: pointer;
+  }
+  .curva-ctrl input[type=range]::-webkit-slider-runnable-track {
+    height: 6px; border-radius: 99px; background: var(--surface-2);
+  }
+  .curva-ctrl input[type=range]::-moz-range-track {
+    height: 6px; border-radius: 99px; background: var(--surface-2);
+  }
+  .curva-ctrl input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none; width: 18px; height: 18px;
+    border-radius: 50%; background: var(--cool); margin-top: -6px; border: 2px solid var(--bg);
+  }
+  .curva-ctrl input[type=range]::-moz-range-thumb {
+    width: 18px; height: 18px; border-radius: 50%; background: var(--cool); border: 2px solid var(--bg);
+  }
+  .curva-ctrl output {
+    font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 20px;
+    color: var(--cool); min-width: 34px; text-align: center;
+  }
+  .curva-kpis {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px; margin-top: 16px;
+  }
+  .ck { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+  .ck-lbl { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: .1em; color: var(--text-faint); }
+  .ck-val { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 24px; color: #21a038; line-height: 1.15; margin: 3px 0; }
+  .ck-val.alt { color: var(--cool); }
+  .ck-val.neu { color: var(--text-dim); }
+  .ck-sub { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; color: var(--text-faint); }
+  .curva-frase {
+    margin-top: 14px; padding-top: 13px; border-top: 1px solid var(--border);
+    font-size: 13.5px; line-height: 1.6; color: var(--text-dim);
+  }
+  .curva-frase b { color: var(--text); }
+  @media (max-width: 620px) {
+    .curva-panel { padding: 14px 15px; }
+    .ck-val { font-size: 20px; }
+    .curva-frase { font-size: 12.5px; }
+  }
+
   /* ---------- CONTROL DE ZOOM DEL VISOR 3D ---------- */
   .zoom3d {
     position: absolute; right: 12px; top: 50%; transform: translateY(-50%); z-index: 6;
@@ -2365,6 +2417,27 @@ THREE.OrbitControls = OrbitControls;
       <div class="prio-table" id="prio1"></div>
     </div>
   </section>
+  <section id="curva">
+    <div class="wrap">
+      <div class="section-head"><h2>Curva de reparación</h2><div class="section-note">CUÁNTO SE ELIMINA SEGÚN CUÁNTOS PUNTOS SE INTERVENGAN</div></div>
+
+      <div class="curva-panel">
+        <div class="curva-ctrl">
+          <label for="curvaN1">Puntos a intervenir</label>
+          <input type="range" id="curvaN1" min="1" max="10" value="3">
+          <output id="curvaOut1">3</output>
+        </div>
+        <div class="curva-kpis">
+          <div class="ck"><div class="ck-lbl">SE ELIMINA</div><div class="ck-val" id="ckPct1">—</div><div class="ck-sub">del volumen total</div></div>
+          <div class="ck"><div class="ck-lbl">GAS EVITADO</div><div class="ck-val alt" id="ckMasa1">—</div><div class="ck-sub" id="ckMasaSub1">al año</div></div>
+          <div class="ck"><div class="ck-lbl">QUEDA PENDIENTE</div><div class="ck-val neu" id="ckResto1">—</div><div class="ck-sub" id="ckRestoSub1">en los demás puntos</div></div>
+        </div>
+        <div class="curva-frase" id="curvaFrase1"></div>
+      </div>
+
+      <div class="chart-card"><div class="chart-canvas-wrap" style="height:340px"><canvas id="chartCurva1"></canvas></div></div>
+    </div>
+  </section>
   <section id="composicion">
     <div class="wrap">
       <div class="section-head"><h2>Composición de la fuga</h2><div class="section-note">CÓMO SE REPARTE EL VOLUMEN TOTAL</div></div>
@@ -2429,6 +2502,27 @@ THREE.OrbitControls = OrbitControls;
       <div class="prio-lead" id="prioLead2"></div>
       <div class="filters" id="filters2"></div>
       <div class="prio-table" id="prio2"></div>
+    </div>
+  </section>
+  <section id="curva2">
+    <div class="wrap">
+      <div class="section-head"><h2>Curva de reparación</h2><div class="section-note">CUÁNTO SE ELIMINA SEGÚN CUÁNTOS PUNTOS SE INTERVENGAN</div></div>
+
+      <div class="curva-panel">
+        <div class="curva-ctrl">
+          <label for="curvaN2">Puntos a intervenir</label>
+          <input type="range" id="curvaN2" min="1" max="10" value="3">
+          <output id="curvaOut2">3</output>
+        </div>
+        <div class="curva-kpis">
+          <div class="ck"><div class="ck-lbl">SE ELIMINA</div><div class="ck-val" id="ckPct2">—</div><div class="ck-sub">del volumen total</div></div>
+          <div class="ck"><div class="ck-lbl">GAS EVITADO</div><div class="ck-val alt" id="ckMasa2">—</div><div class="ck-sub" id="ckMasaSub2">al año</div></div>
+          <div class="ck"><div class="ck-lbl">QUEDA PENDIENTE</div><div class="ck-val neu" id="ckResto2">—</div><div class="ck-sub" id="ckRestoSub2">en los demás puntos</div></div>
+        </div>
+        <div class="curva-frase" id="curvaFrase2"></div>
+      </div>
+
+      <div class="chart-card"><div class="chart-canvas-wrap" style="height:340px"><canvas id="chartCurva2"></canvas></div></div>
     </div>
   </section>
   <section id="composicion2">
@@ -2771,7 +2865,7 @@ document.getElementById('lightboxClose').addEventListener('click', closeLightbox
 document.getElementById('lightboxBackdrop').addEventListener('click', closeLightbox);
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLightbox(); });
 
-const CHART_IDS = ['chartPareto1','chartAreaDonut1','chartEqDonut1','chartPareto2','chartAreaDonut2','chartEq2'];
+const CHART_IDS = ['chartPareto1','chartAreaDonut1','chartEqDonut1','chartPareto2','chartAreaDonut2','chartEq2','chartCurva1','chartCurva2'];
 function destroyCharts() {
   CHART_IDS.forEach(id => {
     const c = Chart.getChart(id);
@@ -2788,6 +2882,123 @@ function arcoDegradado(ctx, area, hex) {
   g.addColorStop(0, hex + 'aa');
   g.addColorStop(1, hex);
   return g;
+}
+
+
+// ---------- Curva de reparación: cuánto se elimina según cuántos puntos se intervengan ----------
+const CURVAS = {};
+
+function renderCurva(data, n) {
+  const cont = document.getElementById('chartCurva' + n);
+  if (!cont) return;
+  const orden = [...data].sort((a, b) => b.tasa - a.tasa);
+  const total = orden.reduce((s, r) => s + r.tasa, 0) || 1;
+
+  let acum = 0;
+  const etiquetas = [], barras = [], linea = [];
+  orden.forEach(r => {
+    acum += r.tasa;
+    etiquetas.push(r.equipo);
+    barras.push(r.tasa);
+    linea.push(+(acum / total * 100).toFixed(1));
+  });
+
+  const slider = document.getElementById('curvaN' + n);
+  slider.max = orden.length;
+  if (+slider.value > orden.length) slider.value = Math.min(3, orden.length);
+
+  // Pareto: barras = aporte de cada punto, línea = acumulado
+  const grafico = new Chart(cont, {
+    data: {
+      labels: etiquetas,
+      datasets: [
+        {
+          type: 'line', label: '% acumulado', data: linea, yAxisID: 'y2',
+          borderColor: '#2dd4ee', backgroundColor: 'rgba(45,212,238,.12)',
+          borderWidth: 2.5, fill: true, tension: .3,
+          pointRadius: (c) => c.dataIndex < (+slider.value) ? 5 : 3,
+          pointBackgroundColor: (c) => c.dataIndex < (+slider.value) ? '#2dd4ee' : cv('--surface'),
+          pointBorderColor: '#2dd4ee', pointBorderWidth: 2, order: 0
+        },
+        {
+          type: 'bar', label: 'Aporte del punto', data: barras, yAxisID: 'y1',
+          backgroundColor: (c) => c.dataIndex < (+slider.value) ? '#21a038' : cv('--surface-2'),
+          borderRadius: 5, borderSkipped: false, barPercentage: .78, order: 1
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: { duration: 700, easing: 'easeOutQuart' },
+      interaction: { mode: 'index', intersect: false },
+      scales: {
+        x: { border: { display: false }, grid: { display: false },
+             ticks: { color: cv('--text-faint'), font: { size: 9.5 }, maxRotation: 60, minRotation: 45 } },
+        y1: { position: 'left', border: { display: false }, grid: { color: cv('--border') },
+              title: { display: true, text: 'g/Hr del punto', color: cv('--text-faint'), font: { size: 10 } },
+              ticks: { color: cv('--text-faint'), font: { size: 10 } } },
+        y2: { position: 'right', min: 0, max: 100, border: { display: false }, grid: { display: false },
+              title: { display: true, text: '% acumulado', color: '#2dd4ee', font: { size: 10 } },
+              ticks: { color: '#2dd4ee', font: { size: 10 }, callback: v => v + '%' } }
+      },
+      plugins: {
+        legend: { display: true, position: 'top', labels: { color: cv('--text-dim'), boxWidth: 12, boxHeight: 12, usePointStyle: true, pointStyle: 'circle', font: { size: 11 } } },
+        tooltip: { ...getTooltipBase(), callbacks: {
+          title: (it) => { const d = orden[it[0].dataIndex]; return `${d.equipo} · ${d.punto}`; },
+          label: (c) => c.datasetIndex === 0
+            ? `Acumulado hasta aquí: ${c.raw}%`
+            : `Este punto: ${c.raw.toLocaleString('es-CO')} g/Hr`
+        } }
+      }
+    }
+  });
+
+  CURVAS[n] = { grafico, orden, total, linea };
+  actualizarCurva(n);
+}
+
+function actualizarCurva(n) {
+  const c = CURVAS[n];
+  if (!c) return;
+  const slider = document.getElementById('curvaN' + n);
+  const k = Math.max(1, Math.min(+slider.value, c.orden.length));
+
+  const eliminado = c.orden.slice(0, k).reduce((s, r) => s + r.tasa, 0);
+  const pct = eliminado / c.total * 100;
+  const resto = c.total - eliminado;
+
+  const fmt = (g) => PERIODO_GLOBAL === 'hora'
+    ? (g >= 1000 ? (g / 1000).toFixed(2) + ' kg/Hr' : Math.round(g).toLocaleString('es-CO') + ' g/Hr')
+    : masaAcumulada(g, PERIODO_GLOBAL);
+  const etiquetaPeriodo = PERIODO_GLOBAL === 'hora' ? 'tasa medida' : PERIODOS[PERIODO_GLOBAL].etiqueta;
+
+  document.getElementById('curvaOut' + n).textContent = k;
+  document.getElementById('ckPct' + n).textContent = pct.toFixed(1) + '%';
+  document.getElementById('ckMasa' + n).textContent = fmt(eliminado);
+  document.getElementById('ckMasaSub' + n).textContent = etiquetaPeriodo;
+  document.getElementById('ckResto' + n).textContent = fmt(resto);
+  document.getElementById('ckRestoSub' + n).textContent = `en los ${c.orden.length - k} puntos restantes`;
+
+  const equipos = [...new Set(c.orden.slice(0, k).map(r => r.equipo))];
+  const esfuerzo = Math.round(k / c.orden.length * 100);
+  document.getElementById('curvaFrase' + n).innerHTML =
+    `Interviniendo <b>${k} de ${c.orden.length} puntos</b> (el ${esfuerzo}% del trabajo) se elimina el `
+    + `<b>${pct.toFixed(1)}% del volumen fugado</b>. Los puntos están en ${equipos.join(', ')}.`;
+
+  c.grafico.update('none');
+}
+
+function initCurvas() {
+  [1, 2].forEach(n => {
+    const g = Chart.getChart('chartCurva' + n);
+    if (g) g.destroy();
+    renderCurva(n === 1 ? DATA1 : DATA2, n);
+    const slider = document.getElementById('curvaN' + n);
+    if (slider && !slider.dataset.listo) {
+      slider.dataset.listo = '1';
+      slider.addEventListener('input', () => actualizarCurva(n));
+    }
+  });
 }
 
 function initCharts() {
@@ -3044,6 +3255,7 @@ function renderGrid2() { renderPrioridad(DATA2, active2, 'prio2', 'prioLead2'); 
 renderFilters1(); renderGrid1();
 renderFilters2(); renderGrid2();
 renderComposicion();
+initCurvas();
 
 // ---------- Control global de periodo ----------
 (function() {
@@ -3057,6 +3269,7 @@ renderComposicion();
       updateKPIs();
       renderGrid1(); renderGrid2();
       renderComposicion();
+      [1, 2].forEach(actualizarCurva);
       // los mapas 3D siguen el mismo periodo
       [map3d1, map3d2].forEach(m => { if (m && m.setPeriodo) m.setPeriodo(PERIODO_GLOBAL); });
     });
@@ -4364,6 +4577,7 @@ window.addEventListener('resize', () => { if (map3d1) map3d1.resize(); if (map3d
     iconMoon.style.display = theme === 'light' ? 'none' : 'block';
     try { localStorage.setItem('cpf-theme', theme); } catch (e) {}
     initCharts();
+    if (typeof initCurvas === 'function') initCurvas();
   }
 
   let saved = 'dark';
