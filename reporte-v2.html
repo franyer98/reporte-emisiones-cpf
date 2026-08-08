@@ -1912,6 +1912,47 @@ THREE.OrbitControls = OrbitControls;
     .p3d-label { display: none; }
   }
 
+  /* ---------- CONTROL DE ZOOM DEL VISOR 3D ---------- */
+  .zoom3d {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%); z-index: 6;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    background: rgba(18,21,26,.86); border: 1px solid var(--border);
+    border-radius: 999px; padding: 10px 7px; backdrop-filter: blur(6px);
+  }
+  html[data-theme="light"] .zoom3d { background: rgba(255,255,255,.92); }
+  .zoom3d button {
+    width: 26px; height: 26px; flex: none; border-radius: 50%;
+    background: var(--surface-2); color: var(--text); border: 1px solid var(--border);
+    font-size: 15px; font-weight: 700; line-height: 1; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; transition: .15s;
+  }
+  .zoom3d button:hover { border-color: var(--cool); color: var(--cool); }
+  .zoom3d input[type=range] {
+    -webkit-appearance: none; appearance: none; background: transparent;
+    width: 110px; height: 20px; margin: 46px -46px; transform: rotate(90deg);
+    cursor: pointer;
+  }
+  .zoom3d input[type=range]::-webkit-slider-runnable-track {
+    height: 5px; border-radius: 99px; background: var(--surface-2);
+  }
+  .zoom3d input[type=range]::-moz-range-track {
+    height: 5px; border-radius: 99px; background: var(--surface-2);
+  }
+  .zoom3d input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none; width: 15px; height: 15px;
+    border-radius: 50%; background: var(--cool); margin-top: -5px;
+    border: 2px solid var(--bg); cursor: grab;
+  }
+  .zoom3d input[type=range]::-moz-range-thumb {
+    width: 15px; height: 15px; border-radius: 50%; background: var(--cool);
+    border: 2px solid var(--bg); cursor: grab;
+  }
+  @media (max-width: 620px) {
+    .zoom3d { right: 8px; padding: 8px 5px; gap: 6px; }
+    .zoom3d button { width: 30px; height: 30px; font-size: 16px; }
+    .zoom3d input[type=range] { width: 84px; margin: 33px -33px; }
+  }
+
   .view3d-bar {
     position: absolute; top: 12px; right: 12px; z-index: 6; display: flex; gap: 6px; flex-wrap: wrap;
     justify-content: flex-end; max-width: calc(100% - 24px);
@@ -2312,8 +2353,8 @@ THREE.OrbitControls = OrbitControls;
   </section>
   <section id="mapa3d">
     <div class="wrap">
-      <div class="section-head"><h2>Vista 3D de tanques</h2><div class="section-note">ARRASTRA: ROTAR · 2 DEDOS / CLIC DER: MOVER · RUEDA: ZOOM</div></div>
-      <div class="mapa3d-wrap"><canvas id="canvas3d1"></canvas><div class="total3d" id="total3d1"><div class="t3d-label">TOTAL FACILIDAD</div><div class="t3d-value">—</div><div class="t3d-sub">—</div></div><div class="mapa3d-hint" id="hint3d1"></div><div class="period3d-bar"><span class="p3d-label">ACUMULADO</span><button data-period="hora" class="active">Hora</button><button data-period="mes">Mes</button><button data-period="trim">Trimestre</button><button data-period="sem">Semestre</button><button data-period="anio">Año</button></div><div class="view3d-bar"><button data-view="iso">Isométrica</button><button data-view="top">Superior</button><button data-view="front">Frontal</button><button data-view="side">Lateral</button></div></div>
+      <div class="section-head"><h2>Vista 3D de tanques</h2><div class="section-note">ARRASTRA: ROTAR · CLIC DER: MOVER · BARRA LATERAL: ZOOM</div></div>
+      <div class="mapa3d-wrap"><canvas id="canvas3d1"></canvas><div class="zoom3d" id="zoom1"><button data-z="in" title="Acercar">+</button><input type="range" min="0" max="100" value="0" aria-label="Zoom"><button data-z="out" title="Alejar">&minus;</button></div><div class="total3d" id="total3d1"><div class="t3d-label">TOTAL FACILIDAD</div><div class="t3d-value">—</div><div class="t3d-sub">—</div></div><div class="mapa3d-hint" id="hint3d1"></div><div class="period3d-bar"><span class="p3d-label">ACUMULADO</span><button data-period="hora" class="active">Hora</button><button data-period="mes">Mes</button><button data-period="trim">Trimestre</button><button data-period="sem">Semestre</button><button data-period="anio">Año</button></div><div class="view3d-bar"><button data-view="iso">Isométrica</button><button data-view="top">Superior</button><button data-view="front">Frontal</button><button data-view="side">Lateral</button></div></div>
     </div>
   </section>
   <section id="ranking">
@@ -2378,8 +2419,8 @@ THREE.OrbitControls = OrbitControls;
   </section>
   <section id="mapa3d2">
     <div class="wrap">
-      <div class="section-head"><h2>Vista 3D de tanques</h2><div class="section-note">ARRASTRA: ROTAR · 2 DEDOS / CLIC DER: MOVER · RUEDA: ZOOM</div></div>
-      <div class="mapa3d-wrap"><canvas id="canvas3d2"></canvas><div class="total3d" id="total3d2"><div class="t3d-label">TOTAL FACILIDAD</div><div class="t3d-value">—</div><div class="t3d-sub">—</div></div><div class="mapa3d-hint" id="hint3d2"></div><div class="period3d-bar"><span class="p3d-label">ACUMULADO</span><button data-period="hora" class="active">Hora</button><button data-period="mes">Mes</button><button data-period="trim">Trimestre</button><button data-period="sem">Semestre</button><button data-period="anio">Año</button></div><div class="view3d-bar"><button data-view="iso">Isométrica</button><button data-view="top">Superior</button><button data-view="front">Frontal</button><button data-view="side">Lateral</button></div></div>
+      <div class="section-head"><h2>Vista 3D de tanques</h2><div class="section-note">ARRASTRA: ROTAR · CLIC DER: MOVER · BARRA LATERAL: ZOOM</div></div>
+      <div class="mapa3d-wrap"><canvas id="canvas3d2"></canvas><div class="zoom3d" id="zoom2"><button data-z="in" title="Acercar">+</button><input type="range" min="0" max="100" value="0" aria-label="Zoom"><button data-z="out" title="Alejar">&minus;</button></div><div class="total3d" id="total3d2"><div class="t3d-label">TOTAL FACILIDAD</div><div class="t3d-value">—</div><div class="t3d-sub">—</div></div><div class="mapa3d-hint" id="hint3d2"></div><div class="period3d-bar"><span class="p3d-label">ACUMULADO</span><button data-period="hora" class="active">Hora</button><button data-period="mes">Mes</button><button data-period="trim">Trimestre</button><button data-period="sem">Semestre</button><button data-period="anio">Año</button></div><div class="view3d-bar"><button data-view="iso">Isométrica</button><button data-view="top">Superior</button><button data-view="front">Frontal</button><button data-view="side">Lateral</button></div></div>
     </div>
   </section>
   <section id="ranking2">
@@ -3931,6 +3972,8 @@ function buildTankMap3D(canvasId, hintId, data, totalId) {
   }
 
   canvas.style.touchAction = 'none';
+  // si el usuario ya movio la camara, no la reencuadramos por debajo de el
+  let userMoved = false, zoomSync = null;
   const controls = new THREE.OrbitControls(camera, canvas);
   controls.target.copy(target);
   controls.enableDamping = true;      // inercia: movimiento suave
@@ -3986,6 +4029,46 @@ function buildTankMap3D(canvasId, hintId, data, totalId) {
     }
   });
 
+
+  // ---- control de zoom con deslizador (mas comodo que la rueda) ----
+  const zoomBox = wrap.querySelector('.zoom3d');
+  if (zoomBox) {
+    const slider = zoomBox.querySelector('input[type=range]');
+    const dMin = controls.minDistance, dMax = controls.maxDistance;
+    let ajustando = false;
+
+    // escala logaritmica: el recorrido se siente parejo en todo el rango
+    const aDistancia = (t) => dMax * Math.pow(dMin / dMax, t / 100);
+    const aSlider = (d) => 100 * Math.log(d / dMax) / Math.log(dMin / dMax);
+
+    function aplicar(t) {
+      const destino = aDistancia(Math.max(0, Math.min(100, t)));
+      const dir = camera.position.clone().sub(controls.target).normalize();
+      camera.position.copy(controls.target).addScaledVector(dir, destino);
+      controls.update();
+      userMoved = true;
+    }
+
+    slider.addEventListener('input', () => { ajustando = true; aplicar(+slider.value); ajustando = false; });
+    zoomBox.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const paso = btn.dataset.z === 'in' ? 12 : -12;
+        slider.value = Math.max(0, Math.min(100, +slider.value + paso));
+        aplicar(+slider.value);
+      });
+    });
+
+    // si el usuario usa la rueda o el pellizco, el deslizador se sincroniza
+    function sincronizar() {
+      if (ajustando) return;
+      const d = camera.position.distanceTo(controls.target);
+      slider.value = Math.round(Math.max(0, Math.min(100, aSlider(d))));
+    }
+    controls.addEventListener('change', sincronizar);
+    sincronizar();
+    zoomSync = sincronizar;
+  }
+
   // botones de vista predefinida
   // ---- periodo de acumulacion ----
   let periodo = 'hora';
@@ -4040,7 +4123,7 @@ function buildTankMap3D(canvasId, hintId, data, totalId) {
   }
 
   // si el usuario ya movio la camara, no la reencuadramos por debajo de el
-  let userMoved = false;
+
   controls.addEventListener('start', () => { userMoved = true; });
 
   function resize() {
