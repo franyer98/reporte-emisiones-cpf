@@ -116,6 +116,33 @@
   }
   .sep span{background:var(--bg);padding:0 14px;position:relative;z-index:1}
   .sep:before{content:'';display:block;border-top:1px solid var(--border);margin-bottom:-8px}
+  .form-bloque{
+    background:var(--bg);border:1px solid var(--border);border-radius:9px;
+    padding:0;overflow:hidden;margin-top:2px
+  }
+  .form-linea{
+    display:flex;gap:10px;align-items:baseline;padding:10px 14px;
+    font-family:'JetBrains Mono',monospace;font-size:13.5px;overflow-x:auto
+  }
+  .form-linea + .form-linea{border-top:1px solid var(--border)}
+  .form-tag{
+    flex:none;width:74px;font-size:8.5px;letter-spacing:.1em;
+    color:var(--faint);text-transform:uppercase
+  }
+  .form-cont{flex:1;white-space:nowrap}
+  .form-linea.res{background:rgba(33,160,56,.07)}
+  .form-linea.res .form-cont{color:var(--verde);font-weight:700;font-size:15px}
+  .sym{color:var(--cool)}
+  .val{color:var(--ambar);font-weight:700}
+  .uni{color:var(--faint);font-size:11.5px}
+  .cancel{text-decoration:line-through;opacity:.55}
+
+  .nomen{margin-top:10px}
+  .nomen table{width:100%;border-collapse:collapse;font-size:12px}
+  .nomen td{padding:7px 9px;border-bottom:1px solid var(--border);font-family:'JetBrains Mono',monospace}
+  .nomen tr:last-child td{border-bottom:none}
+  .nomen td:first-child{color:var(--cool);font-weight:700;width:96px}
+  .nomen td:last-child{color:var(--faint);text-align:right;font-size:11px}
   .pie{text-align:center;color:var(--faint);font-size:11px;margin-top:26px;font-family:'JetBrains Mono',monospace}
 </style>
 </head>
@@ -177,6 +204,25 @@
     <table id="tablaTodos"></table>
   </div>
 
+  <div class="panel">
+    <div class="lbl">NOMENCLATURA</div>
+    <div class="nomen">
+      <table>
+        <tr><td>Q</td><td>Tasa medida por la cámara (todos los orgánicos)</td><td>g/Hr</td></tr>
+        <tr><td>t</td><td>Horas que tiene el periodo</td><td>h</td></tr>
+        <tr><td>m</td><td>Masa fugada en el periodo, en gramos</td><td>g</td></tr>
+        <tr><td>M</td><td>Masa fugada en el periodo, en toneladas</td><td>ton</td></tr>
+        <tr><td>%m<sub>CH4</sub></td><td>Fracción másica de metano (cromatografía)</td><td>%</td></tr>
+        <tr><td>%m<sub>CO2</sub></td><td>Fracción másica de CO2 (cromatografía)</td><td>%</td></tr>
+        <tr><td>%m<sub>TOC</sub></td><td>Fracción másica de compuestos orgánicos</td><td>%</td></tr>
+        <tr><td>Q<sub>CH4</sub></td><td>Caudal de metano puro</td><td>g/Hr</td></tr>
+        <tr><td>Q<sub>CO2</sub></td><td>Caudal de CO2 propio del gas</td><td>g/Hr</td></tr>
+        <tr><td>GWP</td><td>Potencial de calentamiento del metano (IPCC)</td><td>adimensional</td></tr>
+        <tr><td>GEI</td><td>Emisión total en CO2 equivalente</td><td>ton CO2eq/año</td></tr>
+      </table>
+    </div>
+  </div>
+
   <div class="nota">
     <b>Supuesto:</b> el cálculo asume que la fuga se mantiene al mismo caudal durante todo el periodo,
     sin intervención. Es el mismo supuesto de la ficha oficial GOP-F-006 al proyectar Ton CH4/año.
@@ -225,6 +271,17 @@ PERIODOS.forEach(p => {
   cont.appendChild(b);
 });
 
+
+// Cada paso se muestra como en un procedimiento de ingenieria:
+// formula en simbolos -> sustitucion con valores -> resultado con unidades
+function bloqueFormula(simbolos, sustitucion, resultado) {
+  return `<div class="form-bloque">
+    <div class="form-linea"><span class="form-tag">Fórmula</span><span class="form-cont">${simbolos}</span></div>
+    <div class="form-linea"><span class="form-tag">Sustitución</span><span class="form-cont">${sustitucion}</span></div>
+    <div class="form-linea res"><span class="form-tag">Resultado</span><span class="form-cont">${resultado}</span></div>
+  </div>`;
+}
+
 function render() {
   const tasa = parseFloat(document.getElementById('tasa').value) || 0;
   const P = PERIODOS.find(p => p.id === periodoActivo);
@@ -240,22 +297,34 @@ function render() {
     {
       t: 'Punto de partida: la lectura de la cámara',
       e: 'La cámara OGI/FLIR entrega un caudal — cuántos gramos escapan cada hora. Todavía no es una cantidad total.',
-      op: `<span class="g">${num(tasa)}</span> g/Hr`
+      op: bloqueFormula(
+        '<span class="sym">Q</span> <span class="uni">[g/Hr]</span>',
+        '<span class="sym">Q</span> = <span class="val">' + num(tasa) + '</span>',
+        num(tasa) + ' <span class="uni">g/Hr</span>')
     },
     {
-      t: `Cuántas horas tiene el periodo "${P.nombre}"`,
-      e: `Se parte de que 1 año = 365 × 24 = 8.760 horas. Para este periodo: ${P.origen}.`,
-      op: `${P.nombre} = <span class="g">${num(P.horas)}</span> horas`
+      t: 'Horas que tiene el periodo',
+      e: 'Se parte de que 1 año = 365 días × 24 horas = 8.760 h. Para "' + P.nombre + '": ' + P.origen + '.',
+      op: bloqueFormula(
+        '<span class="sym">t</span> <span class="uni">[h]</span>',
+        '<span class="sym">t</span> = <span class="val">' + num(P.horas) + '</span>',
+        num(P.horas) + ' <span class="uni">h</span>')
     },
     {
       t: 'Extender la tasa a todo el periodo',
-      e: 'Se multiplica el caudal por las horas. El resultado queda en gramos.',
-      op: `${num(tasa)} g/Hr × ${num(P.horas)} h = <span class="r">${num(gramos)} g</span>`
+      e: 'Al multiplicar g/Hr por horas, la unidad "hora" se cancela y queda solo gramos.',
+      op: bloqueFormula(
+        '<span class="sym">m</span> = <span class="sym">Q</span> · <span class="sym">t</span>',
+        '<span class="sym">m</span> = <span class="val">' + num(tasa) + '</span> <span class="uni">g/<span class="cancel">Hr</span></span> · <span class="val">' + num(P.horas) + '</span> <span class="uni"><span class="cancel">h</span></span>',
+        num(gramos) + ' <span class="uni">g</span>')
     },
     {
       t: 'Convertir los gramos a toneladas',
-      e: 'Se divide entre 1.000.000, porque 1 tonelada tiene 1.000.000 de gramos.',
-      op: `${num(gramos)} g ÷ 1.000.000 = <span class="r">${num(ton, 2)} ton</span>`
+      e: '1 tonelada = 1.000.000 de gramos, por eso se divide entre ese factor.',
+      op: bloqueFormula(
+        '<span class="sym">M</span> = <span class="sym">m</span> / 10<sup>6</sup>',
+        '<span class="sym">M</span> = <span class="val">' + num(gramos) + '</span> <span class="uni"><span class="cancel">g</span></span> / <span class="val">1.000.000</span> <span class="uni"><span class="cancel">g</span>/ton</span>',
+        num(ton, 2) + ' <span class="uni">ton</span>')
     },
   ];
 
@@ -337,28 +406,43 @@ function renderCO2eq(tasa) {
   const pasos = [
     {
       t: 'Separar el metano del resto del gas',
-      e: 'La cámara mide todos los compuestos orgánicos (TOC) juntos. La cromatografía dice qué parte de eso es metano.',
-      op: `${num(tasa)} g/Hr × ${mCH4} ÷ ${mTOC} = <span class="r">${num(ch4gh, 2)} g/Hr de CH4</span>`
+      e: 'La cámara mide todos los compuestos orgánicos juntos (TOC). La cromatografía dice qué fracción de esa masa es metano.',
+      op: bloqueFormula(
+        '<span class="sym">Q<sub>CH4</sub></span> = <span class="sym">Q</span> · ( <span class="sym">%m<sub>CH4</sub></span> / <span class="sym">%m<sub>TOC</sub></span> )',
+        '<span class="sym">Q<sub>CH4</sub></span> = <span class="val">' + num(tasa) + '</span> · ( <span class="val">' + mCH4 + '</span> / <span class="val">' + mTOC + '</span> )',
+        num(ch4gh, 2) + ' <span class="uni">g/Hr de CH4</span>')
     },
     {
       t: 'Separar también el CO2',
-      e: 'El gas trae CO2 propio, que cuenta directo en el inventario sin multiplicarse.',
-      op: `${num(tasa)} g/Hr × ${mCO2} ÷ ${mTOC} = <span class="r">${num(co2gh, 2)} g/Hr de CO2</span>`
+      e: 'El gas trae CO2 propio. Se obtiene con la misma proporción, usando su fracción másica.',
+      op: bloqueFormula(
+        '<span class="sym">Q<sub>CO2</sub></span> = <span class="sym">Q</span> · ( <span class="sym">%m<sub>CO2</sub></span> / <span class="sym">%m<sub>TOC</sub></span> )',
+        '<span class="sym">Q<sub>CO2</sub></span> = <span class="val">' + num(tasa) + '</span> · ( <span class="val">' + mCO2 + '</span> / <span class="val">' + mTOC + '</span> )',
+        num(co2gh, 2) + ' <span class="uni">g/Hr de CO2</span>')
     },
     {
       t: 'Llevar cada componente a toneladas al año',
-      e: 'Misma conversión de la Parte A: multiplicar por 8.760 horas y dividir entre 1.000.000.',
-      op: `CH4: <span class="r">${num(tCH4, 3)} ton/año</span>&nbsp;&nbsp;·&nbsp;&nbsp;CO2: <span class="r">${num(tCO2, 3)} ton/año</span>`
+      e: 'Misma conversión de la Parte A, aplicada por separado a cada componente.',
+      op: bloqueFormula(
+        '<span class="sym">M<sub>i</sub></span> = <span class="sym">Q<sub>i</sub></span> · 8.760 / 10<sup>6</sup>',
+        '<span class="sym">M<sub>CH4</sub></span> = <span class="val">' + num(ch4gh, 2) + '</span> · 8.760 / 10<sup>6</sup> &nbsp;&nbsp;·&nbsp;&nbsp; <span class="sym">M<sub>CO2</sub></span> = <span class="val">' + num(co2gh, 2) + '</span> · 8.760 / 10<sup>6</sup>',
+        'CH4: ' + num(tCH4, 3) + ' <span class="uni">ton/año</span> &nbsp;·&nbsp; CO2: ' + num(tCO2, 3) + ' <span class="uni">ton/año</span>')
     },
     {
       t: 'Convertir el metano a su equivalente en CO2',
-      e: `Cada tonelada de metano calienta como ${GWP} toneladas de CO2. Ese factor es el GWP definido por el IPCC.`,
-      op: `${num(tCH4, 3)} ton CH4 × ${GWP} = <span class="r">${num(tCH4 * GWP, 3)} ton CO2eq</span>`
+      e: 'El GWP indica cuántas toneladas de CO2 calienta lo mismo que una tonelada de metano.',
+      op: bloqueFormula(
+        '<span class="sym">E<sub>CH4</sub></span> = <span class="sym">M<sub>CH4</sub></span> · <span class="sym">GWP</span>',
+        '<span class="sym">E<sub>CH4</sub></span> = <span class="val">' + num(tCH4, 3) + '</span> · <span class="val">' + GWP + '</span>',
+        num(tCH4 * GWP, 3) + ' <span class="uni">ton CO2eq/año</span>')
     },
     {
       t: 'Sumar ambos aportes',
-      e: 'El CO2 propio del gas más el metano ya convertido. Ese es el valor que se reporta.',
-      op: `${num(tCO2, 3)} + ${num(tCH4 * GWP, 3)} = <span class="r">${num(gei, 2)} ton CO2eq/año</span>`
+      e: 'El CO2 propio entra sin multiplicar, porque ya está expresado en su propia unidad.',
+      op: bloqueFormula(
+        '<span class="sym">GEI</span> = <span class="sym">M<sub>CO2</sub></span> + <span class="sym">M<sub>CH4</sub></span> · <span class="sym">GWP</span>',
+        '<span class="sym">GEI</span> = <span class="val">' + num(tCO2, 3) + '</span> + <span class="val">' + num(tCH4 * GWP, 3) + '</span>',
+        num(gei, 2) + ' <span class="uni">ton CO2eq/año</span>')
     },
   ];
 
