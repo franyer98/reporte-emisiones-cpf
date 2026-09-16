@@ -1668,10 +1668,10 @@ THREE.OrbitControls = OrbitControls;
   .card-photo { position: relative; aspect-ratio: 4/3; overflow:hidden; background:#000; }
   .card-photo img { width:100%; height:100%; object-fit: cover; display:block; filter: contrast(1.05); }
   .badge { position:absolute; top:10px; left:10px; font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; letter-spacing:.06em; padding: 4px 9px; border-radius: 5px; backdrop-filter: blur(4px); }
-  .badge.critico { background: rgba(224,32,32,.95); color:#fff; }
-  .badge.alto { background: rgba(224,32,32,.95); color:#fff; }
-  .badge.medio { background: rgba(245,197,24,.95); color:#1a1200; }
-  .badge.bajo { background: rgba(33,160,56,.95); color:#fff; }
+  .badge.critico { background: rgba(232,20,0,.95); color:#fff; }
+  .badge.alto { background: rgba(232,20,0,.95); color:#fff; }
+  .badge.medio { background: rgba(255,196,0,.95); color:#1a1200; }
+  .badge.bajo { background: rgba(0,184,40,.95); color:#fff; }
   .badge.campo { background: rgba(224,138,79,.88); color:#1a0f06; }
   .card-rate { position:absolute; bottom:10px; left:10px; font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:700; color:#fff; background: rgba(0,0,0,.55); padding: 4px 9px; border-radius: 5px; backdrop-filter: blur(4px); }
   .card-body { padding: 16px 16px 18px; }
@@ -1780,9 +1780,9 @@ THREE.OrbitControls = OrbitControls;
   }
   .prio-barwrap { height: 7px; background: var(--surface-2); border-radius: 99px; overflow: hidden; }
   .prio-bar { height: 100%; border-radius: 99px; transition: width .4s ease; }
-  .prio-bar.alto { background: linear-gradient(90deg, #ff6b6b, #e02020); }
-  .prio-bar.medio { background: linear-gradient(90deg, #ffe07a, #f5c518); }
-  .prio-bar.bajo { background: linear-gradient(90deg, #5ed17c, #21a038); }
+  .prio-bar.alto { background: linear-gradient(90deg, #ff6040, #e81400); }
+  .prio-bar.medio { background: linear-gradient(90deg, #ffdd54, #ffc400); }
+  .prio-bar.bajo { background: linear-gradient(90deg, #3ad46a, #00b828); }
   .prio-area {
     font-family: 'JetBrains Mono', monospace; font-size: 9.5px;
     color: var(--text-faint); margin-top: 5px; letter-spacing: .05em;
@@ -2071,10 +2071,10 @@ THREE.OrbitControls = OrbitControls;
   .lightbox-content img { width: 100%; display: block; background: #000; }
   .lightbox-info { padding: 18px 20px 22px; }
   .lightbox-badge { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: .06em; padding: 4px 10px; border-radius: 5px; margin-bottom: 10px; }
-  .lightbox-badge.critico { background: rgba(224,32,32,.95); color: #fff; }
-  .lightbox-badge.alto { background: rgba(224,32,32,.95); color: #fff; }
-  .lightbox-badge.medio { background: rgba(245,197,24,.95); color: #1a1200; }
-  .lightbox-badge.bajo { background: rgba(33,160,56,.95); color: #fff; }
+  .lightbox-badge.critico { background: rgba(232,20,0,.95); color: #fff; }
+  .lightbox-badge.alto { background: rgba(232,20,0,.95); color: #fff; }
+  .lightbox-badge.medio { background: rgba(255,196,0,.95); color: #1a1200; }
+  .lightbox-badge.bajo { background: rgba(0,184,40,.95); color: #fff; }
   .lightbox-eq { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 22px; }
   .lightbox-meta { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--text-faint); text-transform: uppercase; letter-spacing: .04em; margin: 6px 0 14px; }
   .lightbox-desc { font-size: 14px; color: var(--text-dim); line-height: 1.6; }
@@ -2648,7 +2648,7 @@ const getTooltipBase = () => ({
   displayColors: false,
 });
 
-const TIER_CSS = { alto: '#e02020', medio: '#f5c518', bajo: '#21a038' };
+const TIER_CSS = { alto: '#e81400', medio: '#ffc400', bajo: '#00b828' };
 
 // ---------- Plugin: pista de fondo detras de cada barra ----------
 const barTrack = {
@@ -3096,7 +3096,7 @@ buildMapa(DATA1, 'mapaGrid1', 'mapaDetail1');
 buildMapa(DATA2, 'mapaGrid2', 'mapaDetail2');
 
 // ---------- Mapa 3D de tanques ----------
-const TIER_HEX = { alto: 0xe02020, medio: 0xf5c518, bajo: 0x21a038 };
+const TIER_HEX = { alto: 0xe81400, medio: 0xffc400, bajo: 0x00b828 };
 
 // ---------- Periodos: proyeccion de la tasa medida en el tiempo ----------
 const PERIODOS = {
@@ -3155,49 +3155,80 @@ function getConcreteTexture() {
 
 // Dique de contencion: muro perimetral de concreto + piso, alrededor de cada tanque
 function buildDike3D(group, radius) {
-  const half = radius * 1.85;      // media longitud del recinto
-  const wallH = 0.62;              // altura del muro
-  const wallT = 0.14;              // espesor
+  // El dique es una FOSA EXCAVADA: el piso interior queda ~1,20 m por debajo
+  // del nivel del terreno. Escala del modelo: el tanque mide 2,2 de alto
+  // para ~12 m reales, asi que 1,20 m ≈ 0.22 unidades.
+  const half  = radius * 1.85;     // media longitud del recinto
+  const prof  = 0.22;              // profundidad bajo el nivel del piso
+  const wallT = 0.14;              // espesor del muro perimetral
+  const borde = 0.07;              // resalte sobre el terreno
   const tex = getConcreteTexture();
 
+  const concreto = new THREE.MeshStandardMaterial({ map: tex, color: 0xc2c5c3, roughness: 0.93, metalness: 0.02 });
+  const capMat   = new THREE.MeshStandardMaterial({ color: 0xd6d8d6, roughness: 0.88, metalness: 0.02 });
+
+  // --- piso de la fosa, hundido ---
   const floorTex = tex.clone();
   floorTex.needsUpdate = true;
   floorTex.repeat.set(2.2, 2.2);
   const floor = new THREE.Mesh(
     new THREE.BoxGeometry(half*2, 0.06, half*2),
-    new THREE.MeshStandardMaterial({ map: floorTex, color: 0xb9bcba, roughness: 0.96, metalness: 0.02 })
+    new THREE.MeshStandardMaterial({ map: floorTex, color: 0xa9aca9, roughness: 0.96, metalness: 0.02 })
   );
-  floor.position.y = 0.03;
+  floor.position.y = -prof;
   floor.receiveShadow = true;
   group.add(floor);
 
-  const wallMat = new THREE.MeshStandardMaterial({ map: tex, color: 0xc2c5c3, roughness: 0.93, metalness: 0.02 });
-  const capMat = new THREE.MeshStandardMaterial({ color: 0xd6d8d6, roughness: 0.88, metalness: 0.02 });
+  // --- muros de contencion: del fondo de la fosa hasta el resalte ---
+  const muroH = prof + borde;
   const muros = [
-    { w: half*2 + wallT*2, d: wallT, x: 0, z: -half },
-    { w: half*2 + wallT*2, d: wallT, x: 0, z:  half },
+    { w: half*2 + wallT*2, d: wallT, x: 0,     z: -half },
+    { w: half*2 + wallT*2, d: wallT, x: 0,     z:  half },
     { w: wallT, d: half*2, x: -half, z: 0 },
     { w: wallT, d: half*2, x:  half, z: 0 },
   ];
   muros.forEach(m => {
-    const wall = new THREE.Mesh(new THREE.BoxGeometry(m.w, wallH, m.d), wallMat);
-    wall.position.set(m.x, wallH/2, m.z);
+    const wall = new THREE.Mesh(new THREE.BoxGeometry(m.w, muroH, m.d), concreto);
+    wall.position.set(m.x, -prof + muroH/2, m.z);
     wall.castShadow = true; wall.receiveShadow = true;
     group.add(wall);
-    // remate superior del muro
-    const cap = new THREE.Mesh(new THREE.BoxGeometry(m.w + 0.04, 0.05, m.d + 0.04), capMat);
-    cap.position.set(m.x, wallH + 0.02, m.z);
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(m.w + 0.05, 0.05, m.d + 0.05), capMat);
+    cap.position.set(m.x, borde + 0.02, m.z);
     cap.castShadow = true;
     group.add(cap);
   });
 
-  // escalones de acceso sobre el muro frontal
-  const stepMat = new THREE.MeshStandardMaterial({ color: 0xd0d2d0, roughness: 0.9 });
-  [0, 1, 2].forEach(i => {
-    const step = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.06, 0.22), stepMat);
-    step.position.set(radius*0.5, 0.16 + i*0.2, half + 0.16 + i*0.12);
-    step.castShadow = true; step.receiveShadow = true;
-    group.add(step);
+  // --- pedestal del tanque: se apoya en el fondo de la fosa ---
+  const ped = new THREE.Mesh(
+    new THREE.CylinderGeometry(radius*1.18, radius*1.22, prof, 28),
+    concreto
+  );
+  ped.position.y = -prof/2;
+  ped.castShadow = true; ped.receiveShadow = true;
+  group.add(ped);
+
+  // --- rampa de acceso en concreto (no escalones) ---
+  const rampaAncho = radius * 0.85;
+  const rampaLargo = prof * 4.2;            // pendiente suave, ~1:4
+  const rampa = new THREE.Mesh(
+    new THREE.BoxGeometry(rampaAncho, 0.07, rampaLargo),
+    concreto
+  );
+  rampa.position.set(0, -prof/2 + 0.02, half - rampaLargo/2 + 0.05);
+  rampa.rotation.x = -Math.atan2(prof, rampaLargo);
+  rampa.castShadow = true; rampa.receiveShadow = true;
+  group.add(rampa);
+
+  // bordillos laterales de la rampa
+  [-1, 1].forEach(lado => {
+    const bord = new THREE.Mesh(
+      new THREE.BoxGeometry(0.05, 0.10, rampaLargo),
+      capMat
+    );
+    bord.position.set(lado * (rampaAncho/2 + 0.02), -prof/2 + 0.07, half - rampaLargo/2 + 0.05);
+    bord.rotation.x = -Math.atan2(prof, rampaLargo);
+    bord.castShadow = true;
+    group.add(bord);
   });
 
   return half;
@@ -3300,7 +3331,7 @@ function addSmokePlume(scene, position, colorHex, smokeList, tasa) {
   for (let i = 0; i < n; i++) {
     const mat = new THREE.SpriteMaterial({
       map: tex, color: colorHex, transparent: true, opacity: 0,
-      depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false,
+      depthWrite: false, blending: THREE.NormalBlending, toneMapped: false,
       rotation: Math.random() * Math.PI * 2
     });
     const sprite = new THREE.Sprite(mat);
@@ -3319,7 +3350,7 @@ function addSmokePlume(scene, position, colorHex, smokeList, tasa) {
       altura: 1.15 + Math.random() * 0.7 + intensidad * 0.5,
       tamIni: 0.10 + Math.random() * 0.06,
       tamFin: 0.55 + Math.random() * 0.45 + intensidad * 0.3,
-      opMax: 0.42 + intensidad * 0.3,
+      opMax: 0.52 + intensidad * 0.30,
       intensidad
     });
   }
@@ -3407,7 +3438,7 @@ function makeAreaLabelSprite(text, colorHex) {
 function createFixture(tipoPunto, tierHex) {
   const tipo = (tipoPunto || '').toUpperCase();
   const fixMat = new THREE.MeshStandardMaterial({ color: 0x8a8f96, roughness: 0.55, metalness: 0.55 });
-  const glowMat = new THREE.MeshStandardMaterial({ color: tierHex, emissive: tierHex, emissiveIntensity: 2.1, roughness: 0.25, toneMapped: false });
+  const glowMat = new THREE.MeshStandardMaterial({ color: tierHex, emissive: tierHex, emissiveIntensity: 3.0, roughness: 0.25, toneMapped: false });
   const g = new THREE.Group();
 
   if (tipo.includes('BRIDA')) {
@@ -3846,7 +3877,7 @@ function buildTankMap3D(canvasId, hintId, data, totalId) {
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.0;
+  renderer.toneMappingExposure = 1.12;
   if ('outputColorSpace' in renderer) renderer.outputColorSpace = THREE.SRGBColorSpace;
   else if ('outputEncoding' in renderer) renderer.outputEncoding = THREE.sRGBEncoding;
 
