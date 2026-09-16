@@ -3246,25 +3246,62 @@ let _smokeTexCache = null;
 function getSmokeTexture() {
   if (_smokeTexCache) return _smokeTexCache;
   const c = document.createElement('canvas');
-  c.width = 128; c.height = 128;
+  c.width = c.height = 256;
   const ctx = c.getContext('2d');
-  const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
-  grad.addColorStop(0, 'rgba(255,255,255,0.9)');
-  grad.addColorStop(0.4, 'rgba(255,255,255,0.45)');
-  grad.addColorStop(1, 'rgba(255,255,255,0)');
+
+  // núcleo difuso
+  const grad = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+  grad.addColorStop(0,    'rgba(255,255,255,0.95)');
+  grad.addColorStop(0.35, 'rgba(255,255,255,0.50)');
+  grad.addColorStop(0.7,  'rgba(255,255,255,0.16)');
+  grad.addColorStop(1,    'rgba(255,255,255,0)');
   ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, 128, 128);
+  ctx.fillRect(0, 0, 256, 256);
+
+  // grumos internos: el gas no es una mancha uniforme
+  ctx.globalCompositeOperation = 'lighter';
+  for (let k = 0; k < 26; k++) {
+    const a = Math.random() * Math.PI * 2;
+    const d = Math.random() * 78;
+    const x = 128 + Math.cos(a) * d, y = 128 + Math.sin(a) * d;
+    const r = 16 + Math.random() * 42;
+    const g2 = ctx.createRadialGradient(x, y, 0, x, y, r);
+    const op = 0.05 + Math.random() * 0.13;
+    g2.addColorStop(0, `rgba(255,255,255,${op})`);
+    g2.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g2;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
+  }
+  // mordidas que rompen el contorno circular
+  ctx.globalCompositeOperation = 'destination-out';
+  for (let k = 0; k < 12; k++) {
+    const a = Math.random() * Math.PI * 2;
+    const d = 70 + Math.random() * 50;
+    const x = 128 + Math.cos(a) * d, y = 128 + Math.sin(a) * d;
+    const r = 18 + Math.random() * 34;
+    const g3 = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g3.addColorStop(0, 'rgba(0,0,0,0.55)');
+    g3.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g3;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
+  }
+  ctx.globalCompositeOperation = 'source-over';
+
   _smokeTexCache = new THREE.CanvasTexture(c);
   return _smokeTexCache;
 }
 
-function addSmokePlume(scene, position, colorHex, smokeList) {
+function addSmokePlume(scene, position, colorHex, smokeList, tasa) {
   const tex = getSmokeTexture();
-  const n = 9;
+  // la intensidad de la fuga define cuántas partículas y con qué fuerza salen
+  const intensidad = Math.min(1, Math.log10((tasa || 100) + 1) / 4.2);
+  const n = Math.round(10 + intensidad * 8);
+
   for (let i = 0; i < n; i++) {
     const mat = new THREE.SpriteMaterial({
       map: tex, color: colorHex, transparent: true, opacity: 0,
-      depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false
+      depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false,
+      rotation: Math.random() * Math.PI * 2
     });
     const sprite = new THREE.Sprite(mat);
     sprite.position.copy(position);
@@ -3272,22 +3309,53 @@ function addSmokePlume(scene, position, colorHex, smokeList) {
     scene.add(sprite);
     smokeList.push({
       sprite, base: position.clone(),
-      phase: i / n, speed: 0.16 + Math.random()*0.05,
-      drift: (Math.random()-0.5) * 0.5
+      phase: i / n,
+      speed: (0.13 + intensidad * 0.12) * (0.85 + Math.random() * 0.3),
+      // dirección propia de cada partícula: abre el penacho en cono
+      ang: Math.random() * Math.PI * 2,
+      radio: 0.02 + Math.random() * 0.07,
+      giro: (Math.random() - 0.5) * 1.6,
+      turbul: 0.5 + Math.random(),
+      altura: 1.15 + Math.random() * 0.7 + intensidad * 0.5,
+      tamIni: 0.10 + Math.random() * 0.06,
+      tamFin: 0.55 + Math.random() * 0.45 + intensidad * 0.3,
+      opMax: 0.42 + intensidad * 0.3,
+      intensidad
     });
   }
 }
 
+// Viento común a toda la escena: inclina y ondula los penachos
+const VIENTO = { dir: 0.7, fuerza: 0.30 };
+
 function updateSmoke(smokeList, t) {
+  // ráfagas lentas, para que el viento no se sienta constante
+  const rafaga = VIENTO.fuerza * (0.75 + Math.sin(t * 0.21) * 0.25 + Math.sin(t * 0.53) * 0.12);
+  const vx = Math.cos(VIENTO.dir) * rafaga;
+  const vz = Math.sin(VIENTO.dir) * rafaga;
+
   for (const p of smokeList) {
-    const k = p.escala || 1;                 // crece segun el periodo elegido
-    let local = (t * p.speed + p.phase) % 1;
-    p.sprite.position.x = p.base.x + Math.sin(local * Math.PI * 2) * 0.06 + p.drift * local;
-    p.sprite.position.y = p.base.y + local * 1.4 * k;
-    p.sprite.position.z = p.base.z + Math.cos(local * Math.PI * 1.7) * 0.06;
-    const fade = Math.sin(local * Math.PI);
-    p.sprite.material.opacity = fade * 0.82;
-    p.sprite.scale.setScalar((0.18 + local * 0.55) * k);
+    const k = p.escala || 1;
+    const local = (t * p.speed + p.phase) % 1;
+
+    // el penacho se abre a medida que sube (cono), no en columna recta
+    const apertura = p.radio + local * (0.30 + p.intensidad * 0.22);
+    const serpenteo = Math.sin(local * Math.PI * 2.4 + p.phase * 6.3) * 0.05 * p.turbul;
+
+    // el arrastre del viento crece con la altura: la base se mantiene en el punto
+    const arrastre = local * local * 1.5;
+
+    p.sprite.position.x = p.base.x + Math.cos(p.ang) * apertura + serpenteo + vx * arrastre;
+    p.sprite.position.z = p.base.z + Math.sin(p.ang) * apertura + serpenteo + vz * arrastre;
+    p.sprite.position.y = p.base.y + local * p.altura * k;
+
+    // entra rápido y se disipa lento, como el gas real
+    const fade = Math.min(1, local * 7) * Math.pow(1 - local, 1.45);
+    p.sprite.material.opacity = fade * p.opMax;
+    p.sprite.material.rotation += p.giro * 0.006;
+
+    const tam = (p.tamIni + local * (p.tamFin - p.tamIni)) * k;
+    p.sprite.scale.set(tam, tam, 1);
   }
 }
 
@@ -3441,6 +3509,59 @@ function getTankSkinWithLogo(nombreTanque) {
     gr.addColorStop(0, rust ? 'rgba(150,96,52,0.18)' : 'rgba(120,128,136,0.14)');
     gr.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = gr;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
+  }
+
+  // --- semilla por tanque: evita que todos se vean clonados ---
+  let semilla = 0;
+  for (const ch of clave) semilla = (semilla * 31 + ch.charCodeAt(0)) % 9973;
+  const azar = () => { semilla = (semilla * 1103515245 + 12345) % 2147483648; return semilla / 2147483648; };
+
+  // --- soldaduras horizontales con óxido acumulado en el cordón ---
+  [0.30, 0.58, 0.82].forEach(fy => {
+    const y = 512 * fy;
+    ctx.fillStyle = 'rgba(120,126,132,0.30)';
+    ctx.fillRect(0, y, 2048, 2.5);
+    for (let x = 0; x < 2048; x += 5 + azar()*16) {
+      if (azar() < 0.42) {
+        const w = 8 + azar()*30, h = 2 + azar()*4;
+        ctx.fillStyle = `rgba(${(126+azar()*42)|0},${(80+azar()*26)|0},${(44+azar()*20)|0},${0.10+azar()*0.16})`;
+        ctx.fillRect(x, y - 1, w, h);
+      }
+    }
+  });
+
+  // --- escurrimientos verticales: agua y óxido bajando desde las soldaduras ---
+  for (let i = 0; i < 46; i++) {
+    const x = azar()*2048;
+    const yIni = 512 * [0.30, 0.58, 0.82][(azar()*3)|0];
+    const largo = 26 + azar()*130;
+    const ancho = 1 + azar()*3.5;
+    const oxido = azar() < 0.55;
+    const g = ctx.createLinearGradient(x, yIni, x, yIni + largo);
+    const col = oxido ? '138,88,48' : '120,128,136';
+    g.addColorStop(0,   `rgba(${col},${0.16 + azar()*0.14})`);
+    g.addColorStop(0.6, `rgba(${col},${0.07 + azar()*0.07})`);
+    g.addColorStop(1,   `rgba(${col},0)`);
+    ctx.fillStyle = g;
+    ctx.fillRect(x, yIni, ancho, largo);
+  }
+
+  // --- suciedad acumulada en la base del tanque ---
+  const base = ctx.createLinearGradient(0, 512, 0, 512 - 110);
+  base.addColorStop(0, 'rgba(92,86,74,0.30)');
+  base.addColorStop(1, 'rgba(92,86,74,0)');
+  ctx.fillStyle = base;
+  ctx.fillRect(0, 512 - 110, 2048, 110);
+
+  // --- manchas de óxido propias de cada tanque ---
+  for (let i = 0; i < 16; i++) {
+    const x = azar()*2048, y = 80 + azar()*400, r = 14 + azar()*54;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0,   `rgba(${(140+azar()*36)|0},${(88+azar()*24)|0},${(48+azar()*18)|0},${0.10+azar()*0.12})`);
+    g.addColorStop(0.7, `rgba(150,100,56,${0.03+azar()*0.04})`);
+    g.addColorStop(1,   'rgba(150,100,56,0)');
+    ctx.fillStyle = g;
     ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
   }
   const tex = new THREE.CanvasTexture(c);
@@ -3687,7 +3808,7 @@ function buildTank3D(scene, x, z, name, points, clickable, smokeList, tanques) {
     group.add(fixture);
     clickable.push(fixture);
 
-    addSmokePlume(scene, new THREE.Vector3(worldX, worldY, worldZ), TIER_HEX[pt.tier], smokeList);
+    addSmokePlume(scene, new THREE.Vector3(worldX, worldY, worldZ), TIER_HEX[pt.tier], smokeList, pt.tasa);
   });
 
   scene.add(group);
@@ -3701,8 +3822,24 @@ function buildTankMap3D(canvasId, hintId, data, totalId) {
   const scene = new THREE.Scene();
   // cielo propio del visor: no depende del tema claro/oscuro de la pagina
   const SKY_HEX = 0x8fb6d6;
-  scene.background = new THREE.Color(SKY_HEX);
-  scene.fog = new THREE.Fog(SKY_HEX, 90, 320);
+  // cielo con degradado: mas claro en el horizonte, mas profundo en el cenit
+  (function () {
+    const sc = document.createElement('canvas');
+    sc.width = 8; sc.height = 256;
+    const g = sc.getContext('2d');
+    const gr = g.createLinearGradient(0, 0, 0, 256);
+    gr.addColorStop(0.00, '#6f9ec6');
+    gr.addColorStop(0.42, '#93bcdb');
+    gr.addColorStop(0.72, '#bcd4e6');
+    gr.addColorStop(1.00, '#d8e4ec');
+    g.fillStyle = gr; g.fillRect(0, 0, 8, 256);
+    const t = new THREE.CanvasTexture(sc);
+    if ('colorSpace' in t) t.colorSpace = THREE.SRGBColorSpace;
+    else if ('encoding' in t) t.encoding = THREE.sRGBEncoding;
+    t.mapping = THREE.EquirectangularReflectionMapping;
+    scene.background = t;
+  })();
+  scene.fog = new THREE.Fog(0xbcd4e6, 90, 320);
   const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 200);
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -3732,19 +3869,30 @@ function buildTankMap3D(canvasId, hintId, data, totalId) {
     envTex.dispose();
   } catch (e) {}
 
-  scene.add(new THREE.HemisphereLight(0xc9dcf5, 0x272b32, 0.75));
-  const keyLight = new THREE.DirectionalLight(0xfff2e0, 2.1);
+  // luz de cielo: azul arriba, rebote cálido del terreno abajo
+  scene.add(new THREE.HemisphereLight(0xbcd8f5, 0x4a5236, 0.85));
+
+  // sol principal, con sombras de mayor resolución para los detalles
+  const keyLight = new THREE.DirectionalLight(0xfff0d8, 2.25);
   keyLight.castShadow = true;
-  keyLight.shadow.mapSize.set(1024, 1024);
+  keyLight.shadow.mapSize.set(2048, 2048);
   keyLight.shadow.camera.near = 1;
   keyLight.shadow.camera.far = 90;
-  keyLight.shadow.bias = -0.0012;
-  keyLight.shadow.normalBias = 0.03;
+  keyLight.shadow.bias = -0.0009;
+  keyLight.shadow.normalBias = 0.022;
+  keyLight.shadow.radius = 1.6;
   scene.add(keyLight);
   scene.add(keyLight.target);
-  const rimLight = new THREE.DirectionalLight(0x9fc4ff, 0.5);
+
+  // contraluz frío: despega los tanques del fondo
+  const rimLight = new THREE.DirectionalLight(0x9fc4ff, 0.55);
   rimLight.position.set(-9, 6, -8);
   scene.add(rimLight);
+
+  // relleno tenue desde abajo: evita que las sombras queden muertas
+  const fillLight = new THREE.DirectionalLight(0xdce8d8, 0.22);
+  fillLight.position.set(5, -3, 7);
+  scene.add(fillLight);
 
   // terreno verde alrededor de la planta (como en la vista aerea real)
   const tC = document.createElement('canvas');
