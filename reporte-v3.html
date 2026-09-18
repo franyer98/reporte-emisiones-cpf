@@ -1913,6 +1913,32 @@ THREE.OrbitControls = OrbitControls;
   }
 
   /* ---------- PESTAÑA EN DESARROLLO ---------- */
+  .dev-escena { max-width: 340px; margin: 0 auto 20px; }
+  .dev-escena svg { width: 100%; height: auto; display: block; }
+  .cs-haz { transform-origin: 40px 120px; animation: csBarrer 4.6s ease-in-out infinite; }
+  @keyframes csBarrer {
+    0%, 100% { transform: rotate(-7deg); opacity: .5; }
+    50%      { transform: rotate(7deg);  opacity: .9; }
+  }
+  .cs-scan { animation: csEscanear 4.6s ease-in-out infinite; }
+  @keyframes csEscanear {
+    0%, 100% { transform: translateY(0);    opacity: .25; }
+    50%      { transform: translateY(62px); opacity: .85; }
+  }
+  .cs-fuga { animation: csSubir 3.2s ease-out infinite; }
+  @keyframes csSubir {
+    0%   { opacity: 0; transform: translateY(6px) scale(.7); }
+    30%  { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-16px) scale(1.25); }
+  }
+  .cs-led { animation: csLed 1.4s ease-in-out infinite; }
+  @keyframes csLed { 0%,100% { opacity: 1; } 50% { opacity: .25; } }
+  @media (prefers-reduced-motion: reduce) {
+    .cs-haz, .cs-scan, .cs-fuga, .cs-led, .dev-dot { animation: none; }
+  }
+  @media (max-width: 620px) { .dev-escena { max-width: 250px; } }
+
+
   .tab.pendiente { opacity: .55; }
   .tab.pendiente:hover { opacity: .8; }
   .tab.pendiente.active { opacity: 1; }
@@ -2559,6 +2585,53 @@ THREE.OrbitControls = OrbitControls;
   <section id="canosur">
     <div class="wrap">
       <div class="dev-card">
+        <div class="dev-escena">
+          <svg viewBox="0 0 320 180" role="img" aria-label="Inspección termográfica en curso">
+            <defs>
+              <linearGradient id="csTanque" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0" stop-color="#8d949c"/><stop offset="0.35" stop-color="#e2e6ea"/>
+                <stop offset="0.75" stop-color="#aab1b8"/><stop offset="1" stop-color="#767d85"/>
+              </linearGradient>
+              <linearGradient id="csHaz" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#2dd4ee" stop-opacity="0.42"/>
+                <stop offset="1" stop-color="#2dd4ee" stop-opacity="0"/>
+              </linearGradient>
+              <radialGradient id="csFuga">
+                <stop offset="0" stop-color="#ffc400" stop-opacity="0.85"/>
+                <stop offset="1" stop-color="#ffc400" stop-opacity="0"/>
+              </radialGradient>
+              <clipPath id="csRecorte"><rect x="0" y="0" width="320" height="150"/></clipPath>
+            </defs>
+            <ellipse cx="160" cy="150" rx="150" ry="13" fill="#3f4a38" opacity=".45"/>
+            <path d="M92 150 L104 132 L216 132 L228 150 Z" fill="#6f7670" opacity=".55"/>
+            <path d="M104 132 L216 132 L216 136 L104 136 Z" fill="#9aa19a" opacity=".7"/>
+            <g clip-path="url(#csRecorte)">
+              <rect x="112" y="62" width="96" height="74" rx="2" fill="url(#csTanque)"/>
+              <ellipse cx="160" cy="62" rx="48" ry="11" fill="#eef1f4"/>
+              <ellipse cx="160" cy="62" rx="48" ry="11" fill="none" stroke="#b9c0c6" stroke-width="1"/>
+              <line x1="112" y1="88" x2="208" y2="88" stroke="#8f979e" stroke-width="1" opacity=".55"/>
+              <line x1="112" y1="112" x2="208" y2="112" stroke="#8f979e" stroke-width="1" opacity=".55"/>
+              <path d="M118 132 Q140 120 160 116 Q182 112 200 96" fill="none" stroke="#e8b923" stroke-width="2.2" opacity=".9"/>
+              <path d="M118 126 Q140 114 160 110 Q182 106 200 90" fill="none" stroke="#e8b923" stroke-width="1.1" opacity=".55"/>
+            </g>
+            <ellipse cx="143" cy="59" rx="7" ry="3" fill="#7d858c"/>
+            <ellipse cx="176" cy="60" rx="6" ry="2.6" fill="#7d858c"/>
+            <g class="cs-fuga">
+              <circle cx="143" cy="52" r="7" fill="url(#csFuga)"/>
+              <circle cx="145" cy="40" r="9" fill="url(#csFuga)" opacity=".7"/>
+              <circle cx="141" cy="28" r="11" fill="url(#csFuga)" opacity=".45"/>
+            </g>
+            <g class="cs-haz"><path d="M40 120 L118 52 L118 140 Z" fill="url(#csHaz)"/></g>
+            <g>
+              <rect x="22" y="110" width="30" height="17" rx="3" fill="#2a3138"/>
+              <rect x="50" y="115" width="9" height="8" rx="1.5" fill="#1d2329"/>
+              <circle cx="30" cy="118" r="3.4" fill="#2dd4ee" class="cs-led"/>
+              <path d="M37 127 L28 152 M37 127 L46 152 M37 127 L37 152" stroke="#2a3138" stroke-width="2.6" stroke-linecap="round"/>
+            </g>
+            <line class="cs-scan" x1="112" y1="70" x2="208" y2="70" stroke="#2dd4ee" stroke-width="1.6" opacity=".8"/>
+          </svg>
+        </div>
+
         <div class="dev-badge">
           <span class="dev-dot"></span> INSPECCIÓN EN CURSO
         </div>
