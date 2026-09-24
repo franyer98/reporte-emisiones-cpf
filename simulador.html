@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>Simulador GEI · de la cámara a ton CO₂eq</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0d10; --surface:#141a20; --surface2:#1c242c; --border:#28323c;
+    --text:#eef2f5; --dim:#9aa7b4; --faint:#65717e;
+    --verde:#00b828; --ambar:#ffc400; --cool:#2dd4ee;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;
+       padding:22px 16px 60px;line-height:1.55}
+  .wrap{max-width:780px;margin:0 auto}
+  .kicker{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.16em;color:var(--verde);font-weight:700}
+  h1{font-family:'Space Grotesk',sans-serif;font-size:clamp(23px,5vw,32px);margin:6px 0 4px;letter-spacing:-.02em}
+  .sub{color:var(--dim);font-size:14px;margin-bottom:24px}
+
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:14px}
+  .lbl{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;color:var(--faint);margin-bottom:11px}
+  .paso{display:inline-flex;width:21px;height:21px;border-radius:50%;background:var(--verde);color:#04140a;
+    align-items:center;justify-content:center;font-weight:700;font-size:11.5px;margin-right:9px;
+    font-family:'JetBrains Mono',monospace}
+
+  /* --- entrada de la camara --- */
+  .campo{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  input[type=number]{flex:1;min-width:170px;background:var(--surface2);border:2px solid var(--border);
+    border-radius:10px;padding:15px 16px;color:var(--text);font-family:'JetBrains Mono',monospace;
+    font-size:25px;font-weight:700;outline:none}
+  input[type=number]:focus{border-color:var(--cool)}
+  .unidad{font-family:'JetBrains Mono',monospace;font-size:16px;color:var(--dim)}
+  .chips{display:flex;gap:7px;flex-wrap:wrap;margin-top:13px}
+  .chips button{background:transparent;border:1px solid var(--border);color:var(--dim);border-radius:99px;
+    padding:7px 13px;font-family:'JetBrains Mono',monospace;font-size:11px;cursor:pointer;transition:.15s}
+  .chips button:hover{border-color:var(--cool);color:var(--text)}
+
+  /* --- seleccion de cromatografia --- */
+  .croms{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:10px}
+  .crom{background:var(--bg);border:2px solid var(--border);border-radius:11px;padding:13px 15px;
+    cursor:pointer;transition:.15s;text-align:left}
+  .crom:hover{border-color:var(--faint)}
+  .crom.on{border-color:var(--cool);background:rgba(45,212,238,.07)}
+  .crom-t{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;margin-bottom:2px}
+  .crom-o{font-size:11px;color:var(--faint);margin-bottom:8px;line-height:1.4}
+  .crom-d{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--dim)}
+  .crom.on .crom-d{color:var(--cool)}
+
+  /* --- resultado --- */
+  .final{background:linear-gradient(135deg,rgba(0,184,40,.15),rgba(45,212,238,.09));
+    border:1px solid var(--verde);border-radius:14px;padding:24px;text-align:center}
+  .final .et{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.14em;color:var(--dim)}
+  .final .val{font-family:'Space Grotesk',sans-serif;font-size:clamp(32px,9vw,50px);font-weight:700;
+    color:var(--verde);line-height:1.1;margin:7px 0}
+  .final .eq{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--dim)}
+
+  .secund{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:11px;margin-top:14px}
+  .s{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  .s-l{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.1em;color:var(--faint)}
+  .s-v{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:19px;color:var(--cool);margin:3px 0}
+  .s-u{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--faint)}
+
+  /* --- detalle --- */
+  details{margin-top:14px}
+  summary{cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--faint);
+    padding:9px 0;list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:'▸ ';color:var(--cool)}
+  details[open] summary:before{content:'▾ '}
+  table{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
+  td{padding:8px 9px;border-bottom:1px solid var(--border);font-family:'JetBrains Mono',monospace}
+  td:last-child{text-align:right;color:var(--text);font-weight:700}
+  td:first-child{color:var(--dim)}
+  tr:last-child td{border-bottom:none;color:var(--verde)}
+
+  .gwp{display:flex;gap:7px;margin-top:4px}
+  .gwp button{flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--dim);
+    border-radius:9px;padding:10px;font-family:'JetBrains Mono',monospace;font-size:11.5px;cursor:pointer}
+  .gwp button.on{background:var(--ambar);color:#241a00;border-color:var(--ambar);font-weight:700}
+
+  .nota{background:rgba(255,196,0,.08);border-left:3px solid var(--ambar);border-radius:0 9px 9px 0;
+    padding:11px 14px;font-size:12.5px;color:var(--dim);margin-top:14px}
+  .nota b{color:var(--ambar)}
+  .pie{text-align:center;color:var(--faint);font-size:11px;margin-top:26px;font-family:'JetBrains Mono',monospace}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="kicker">EMISIONES FUGITIVAS · FICHA GOP-F-006</div>
+  <h1>De la lectura de la cámara a ton CO₂eq</h1>
+  <div class="sub">Escribe lo que midió la cámara, elige la cromatografía del área y obtén la emisión anual.</div>
+
+  <div class="panel">
+    <div class="lbl"><span class="paso">1</span>LECTURA DE LA CÁMARA</div>
+    <div class="campo">
+      <input type="number" id="tasa" value="13000" min="0" step="1">
+      <span class="unidad">g/Hr</span>
+    </div>
+    <div class="chips" id="chips"></div>
+  </div>
+
+  <div class="panel">
+    <div class="lbl"><span class="paso">2</span>CROMATOGRAFÍA A UTILIZAR</div>
+    <div class="croms" id="croms"></div>
+    <div class="lbl" style="margin:16px 0 8px">POTENCIAL DE CALENTAMIENTO (GWP)</div>
+    <div class="gwp">
+      <button data-g="25">25 · IPCC AR4</button>
+      <button data-g="28" class="on">28 · IPCC AR5</button>
+    </div>
+  </div>
+
+  <div class="final">
+    <div class="et" id="finEt">GEI · TON CO₂eq / AÑO</div>
+    <div class="val" id="finVal">—</div>
+    <div class="eq" id="finEq"></div>
+  </div>
+
+  <div class="secund">
+    <div class="s"><div class="s-l">GAS FUGADO</div><div class="s-v" id="sGas">—</div><div class="s-u">ton/año</div></div>
+    <div class="s"><div class="s-l">METANO</div><div class="s-v" id="sCH4">—</div><div class="s-u">ton CH₄/año</div></div>
+    <div class="s"><div class="s-l">CO₂ PROPIO</div><div class="s-v" id="sCO2">—</div><div class="s-u">ton CO₂/año</div></div>
+  </div>
+
+  <div class="panel" style="margin-top:14px">
+    <details>
+      <summary>Ver el detalle del cálculo</summary>
+      <table id="detalle"></table>
+    </details>
+  </div>
+
+  <div class="nota">
+    <b>Supuesto:</b> la proyección asume que la fuga se mantiene al mismo caudal durante todo el año,
+    sin intervención. Es el mismo criterio de la ficha oficial al llevar la lectura a Ton CH₄/año.
+  </div>
+
+  <div class="pie">Cadena de cálculo validada contra la ficha GOP-F-006</div>
+</div>
+
+<script>const CROMS = {"CPF-1|PROCESOS": {"mol": [0.02, 0.0, 21.03, 5.88, 73.04, 0.03, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "origen": "TK-901-C-PROCESOS"}, "CPF-1|SKIM TANK": {"mol": [1.88, 0.0, 79.54, 2.06, 15.79, 0.34, 0.15, 0.0, 0.12, 0.12, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "origen": "TK-906-B -SKIM TANK"}, "CPF-2|ALMACENAMIENTO": {"mol": [0.445, 0.0, 49.365, 6.225, 43.635, 0.06, 0.03, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "origen": "300 TK- 0103 ALMACENAMIENTO"}, "CPF-2|FWKOS": {"mol": [0.02, 0.0, 18.7, 5.47, 75.78, 0.63, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "origen": "300-TK-0301 FWKOS"}};</script>
+<script>
+const HORAS_ANO = 8760, G_TON = 1e6;
+const COMPUESTOS = ['H2','O2','N2','CO2','C1','C2','C3','iC4','nC4','iC5','nC5','C6','C7','C8','C9','C10','C11','C12'];
+const PESO_MOL = [2.016,31.9988,28.0134,44.0098,16.04276,30.06964,44.09652,58.1234,58.1234,
+                  72.15028,72.15028,86.17716,100.20404,114.23092,128.2578,142.28468,156.31156,170.33844];
+const iCO2 = 3, iCH4 = 4;
+
+let GWP = 28, SELECCION = Object.keys(CROMS)[0];
+
+const EJEMPLOS = [
+  ['TK-901B · manhole', 13000], ['TK-901C · manhole', 10000],
+  ['TK-901A · manhole', 7600],  ['CPF-1 completo', 45959], ['CPF-2 completo', 12100],
+];
+
+function composicion(mol) {
+  const Y  = mol.reduce((s,m,i) => s + m*PESO_MOL[i], 0) / 100;
+  const Z  = mol[iCH4]*PESO_MOL[iCH4] / Y;
+  const AA = mol[iCO2]*PESO_MOL[iCO2] / Y;
+  const AB = mol.slice(iCH4).reduce((s,m,i) => s + m*PESO_MOL[iCH4+i], 0) / Y;
+  return { Y, Z, AA, AB, AC: Z*100/AB };
+}
+
+const n = (v,d=0) => v.toLocaleString('es-CO', {minimumFractionDigits:d, maximumFractionDigits:d});
+
+function pintarChips() {
+  document.getElementById('chips').innerHTML =
+    EJEMPLOS.map(([t,v]) => `<button data-v="${v}">${t}</button>`).join('');
+  document.querySelectorAll('#chips button').forEach(b =>
+    b.onclick = () => { document.getElementById('tasa').value = b.dataset.v; calcular(); });
+}
+
+function pintarCroms() {
+  document.getElementById('croms').innerHTML = Object.entries(CROMS).map(([k,v]) => {
+    const c = composicion(v.mol);
+    const [fac, area] = k.split('|');
+    return `<button class="crom${k===SELECCION?' on':''}" data-k="${k}">
+      <div class="crom-t">${area}</div>
+      <div class="crom-o">${fac} · ${v.origen}</div>
+      <div class="crom-d">CH₄ ${c.Z.toFixed(2)}%m · CO₂ ${c.AA.toFixed(2)}%m</div>
+    </button>`;
+  }).join('');
+  document.querySelectorAll('.crom').forEach(b =>
+    b.onclick = () => { SELECCION = b.dataset.k; pintarCroms(); calcular(); });
+}
+
+function calcular() {
+  const F = parseFloat(document.getElementById('tasa').value) || 0;
+  const cr = CROMS[SELECCION];
+  const c  = composicion(cr.mol);
+
+  // cadena de la ficha: AE, AF, AG, AH, AI, AJ
+  const AE = F * c.AC / 100;
+  const AF = F / c.AB * 100 * c.AA / 100;
+  const AG = AE * 24 / G_TON;
+  const AH = AG * 365;
+  const AI = AF * 24 * 365 / G_TON;
+  const AJ = AI + AH * GWP;
+  const gas = F * HORAS_ANO / G_TON;
+
+  document.getElementById('finEt').textContent = `GEI · TON CO₂eq / AÑO  (GWP ${GWP})`;
+  document.getElementById('finVal').textContent = n(AJ, 2);
+  document.getElementById('finEq').textContent =
+    `${n(AH*GWP,1)} del metano  +  ${n(AI,1)} del CO₂ propio`;
+
+  document.getElementById('sGas').textContent = n(gas, 2);
+  document.getElementById('sCH4').textContent = n(AH, 2);
+  document.getElementById('sCO2').textContent = n(AI, 2);
+
+  document.getElementById('detalle').innerHTML = [
+    ['Lectura de la cámara',            `${n(F)} g/Hr`],
+    ['Peso molecular del gas (Y)',      `${c.Y.toFixed(4)} g/mol`],
+    ['% másico CH₄ (Z)',                `${c.Z.toFixed(4)} %`],
+    ['% másico CO₂ (AA)',               `${c.AA.toFixed(4)} %`],
+    ['% másico orgánicos (AB)',         `${c.AB.toFixed(4)} %`],
+    ['% CH₄ dentro de orgánicos (AC)',  `${c.AC.toFixed(4)} %`],
+    ['Caudal de metano (AE)',           `${n(AE,2)} g/Hr`],
+    ['Caudal de CO₂ (AF)',              `${n(AF,2)} g/Hr`],
+    ['Ton CH₄/día (AG)',                AG.toFixed(7)],
+    ['Ton CH₄/año (AH)',                n(AH,6)],
+    ['Ton CO₂/año (AI)',                n(AI,6)],
+    [`GEI = AI + (AH × ${GWP})`,        `${n(AJ,2)} ton CO₂eq/año`],
+  ].map(([a,b]) => `<tr><td>${a}</td><td>${b}</td></tr>`).join('');
+}
+
+document.getElementById('tasa').addEventListener('input', calcular);
+document.querySelectorAll('.gwp button').forEach(b =>
+  b.onclick = () => {
+    GWP = parseInt(b.dataset.g, 10);
+    document.querySelectorAll('.gwp button').forEach(x => x.classList.toggle('on', x === b));
+    calcular();
+  });
+
+pintarChips(); pintarCroms(); calcular();
+</script>
+</body>
+</html>
