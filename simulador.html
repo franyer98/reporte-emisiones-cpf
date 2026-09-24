@@ -34,10 +34,6 @@
     font-size:25px;font-weight:700;outline:none}
   input[type=number]:focus{border-color:var(--cool)}
   .unidad{font-family:'JetBrains Mono',monospace;font-size:16px;color:var(--dim)}
-  .chips{display:flex;gap:7px;flex-wrap:wrap;margin-top:13px}
-  .chips button{background:transparent;border:1px solid var(--border);color:var(--dim);border-radius:99px;
-    padding:7px 13px;font-family:'JetBrains Mono',monospace;font-size:11px;cursor:pointer;transition:.15s}
-  .chips button:hover{border-color:var(--cool);color:var(--text)}
 
   /* --- seleccion de cromatografia --- */
   .croms{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:10px}
@@ -98,10 +94,9 @@
   <div class="panel">
     <div class="lbl"><span class="paso">1</span>LECTURA DE LA CÁMARA</div>
     <div class="campo">
-      <input type="number" id="tasa" value="13000" min="0" step="1">
+      <input type="number" id="tasa" placeholder="0" min="0" step="1">
       <span class="unidad">g/Hr</span>
     </div>
-    <div class="chips" id="chips"></div>
   </div>
 
   <div class="panel">
@@ -151,12 +146,6 @@ const iCO2 = 3, iCH4 = 4;
 
 let GWP = 28, SELECCION = Object.keys(CROMS)[0];
 
-// valores de referencia, sin identificar equipos ni facilidades
-const EJEMPLOS = [
-  ['13.000', 13000], ['7.600', 7600], ['1.100', 1100],
-  ['660', 660], ['13', 13],
-];
-
 function composicion(mol) {
   const Y  = mol.reduce((s,m,i) => s + m*PESO_MOL[i], 0) / 100;
   const Z  = mol[iCH4]*PESO_MOL[iCH4] / Y;
@@ -166,13 +155,6 @@ function composicion(mol) {
 }
 
 const n = (v,d=0) => v.toLocaleString('es-CO', {minimumFractionDigits:d, maximumFractionDigits:d});
-
-function pintarChips() {
-  document.getElementById('chips').innerHTML =
-    EJEMPLOS.map(([t,v]) => `<button data-v="${v}">${t}</button>`).join('');
-  document.querySelectorAll('#chips button').forEach(b =>
-    b.onclick = () => { document.getElementById('tasa').value = b.dataset.v; calcular(); });
-}
 
 function pintarCroms() {
   document.getElementById('croms').innerHTML = Object.entries(CROMS).map(([k,v]) => {
@@ -235,7 +217,7 @@ document.querySelectorAll('.gwp button').forEach(b =>
     calcular();
   });
 
-pintarChips(); pintarCroms(); calcular();
+pintarCroms(); calcular();
 </script>
 </body>
 </html>
