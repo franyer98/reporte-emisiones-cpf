@@ -1912,6 +1912,39 @@ THREE.OrbitControls = OrbitControls;
     .p3d-label { display: none; }
   }
 
+  /* ---------- PANEL DE FUENTE DE DATOS ---------- */
+  .bd-capa{position:fixed;inset:0;background:rgba(6,9,12,.72);backdrop-filter:blur(3px);
+    z-index:2000;display:flex;align-items:center;justify-content:center;padding:18px}
+  .bd-caja{background:var(--surface);border:1px solid var(--border);border-radius:16px;
+    padding:24px;max-width:560px;width:100%;max-height:90vh;overflow-y:auto;
+    box-shadow:0 22px 60px rgba(0,0,0,.45)}
+  .bd-top{display:flex;justify-content:space-between;align-items:flex-start;gap:14px}
+  .bd-kick{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.14em;color:var(--verde,#00b828)}
+  .bd-h{font-family:'Space Grotesk',sans-serif;font-size:20px;margin:4px 0 0;letter-spacing:-.01em}
+  .bd-x{background:none;border:none;color:var(--text-faint);font-size:26px;line-height:1;
+    cursor:pointer;padding:0 4px}
+  .bd-x:hover{color:var(--text)}
+  .bd-p{color:var(--text-dim);font-size:13.5px;line-height:1.65;margin:12px 0 15px}
+  .bd-in{width:100%;background:var(--bg);border:2px solid var(--border);border-radius:10px;
+    padding:12px 13px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11.5px;outline:none}
+  .bd-in:focus{border-color:var(--cool)}
+  .bd-btns{display:flex;gap:9px;flex-wrap:wrap;margin-top:13px}
+  .bd-b{background:var(--surface-2);border:1px solid var(--border);color:var(--text);
+    border-radius:9px;padding:11px 17px;font-family:'Inter',sans-serif;font-size:13.5px;
+    font-weight:600;cursor:pointer;transition:.15s}
+  .bd-b:hover{border-color:var(--cool)}
+  .bd-pri{background:#00b828;color:#04140a;border-color:#00b828}
+  .bd-pri:hover{filter:brightness(1.12)}
+  .bd-msg{border-radius:9px;padding:11px 14px;font-size:13px;margin-top:13px;line-height:1.6}
+  .bd-msg b{display:block;margin-bottom:3px}
+  .bd-ok{background:rgba(0,184,40,.10);border-left:3px solid #00b828;color:#7fe39a}
+  .bd-err{background:rgba(232,20,0,.10);border-left:3px solid #e81400;color:#ff9a8a}
+  .bd-espera{background:rgba(45,212,238,.09);border-left:3px solid var(--cool);color:var(--cool)}
+  .bd-pie{margin-top:17px;padding-top:14px;border-top:1px solid var(--border);
+    font-size:11.5px;color:var(--text-faint);line-height:1.65;font-family:'JetBrains Mono',monospace}
+  html[data-theme="light"] .bd-ok{color:#16803c}
+  html[data-theme="light"] .bd-err{color:#b91c1c}
+
   /* ---------- PESTAÑA EN DESARROLLO ---------- */
   .dev-escena { max-width: 340px; margin: 0 auto 20px; }
   .dev-escena svg { width: 100%; height: auto; display: block; }
@@ -2260,6 +2293,11 @@ THREE.OrbitControls = OrbitControls;
 <div class="nav-menu" id="navMenu">
   <div class="wrap">
     <div class="nav-menu-grid">
+      <div class="nav-group" style="grid-column:1/-1">
+        <div class="nav-group-title">DATOS</div>
+        <a href="#" class="nav-link" id="navFuente">Fuente de datos · hoja de cálculo</a>
+      </div>
+
       <div class="nav-group">
         <div class="nav-group-title">CPF-1</div>
         <a href="#" class="nav-link" data-tab="t1" data-target="mapa">Mapa por área</a>
@@ -3210,10 +3248,276 @@ function renderFilters2() {
 }
 function renderGrid2() { renderPrioridad(DATA2, active2, 'prio2', 'prioLead2'); renderTarjetas(DATA2, active2, 'grid2'); }
 
-updateKPIs();   // refresca los indicadores con los datos reales
-renderFilters1(); renderGrid1();
-renderFilters2(); renderGrid2();
-renderComposicion();
+// Vuelve a pintar todo a partir de DATA1/DATA2. Se llama al arrancar y
+// cada vez que llegan datos nuevos desde la hoja de cálculo.
+function refrescarTodo() {
+  applyAggregates();
+  updateKPIs();
+  renderFilters1(); renderGrid1();
+  renderFilters2(); renderGrid2();
+  renderComposicion();
+  if (typeof initCharts === 'function') { try { initCharts(); } catch (e) {} }
+  try { if (map3d1) map3d1.rebuild(DATA1); } catch (e) {}
+  try { if (map3d2) map3d2.rebuild(DATA2); } catch (e) {}
+}
+refrescarTodo();
+
+
+// ============================================================
+//  FUENTE DE DATOS EXTERNA
+//  Lee la hoja de cálculo publicada como CSV y reemplaza los
+//  registros. Si algo falla, el tablero sigue con los datos
+//  incluidos en el archivo, que nunca se pierden.
+// ============================================================
+(function () {
+  const CLAVE_URL   = 'emisiones.fuenteURL';
+  const CLAVE_CACHE = 'emisiones.cache';
+  const CLAVE_FECHA = 'emisiones.fecha';
+
+  // copia intacta de lo que trae el archivo, como respaldo
+  const BASE1 = JSON.parse(JSON.stringify(DATA1));
+  const BASE2 = JSON.parse(JSON.stringify(DATA2));
+
+  // ---------- lectura de CSV (respeta comillas y saltos internos) ----------
+  function leerCSV(texto) {
+    const filas = [];
+    let fila = [], campo = '', comillas = false;
+    for (let i = 0; i < texto.length; i++) {
+      const c = texto[i];
+      if (comillas) {
+        if (c === '"') {
+          if (texto[i + 1] === '"') { campo += '"'; i++; }
+          else comillas = false;
+        } else campo += c;
+      } else if (c === '"') comillas = true;
+      else if (c === ',') { fila.push(campo); campo = ''; }
+      else if (c === '\n') { fila.push(campo); filas.push(fila); fila = []; campo = ''; }
+      else if (c !== '\r') campo += c;
+    }
+    if (campo !== '' || fila.length) { fila.push(campo); filas.push(fila); }
+    return filas.filter(f => f.some(x => x.trim() !== ''));
+  }
+
+  const normalizar = t => (t || '').toString().trim().toUpperCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+  // acepta 13.000 · 13,000 · 13000
+  function aNumero(t) {
+    if (t === null || t === undefined) return NaN;
+    let x = t.toString().trim().replace(/\s/g, '');
+    if (x === '') return NaN;
+    if (x.includes('.') && x.includes(',')) x = x.replace(/\./g, '').replace(',', '.');
+    else if ((x.match(/\./g) || []).length > 1) x = x.replace(/\./g, '');
+    else if (/,\d{1,2}$/.test(x)) x = x.replace(',', '.');
+    else x = x.replace(/,/g, '');
+    return parseFloat(x);
+  }
+
+  // ---------- convierte las filas de la hoja a registros del tablero ----------
+  function interpretar(filas) {
+    if (!filas.length) throw new Error('La hoja está vacía.');
+
+    const enc = filas[0].map(normalizar);
+    const col = nombres => {
+      for (const n of nombres) {
+        const i = enc.findIndex(e => e.includes(n));
+        if (i >= 0) return i;
+      }
+      return -1;
+    };
+    const iFac = col(['FACILIDAD']), iArea = col(['AREA']), iEq = col(['EQUIPO']);
+    const iPto = col(['PUNTO']), iEle = col(['ELEMENTO']), iDia = col(['DIAMETRO']);
+    const iTasa = col(['LECTURA', 'TASA', 'G/HR']), iHall = col(['HALLAZGO', 'OBSERV']);
+    const iEst = col(['ESTADO']), iFoto = col(['ID FOTO', 'FOTO']);
+
+    if (iFac < 0 || iTasa < 0)
+      throw new Error('Faltan las columnas Facilidad y Lectura (g/Hr).');
+
+    // las fotos del archivo se recuperan por su identificador
+    const fotos = {};
+    BASE1.forEach(r => { fotos['CPF-1-' + r.id] = r.img; });
+    BASE2.forEach(r => { fotos['CPF-2-' + r.id] = r.img; });
+
+    const salida = { 'CPF-1': [], 'CPF-2': [] }, avisos = [];
+    let descartadas = 0;
+
+    filas.slice(1).forEach((f, n) => {
+      const fac = normalizar(f[iFac]);
+      if (!fac) return;
+      if (fac !== 'CPF-1' && fac !== 'CPF-2') {
+        if (!avisos.includes(fac)) avisos.push(fac);
+        return;
+      }
+      const estado = iEst >= 0 ? normalizar(f[iEst]) : 'ACTIVA';
+      if (estado === 'REPARADA') { descartadas++; return; }   // ya no emite
+
+      const tasa = aNumero(f[iTasa]);
+      if (!isFinite(tasa) || tasa <= 0) { descartadas++; return; }
+
+      const lista = salida[fac];
+      const id = lista.length + 1;
+      const idFoto = iFoto >= 0 ? (f[iFoto] || '').trim() : '';
+
+      lista.push({
+        id,
+        campo: 'RUBIALES',
+        area:     iArea >= 0 ? normalizar(f[iArea]) : 'SIN ÁREA',
+        equipo:   iEq  >= 0 ? (f[iEq]  || '').trim() : '',
+        punto:    iPto >= 0 ? normalizar(f[iPto]) : '',
+        elemento: iEle >= 0 ? normalizar(f[iEle]) : '',
+        diam:     iDia >= 0 ? aNumero(f[iDia]) || '' : '',
+        diametro: iDia >= 0 ? aNumero(f[iDia]) || '' : '',
+        tasa,
+        hallazgo: iHall >= 0 ? (f[iHall] || '').trim() : '',
+        img: fotos[idFoto] || '',
+        tier: tierOf(tasa),
+        tier_label: tierOf(tasa).toUpperCase(),
+      });
+    });
+
+    if (!salida['CPF-1'].length && !salida['CPF-2'].length)
+      throw new Error('No se encontró ningún registro válido.');
+
+    return { d1: salida['CPF-1'], d2: salida['CPF-2'], avisos, descartadas };
+  }
+
+  // ---------- aplicar ----------
+  function aplicar(r) {
+    DATA1.length = 0; r.d1.forEach(x => DATA1.push(x));
+    DATA2.length = 0; r.d2.forEach(x => DATA2.push(x));
+    active1 = 'Todas'; active2 = 'Todas';
+    refrescarTodo();
+  }
+
+  function restaurar() {
+    DATA1.length = 0; JSON.parse(JSON.stringify(BASE1)).forEach(x => DATA1.push(x));
+    DATA2.length = 0; JSON.parse(JSON.stringify(BASE2)).forEach(x => DATA2.push(x));
+    active1 = 'Todas'; active2 = 'Todas';
+    refrescarTodo();
+  }
+
+  // Google Sheets publica en /pub?...&output=csv
+  function normalizarURL(u) {
+    u = (u || '').trim();
+    if (!u) return '';
+    if (u.includes('/pub') && !u.includes('output=csv')) u += (u.includes('?') ? '&' : '?') + 'output=csv';
+    const m = u.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+    if (m && !u.includes('/pub')) return `https://docs.google.com/spreadsheets/d/${m[1]}/export?format=csv`;
+    return u;
+  }
+
+  async function sincronizar(url, silencioso) {
+    const u = normalizarURL(url);
+    if (!u) throw new Error('Pega primero el enlace de la hoja publicada.');
+    // el parámetro evita que el navegador sirva una copia vieja
+    const resp = await fetch(u + (u.includes('?') ? '&' : '?') + '_=' + Date.now());
+    if (!resp.ok) throw new Error(`La hoja respondió ${resp.status}. Revisa que esté publicada en la web.`);
+    const texto = await resp.text();
+    if (texto.trim().startsWith('<'))
+      throw new Error('El enlace devolvió una página, no un CSV. Usa Archivo → Compartir → Publicar en la Web, formato CSV.');
+
+    const r = interpretar(leerCSV(texto));
+    aplicar(r);
+    try {
+      localStorage.setItem(CLAVE_CACHE, JSON.stringify({ d1: r.d1, d2: r.d2 }));
+      localStorage.setItem(CLAVE_FECHA, new Date().toISOString());
+    } catch (e) {}
+    return r;
+  }
+
+  // ---------- panel ----------
+  function abrirPanel() {
+    let url = '';
+    try { url = localStorage.getItem(CLAVE_URL) || ''; } catch (e) {}
+    let fecha = '';
+    try { fecha = localStorage.getItem(CLAVE_FECHA) || ''; } catch (e) {}
+
+    const cap = document.createElement('div');
+    cap.className = 'bd-capa';
+    cap.innerHTML = `
+      <div class="bd-caja" role="dialog" aria-label="Fuente de datos">
+        <div class="bd-top">
+          <div>
+            <div class="bd-kick">FUENTE DE DATOS</div>
+            <h3 class="bd-h">Hoja de cálculo conectada</h3>
+          </div>
+          <button class="bd-x" aria-label="Cerrar">×</button>
+        </div>
+        <p class="bd-p">
+          Pega el enlace de la hoja publicada como CSV. El tablero la lee al abrir
+          y recalcula todo: ranking, composición, mapa 3D y emisiones.
+        </p>
+        <input class="bd-in" id="bdUrl" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv" value="${url.replace(/"/g,'&quot;')}">
+        <div class="bd-btns">
+          <button class="bd-b bd-pri" id="bdSync">Conectar y actualizar</button>
+          <button class="bd-b" id="bdBase">Usar datos del archivo</button>
+        </div>
+        <div id="bdMsg"></div>
+        <div class="bd-pie">
+          ${fecha ? 'Última sincronización: ' + new Date(fecha).toLocaleString('es-CO') : 'Sin sincronizar todavía.'}
+          <br>Para publicar: Archivo → Compartir → Publicar en la Web → hoja Emisiones, formato CSV.
+        </div>
+      </div>`;
+    document.body.appendChild(cap);
+
+    const cerrar = () => cap.remove();
+    cap.querySelector('.bd-x').onclick = cerrar;
+    cap.onclick = e => { if (e.target === cap) cerrar(); };
+
+    const msg = cap.querySelector('#bdMsg');
+    const decir = (clase, titulo, det) => {
+      msg.innerHTML = `<div class="bd-msg ${clase}"><b>${titulo}</b>${det || ''}</div>`;
+    };
+
+    cap.querySelector('#bdSync').onclick = async () => {
+      const v = cap.querySelector('#bdUrl').value;
+      decir('bd-espera', 'Leyendo la hoja…');
+      try {
+        const r = await sincronizar(v);
+        try { localStorage.setItem(CLAVE_URL, v.trim()); } catch (e) {}
+        let det = `${r.d1.length + r.d2.length} emisiones activas cargadas.`;
+        if (r.descartadas) det += ` ${r.descartadas} fila(s) omitidas por estar reparadas o sin lectura.`;
+        if (r.avisos.length) det += ` Facilidad sin reconocer: ${r.avisos.join(', ')}.`;
+        decir('bd-ok', 'Datos actualizados', det);
+      } catch (e) {
+        decir('bd-err', 'No se pudo leer la hoja', e.message);
+      }
+    };
+
+    cap.querySelector('#bdBase').onclick = () => {
+      restaurar();
+      try { localStorage.removeItem(CLAVE_URL); localStorage.removeItem(CLAVE_CACHE); } catch (e) {}
+      decir('bd-ok', 'Restaurado', 'El tablero volvió a los datos incluidos en el archivo.');
+    };
+  }
+
+  window.abrirFuenteDatos = abrirPanel;
+
+  // ---------- al arrancar ----------
+  (function () {
+    let url = '', cache = null;
+    try {
+      url = localStorage.getItem(CLAVE_URL) || '';
+      cache = JSON.parse(localStorage.getItem(CLAVE_CACHE) || 'null');
+    } catch (e) {}
+    if (!url) return;
+
+    // lo último sincronizado se muestra de inmediato; la red llega después
+    if (cache && cache.d1) { try { aplicar({ d1: cache.d1, d2: cache.d2 }); } catch (e) {} }
+    sincronizar(url, true).catch(() => {});
+  })();
+})();
+
+(function () {
+  const a = document.getElementById('navFuente');
+  if (!a) return;
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    const m = document.querySelector('.nav-menu');
+    if (m) m.classList.remove('open');
+    abrirFuenteDatos();
+  });
+})();
 
 // ---------- Control global de periodo ----------
 (function() {
