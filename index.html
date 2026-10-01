@@ -2003,7 +2003,10 @@ THREE.OrbitControls = OrbitControls;
   /* ---------- INFORME IMPRIMIBLE ---------- */
   #informe{display:none}
   @media print{
-    @page{size:A4;margin:14mm 13mm}
+    /* Con margen cero el navegador deja de estampar su encabezado y su pie
+       —fecha, título y la dirección web de la página—. El margen real del
+       documento lo pone el propio informe. */
+    @page{size:A4;margin:0}
     html.imprimiendo, html.imprimiendo body{
       background:#fff!important;color:#000!important;
       margin:0!important;padding:0!important;width:auto!important;min-height:0!important;
@@ -2036,7 +2039,7 @@ THREE.OrbitControls = OrbitControls;
     transform-origin:top left;position:absolute;top:0;left:0}
   html.imprimiendo .inf-marco{height:auto!important;width:auto!important}
   html.imprimiendo .inf-hoja #informe{transform:none!important;position:static!important;
-    width:100%!important;padding:0!important;border-radius:0!important;box-shadow:none!important}
+    width:auto!important;padding:15mm 13mm!important;border-radius:0!important;box-shadow:none!important}
   #informe{font-family:'Inter',system-ui,sans-serif;color:#000;font-size:10pt;line-height:1.45}
   .inf-top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;
     border-bottom:2px solid #000;padding-bottom:6px;margin-bottom:11px}
@@ -5924,10 +5927,13 @@ window.addEventListener('resize', () => { if (map3d1) map3d1.resize(); if (map3d
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Informe de emisiones fugitivas</title>
 <style>
-@page{size:A4;margin:14mm 13mm}
+/* margen cero: así el navegador no estampa su encabezado ni su pie con la
+   dirección web; el margen del documento lo pone el propio informe */
+@page{size:A4;margin:0}
 body{margin:0;padding:18px;background:#fff;color:#000;
   font-family:system-ui,-apple-system,'Segoe UI',sans-serif}
 #informe{display:block!important;max-width:760px;margin:0 auto}
+@media print{ body{padding:15mm 13mm} #informe{max-width:none} }
 ${cssInforme()}
 </style></head><body>${document.getElementById('informe').outerHTML}</body></html>`;
 
