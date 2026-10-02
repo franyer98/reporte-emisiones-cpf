@@ -3706,11 +3706,13 @@ function refrescarTodo() {
   renderFilters1(); renderGrid1();
   renderFilters2(); renderGrid2();
   if (typeof renderCanoSur === 'function') { try { renderCanoSur(); } catch (e) {} }
+  try { pintarMapasArea(); } catch (e) {}
   renderComposicion();
   renderCierres();
   if (typeof initCharts === 'function') { try { initCharts(); } catch (e) {} }
   try { if (map3d1) map3d1.rebuild(DATA1); } catch (e) {}
   try { if (map3d2) map3d2.rebuild(DATA2); } catch (e) {}
+  try { if (map3d3) map3d3.rebuild(DATACS); } catch (e) {}
 }
 refrescarTodo();
 
@@ -4580,8 +4582,11 @@ function buildMapa(data, gridId, detailId) {
   renderDetail();
 }
 
-buildMapa(DATA1, 'mapaGrid1', 'mapaDetail1');
-buildMapa(DATA2, 'mapaGrid2', 'mapaDetail2');
+function pintarMapasArea() {
+  buildMapa(DATA1, 'mapaGrid1', 'mapaDetail1');
+  buildMapa(DATA2, 'mapaGrid2', 'mapaDetail2');
+}
+pintarMapasArea();
 
 // ---------- Mapa 3D de tanques ----------
 const TIER_HEX = { alto: 0xe81400, medio: 0xffc400, bajo: 0x00b828 };
@@ -5853,7 +5858,11 @@ function buildTankMap3D(canvasId, hintId, data, totalId) {
   resize();
   animate();
   function rebuild(newData) {
-    buildContent(newData);
+    // el rotulo de total leia la lista original: al cerrar un hallazgo
+    // la escena se rehacia pero el numero se quedaba viejo
+    if (newData) data = newData;
+    buildContent(data);
+    actualizarTotal();
     controls.target.copy(target);
     userMoved = false;
     updateCamera();
@@ -5898,9 +5907,7 @@ function renderCanoSur() {
   if (t) t.textContent = DATACS.length;
   renderFilters3();
   renderGrid3();
-  if (typeof buildMapa === 'function' && !window.__mapaCS) {
-    try { buildMapa(DATACS, 'mapaGrid3', 'mapaDetail3'); window.__mapaCS = true; } catch (e) {}
-  }
+  if (document.getElementById('mapaGrid3')) buildMapa(DATACS, 'mapaGrid3', 'mapaDetail3');
 }
 renderCanoSur();
 
