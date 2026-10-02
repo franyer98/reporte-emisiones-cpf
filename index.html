@@ -2010,6 +2010,11 @@ THREE.OrbitControls = OrbitControls;
   html[data-theme="light"] .bd-ok{color:#16803c}
   html[data-theme="light"] .bd-err{color:#b91c1c}
   /* ---------- CAÑO SUR ---------- */
+  /* en Caño Sur todavía no hay cromatografía, así que el CO2eq del encabezado
+     no aplica: se oculta en vez de mostrar un número de otra facilidad */
+  html.sin-co2 .hero-co2 { display: none; }
+
+
   .cs-aviso{display:flex;gap:11px;align-items:flex-start;margin:0 0 22px;padding:13px 16px;
     border-radius:11px;background:rgba(255,196,0,.09);border-left:3px solid #ffc400;
     font-size:13.5px;line-height:1.6;color:var(--text-dim)}
@@ -2861,13 +2866,6 @@ THREE.OrbitControls = OrbitControls;
         </div>
       </div>
 
-      <div class="cs-kpis">
-        <div class="cs-kpi"><div class="cs-kv" id="csN">5</div><div class="cs-ke">puntos detectados</div></div>
-        <div class="cs-kpi"><div class="cs-kv" id="csG">11.273</div><div class="cs-ke">g/Hr medidos</div></div>
-        <div class="cs-kpi"><div class="cs-kv" id="csA">2</div><div class="cs-ke">áreas afectadas</div></div>
-        <div class="cs-kpi pend"><div class="cs-kv">—</div><div class="cs-ke">ton CO2eq/año · falta cromatografía</div></div>
-      </div>
-
       <div class="section-head"><h2>Prioridad de intervención</h2>
         <div class="section-note">CENTAUROS · ORDENADO POR TASA</div></div>
       <div class="prio-lead" id="prioLead3"></div>
@@ -3044,7 +3042,72 @@ function critRowsHTML(crit) {
 
 let PERIODO_GLOBAL = 'hora';
 
+// El encabezado resume la pestaña que se está mirando. En Caño Sur mostraba
+// los totales de CPF-1 y CPF-2, que no tienen nada que ver con lo que hay debajo.
+let HERO_CS = false;
+
+function heroCanoSur() {
+  const a = aggregate(DATACS);
+  const set = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+  const P = PERIODO_GLOBAL, esTasa = (P === 'hora');
+  const et = esTasa ? '' : ' ' + PERIODOS[P].etiqueta;
+  const val = v => esTasa ? v.toLocaleString('es-CO') + ' g/Hr' : masaAcumulada(v, P);
+
+  document.documentElement.classList.add('sin-co2');
+  set('kpiTotal', val(a.total));
+  set('kpiSub', `de gas fugitivo detectado en <b>Caño Sur</b>, facilidad CENTAUROS`
+    + ` (${a.nPuntos} puntos). Falta la cromatografía del campo para expresarlo en CO2 equivalente.`);
+  set('kpiTotPuntos', a.nPuntos);
+  set('kpiTotSub', esTasa ? `${a.total.toLocaleString('es-CO')} g/Hr · ${a.nPuntos} puntos medidos`
+                          : `${masaAcumulada(a.total, P)}${et}`);
+
+  // las dos tarjetas de facilidad pasan a ser las dos áreas del campo
+  const areas = [...new Set(DATACS.map(d => d.area))];
+  [['f1', 0], ['f2', 1]].forEach(([cls, i]) => {
+    const tarjeta = document.querySelector('.fcard.' + cls);
+    if (!tarjeta) return;
+    const area = areas[i];
+    if (!area) { tarjeta.style.display = 'none'; return; }
+    tarjeta.style.display = '';
+    const pts = DATACS.filter(d => d.area === area);
+    const tot = pts.reduce((x, d) => x + d.tasa, 0);
+    const crit = [...pts].sort((x, y) => y.tasa - x.tasa).slice(0, 2);
+    tarjeta.querySelector('.fcard-label').textContent = area;
+    tarjeta.querySelector('.fcard-main').innerHTML = `<span>${pts.length}</span> <small>puntos</small>`;
+    tarjeta.querySelector('.fcard-sub').textContent = esTasa
+      ? `${tot.toLocaleString('es-CO')} g/Hr medidos` : `${masaAcumulada(tot, P)}${et}`;
+    const lbl = tarjeta.querySelector('.fcard-crit-label');
+    if (lbl) lbl.textContent = 'PUNTOS DE MAYOR TASA';
+    const cont = document.getElementById('kpiF' + (i + 1) + 'Crit');
+    if (cont) cont.innerHTML = crit.map(d => `<div class="fcard-row"><span class="k">${d.punto}</span>`
+      + `<span class="v">${d.equipo} <small>${val(d.tasa)} · ${Math.round(d.tasa / tot * 100)}%</small></span></div>`).join('');
+  });
+
+  const tot = document.querySelector('.fcard.total .fcard-label');
+  if (tot) tot.textContent = 'Total · Caño Sur';
+  const fila = document.querySelector('.fcard.total .fcard-row .v');
+  if (fila) fila.textContent = 'CENTAUROS';
+}
+
 function updateKPIs() {
+  if (HERO_CS) { heroCanoSur(); return; }
+  document.documentElement.classList.remove('sin-co2');
+  const tot = document.querySelector('.fcard.total .fcard-label');
+  if (tot) tot.textContent = 'Total · CPF-1 + CPF-2';
+  const fila = document.querySelector('.fcard.total .fcard-row .v');
+  if (fila) fila.textContent = 'CPF-1 + CPF-2';
+  ['f1', 'f2'].forEach((cls, i) => {
+    const t = document.querySelector('.fcard.' + cls);
+    if (!t) return;
+    t.style.display = '';
+    t.querySelector('.fcard-label').textContent = 'CPF-' + (i + 1);
+    const lbl = t.querySelector('.fcard-crit-label');
+    if (lbl) lbl.textContent = 'EQUIPO CRÍTICO POR ÁREA';
+    const main = t.querySelector('.fcard-main');
+    if (main && !main.querySelector('#kpiF' + (i + 1) + 'Puntos'))
+      main.innerHTML = `<span id="kpiF${i + 1}Puntos"></span> <small>puntos</small>`;
+  });
+
   const t1 = AGG1.total, t2 = AGG2.total, tt = t1 + t2;
   const co2 = co2eqDe(DATA1, 'CPF-1') + co2eqDe(DATA2, 'CPF-2');   // cromatografía por área
   const set = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
@@ -3085,6 +3148,9 @@ document.querySelectorAll('.tab').forEach(tab => {
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
     tab.classList.add('active');
     document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+    // el encabezado sigue a la pestaña: Caño Sur tiene sus propios totales
+    HERO_CS = (tab.dataset.tab === 't3');
+    updateKPIs();
     document.dispatchEvent(new CustomEvent('tabshown', { detail: tab.dataset.tab }));
   });
 });
