@@ -1507,10 +1507,19 @@ THREE.OrbitControls = OrbitControls;
     position: fixed; top: 54px; left: 0; right: 0; z-index: 40;
     background: var(--surface); border-bottom: 1px solid var(--border);
     box-shadow: 0 12px 24px rgba(0,0,0,0.25);
-    max-height: 0; overflow-y: auto; transition: max-height .25s ease;
-    visibility: hidden;
+    /* Antes se animaba max-height, lo que obliga al navegador a recalcular la
+       página completa en cada cuadro. Mover y desvanecer lo hace la tarjeta
+       gráfica sola, sin tocar el resto del documento. */
+    max-height: calc(100vh - 54px); overflow-y: auto;
+    visibility: hidden; opacity: 0; transform: translateY(-10px);
+    transition: opacity .16s ease, transform .16s ease, visibility 0s linear .16s;
+    will-change: opacity, transform; contain: content;
   }
-  .nav-menu.open { max-height: calc(100vh - 54px); visibility: visible; }
+  .nav-menu.open {
+    visibility: visible; opacity: 1; transform: none;
+    transition: opacity .16s ease, transform .16s ease, visibility 0s;
+  }
+  @media (prefers-reduced-motion: reduce) { .nav-menu { transition: none } }
   .nav-menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; padding: 18px 0; }
   .nav-group-title { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: .1em; color: var(--text-faint); margin-bottom: 8px; }
   .nav-link {
@@ -5696,6 +5705,39 @@ document.addEventListener('tabshown', (e) => {
 });
 window.addEventListener('resize', () => { if (map3d1) map3d1.resize(); if (map3d2) map3d2.resize(); });
 
+/* Las dos vistas 3D dibujaban sin parar, aunque estuvieran fuera de pantalla o
+   en la otra pestaña. En el teléfono eso mantiene la GPU ocupada todo el rato y
+   hace que cualquier otra cosa —abrir el menú, por ejemplo— responda tarde.
+   Ahora cada una sólo dibuja mientras se está viendo. */
+(function () {
+  const mapaDe = id => id === 'canvas3d1' ? map3d1 : map3d2;
+  const aLaVista = new Map();
+
+  function aplicar() {
+    const oculto = document.hidden || document.body.classList.contains('con-capa');
+    ['canvas3d1', 'canvas3d2'].forEach(id => {
+      const m = mapaDe(id);
+      if (m && m.setPaused) m.setPaused(oculto || !aLaVista.get(id));
+    });
+  }
+
+  if ('IntersectionObserver' in window) {
+    const obs = new IntersectionObserver(entradas => {
+      entradas.forEach(e => aLaVista.set(e.target.id, e.isIntersecting));
+      aplicar();
+    }, { threshold: 0.01 });
+    const vigilar = () => ['canvas3d1', 'canvas3d2'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el && !aLaVista.has(id)) { aLaVista.set(id, false); obs.observe(el); }
+    });
+    vigilar();
+    document.addEventListener('tabshown', () => setTimeout(vigilar, 80));
+  }
+
+  document.addEventListener('visibilitychange', aplicar);
+  window.pausarMapas3D = aplicar;
+})();
+
 
 // ---------- Tema claro / oscuro ----------
 (function() {
@@ -5965,6 +6007,9 @@ ${cssInforme()}
     cap.querySelector('#infMarco').appendChild(inf);
     inf.style.display = 'block';
     document.body.style.overflow = 'hidden';
+    // con el informe encima no tiene sentido seguir dibujando las vistas 3D
+    document.body.classList.add('con-capa');
+    if (window.pausarMapas3D) window.pausarMapas3D();
 
     const marco = cap.querySelector('#infMarco');
     const hoja = cap.querySelector('#infHoja');
@@ -5987,6 +6032,8 @@ ${cssInforme()}
       document.body.appendChild(inf);
       cap.remove();
       document.body.style.overflow = '';
+      document.body.classList.remove('con-capa');
+      if (window.pausarMapas3D) window.pausarMapas3D();
     };
     cap.querySelector('#infCerrar').onclick = cerrar;
     cap.querySelector('#infImp').onclick = imprimir;
