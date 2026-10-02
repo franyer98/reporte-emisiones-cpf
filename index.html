@@ -2009,6 +2009,12 @@ THREE.OrbitControls = OrbitControls;
     font-size:11.5px;color:var(--text-faint);line-height:1.65;font-family:'JetBrains Mono',monospace}
   html[data-theme="light"] .bd-ok{color:#16803c}
   html[data-theme="light"] .bd-err{color:#b91c1c}
+  /* Código fijo del punto: es el mismo que va en la columna "ID foto" de la
+     hoja, así que sirve para cruzar lo que ves con la fila que hay que tocar. */
+  .cod{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.05em;
+    color:var(--text-faint);border:1px solid var(--border);border-radius:5px;
+    padding:1px 5px;margin-left:7px;vertical-align:middle;white-space:nowrap}
+
   /* ---------- CAÑO SUR ---------- */
   /* en Caño Sur todavía no hay cromatografía, así que el CO2eq del encabezado
      no aplica: se oculta en vez de mostrar un número de otra facilidad */
@@ -3427,6 +3433,7 @@ function renderPrioridad(data, areaActiva, contenedorId, leadId) {
         <div class="prio-main">
           <div class="prio-top">
             <span class="prio-eq">${d.equipo}</span>
+            ${d.fid ? '<span class="cod">' + d.fid + '</span>' : ''}
             <span class="prio-pt">${d.punto}${d.elemento ? ' · ' + d.elemento : ''}</span>
             <span class="badge ${d.tier}">${severidadTexto(d.tier)}</span>
           </div>
@@ -3509,7 +3516,7 @@ function renderTarjetas(data, areaActiva, gridId) {
         <div class="badge ${d.tier}">${severidadTexto(d.tier)}</div>
       </div>
       <div class="card-body">
-        <div class="card-eq">${d.equipo}</div>
+        <div class="card-eq">${d.equipo}${d.fid ? '<span class="cod">' + d.fid + '</span>' : ''}</div>
         <div class="card-meta">${d.area} · ${d.punto} · ${d.elemento}</div>
         <div class="card-desc">${d.hallazgo}</div>
         <div class="card-periodo">${PERIODO_GLOBAL === 'hora'
@@ -3657,7 +3664,7 @@ function renderCierres() {
       card.innerHTML = `
         ${foto}
         <div class="card-body">
-          <div class="card-eq">${d.equipo}</div>
+          <div class="card-eq">${d.equipo}${d.fid ? '<span class="cod">' + d.fid + '</span>' : ''}</div>
           <div class="card-meta">${d.area} · ${d.punto} · ${d.elemento}</div>
           <div class="card-desc">${d.hallazgo}</div>
           <div class="card-periodo cerr-antes">Medición previa: ${d.tasa.toLocaleString('es-CO')} g/Hr${d.cierre ? ' · ' + d.cierre : ''}</div>
