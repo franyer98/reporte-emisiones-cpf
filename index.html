@@ -2866,7 +2866,23 @@ THREE.OrbitControls = OrbitControls;
         </div>
       </div>
 
-      <div class="section-head"><h2>Prioridad de intervención</h2>
+      <div class="section-head"><h2>Mapa por área</h2>
+        <div class="section-note">TOCA UN ÁREA PARA VER SUS PUNTOS</div></div>
+      <div class="mapa-grid" id="mapaGrid3"></div>
+      <div class="mapa-detail" id="mapaDetail3"></div>
+
+      <div class="section-head" style="margin-top:34px"><h2>Vista 3D de tanques</h2>
+        <div class="section-note">ARRASTRA: ROTAR · CLIC DER: MOVER · BARRA LATERAL: ZOOM</div></div>
+      <div class="mapa3d-wrap">
+        <canvas id="canvas3d3"></canvas>
+        <div class="zoom3d" id="zoom3"><button data-z="in" title="Acercar">+</button><input type="range" min="0" max="100" value="0" aria-label="Zoom"><button data-z="out" title="Alejar">&minus;</button></div>
+        <div class="total3d" id="total3d3"><div class="t3d-label">TOTAL FACILIDAD</div><div class="t3d-value">—</div><div class="t3d-sub">—</div></div>
+        <div class="mapa3d-hint" id="hint3d3"></div>
+        <div class="period3d-bar"><span class="p3d-label">ACUMULADO</span><button data-period="hora" class="active">Hora</button><button data-period="mes">Mes</button><button data-period="trim">Trimestre</button><button data-period="sem">Semestre</button><button data-period="anio">Año</button></div>
+        <div class="view3d-bar"><button data-view="iso">Isométrica</button><button data-view="top">Superior</button><button data-view="front">Frontal</button><button data-view="side">Lateral</button></div>
+      </div>
+
+      <div class="section-head" style="margin-top:34px"><h2>Prioridad de intervención</h2>
         <div class="section-note">CENTAUROS · ORDENADO POR TASA</div></div>
       <div class="prio-lead" id="prioLead3"></div>
       <div class="filters" id="filters3"></div>
@@ -5761,30 +5777,37 @@ function renderCanoSur() {
   if (t) t.textContent = DATACS.length;
   renderFilters3();
   renderGrid3();
+  if (typeof buildMapa === 'function' && !window.__mapaCS) {
+    try { buildMapa(DATACS, 'mapaGrid3', 'mapaDetail3'); window.__mapaCS = true; } catch (e) {}
+  }
 }
 renderCanoSur();
 
-let map3d1 = null, map3d2 = null;
+let map3d1 = null, map3d2 = null, map3d3 = null;
 function ensureMap3D1() { if (!map3d1) map3d1 = buildTankMap3D('canvas3d1', 'hint3d1', DATA1, 'total3d1'); else map3d1.resize(); }
 function ensureMap3D2() { if (!map3d2) map3d2 = buildTankMap3D('canvas3d2', 'hint3d2', DATA2, 'total3d2'); else map3d2.resize(); }
+function ensureMap3D3() { if (!map3d3) map3d3 = buildTankMap3D('canvas3d3', 'hint3d3', DATACS, 'total3d3'); else map3d3.resize(); }
 ensureMap3D1();
 document.addEventListener('tabshown', (e) => {
   if (e.detail === 't1') ensureMap3D1();
   if (e.detail === 't2') ensureMap3D2();
+  if (e.detail === 't3') ensureMap3D3();
 });
-window.addEventListener('resize', () => { if (map3d1) map3d1.resize(); if (map3d2) map3d2.resize(); });
+window.addEventListener('resize', () => {
+  [map3d1, map3d2, map3d3].forEach(m => { if (m) m.resize(); });
+});
 
 /* Las dos vistas 3D dibujaban sin parar, aunque estuvieran fuera de pantalla o
    en la otra pestaña. En el teléfono eso mantiene la GPU ocupada todo el rato y
    hace que cualquier otra cosa —abrir el menú, por ejemplo— responda tarde.
    Ahora cada una sólo dibuja mientras se está viendo. */
 (function () {
-  const mapaDe = id => id === 'canvas3d1' ? map3d1 : map3d2;
+  const mapaDe = id => id === 'canvas3d1' ? map3d1 : (id === 'canvas3d2' ? map3d2 : map3d3);
   const aLaVista = new Map();
 
   function aplicar() {
     const oculto = document.hidden || document.body.classList.contains('con-capa');
-    ['canvas3d1', 'canvas3d2'].forEach(id => {
+    ['canvas3d1', 'canvas3d2', 'canvas3d3'].forEach(id => {
       const m = mapaDe(id);
       if (m && m.setPaused) m.setPaused(oculto || !aLaVista.get(id));
     });
@@ -5795,7 +5818,7 @@ window.addEventListener('resize', () => { if (map3d1) map3d1.resize(); if (map3d
       entradas.forEach(e => aLaVista.set(e.target.id, e.isIntersecting));
       aplicar();
     }, { threshold: 0.01 });
-    const vigilar = () => ['canvas3d1', 'canvas3d2'].forEach(id => {
+    const vigilar = () => ['canvas3d1', 'canvas3d2', 'canvas3d3'].forEach(id => {
       const el = document.getElementById(id);
       if (el && !aLaVista.has(id)) { aLaVista.set(id, false); obs.observe(el); }
     });
