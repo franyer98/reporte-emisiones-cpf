@@ -2009,6 +2009,13 @@ THREE.OrbitControls = OrbitControls;
     font-size:11.5px;color:var(--text-faint);line-height:1.65;font-family:'JetBrains Mono',monospace}
   html[data-theme="light"] .bd-ok{color:#16803c}
   html[data-theme="light"] .bd-err{color:#b91c1c}
+  /* ---------- PESTILLO ---------- */
+  .pin-caja{max-width:400px}
+  .pin-in{text-align:center;letter-spacing:.35em;font-size:19px;
+    font-family:'JetBrains Mono',monospace;padding:12px 14px}
+  .pin-caja .bd-btns{margin-top:12px}
+  .pin-caja .bd-pie{font-size:11px;line-height:1.6}
+
   /* ---------- SELECTOR DE CIERRE ---------- */
   .ci-nuevo{margin:0 0 20px;padding:9px 16px}
   .sel-lista{margin-top:14px;max-height:46vh;overflow-y:auto;display:flex;flex-direction:column;gap:7px}
@@ -4450,6 +4457,100 @@ refrescarTodo();
     b.querySelector('#edSalir').onclick = () => activar(false);
   }
 
+  /* ---------- PESTILLO DEL MODO EDICIÓN ----------
+     No es un control de acceso: esta página se sirve tal cual al navegador y
+     quien sepa mirar el código entra igual. Lo que evita es que alguien toque
+     sin querer mientras el tablero está proyectado o prestado. El PIN no se
+     guarda en el archivo: sólo queda su huella, de la que no se puede volver
+     al número. Lo que de verdad protege el dato publicado es la cuenta de
+     GitHub, y ahí sí conviene la verificación en dos pasos. */
+  const PIN_SAL  = 'emisiones-cpf-2026';
+  const PIN_HASH = 'f4918944250230c665132f6a68e353e38d300fb7c5741a39ec1eb359a9b6e8e7';
+  const PIN_CLAVE = 'emisiones.desbloqueo';
+  const PIN_VIGENCIA = 2 * 60 * 60 * 1000;   // dos horas
+  let intentos = 0, bloqueadoHasta = 0;
+
+  async function huella(txt) {
+    const datos = new TextEncoder().encode(PIN_SAL + txt);
+    if (window.crypto && crypto.subtle && crypto.subtle.digest) {
+      const h = await crypto.subtle.digest('SHA-256', datos);
+      return [...new Uint8Array(h)].map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+    return null;   // sin contexto seguro (archivo local) no hay cómo calcularla
+  }
+
+  function desbloqueado() {
+    try {
+      const t = parseInt(sessionStorage.getItem(PIN_CLAVE) || '0', 10);
+      return t && (Date.now() - t) < PIN_VIGENCIA;
+    } catch (e) { return false; }
+  }
+
+  function pedirPIN(alEntrar) {
+    if (desbloqueado()) { alEntrar(); return; }
+
+    const cap = document.createElement('div');
+    cap.className = 'bd-capa';
+    cap.innerHTML = `
+      <div class="bd-caja pin-caja" role="dialog" aria-label="Clave de edición">
+        <div class="bd-top">
+          <div>
+            <div class="bd-kick">MODO EDICIÓN</div>
+            <h3 class="bd-h">Clave para editar</h3>
+          </div>
+          <button class="bd-x" aria-label="Cerrar">×</button>
+        </div>
+        <p class="bd-p">Los datos del tablero sólo se cambian con clave. Si no la
+        tienes, puedes seguir consultando todo con normalidad.</p>
+        <input class="bd-in pin-in" id="pinIn" type="password" inputmode="numeric"
+               autocomplete="off" placeholder="••••••••" maxlength="16">
+        <div class="bd-btns"><button class="bd-b bd-pri" id="pinOk">Entrar</button></div>
+        <div id="pinMsg"></div>
+        <div class="bd-pie">Esto evita cambios accidentales mientras el tablero
+        está proyectado o prestado. No sustituye al control de acceso: lo que
+        protege lo publicado es la cuenta de GitHub.</div>
+      </div>`;
+    document.body.appendChild(cap);
+
+    const q = s => cap.querySelector(s);
+    const cerrar = () => cap.remove();
+    q('.bd-x').onclick = cerrar;
+    cap.onclick = e => { if (e.target === cap) cerrar(); };
+    setTimeout(() => q('#pinIn').focus(), 60);
+
+    const decir = (clase, txt) => { q('#pinMsg').innerHTML = `<div class="bd-msg ${clase}"><b>${txt}</b></div>`; };
+
+    async function probar() {
+      const espera = bloqueadoHasta - Date.now();
+      if (espera > 0) { decir('bd-err', `Espera ${Math.ceil(espera / 1000)} segundos.`); return; }
+
+      const h = await huella(q('#pinIn').value.trim());
+      if (h === null) {
+        decir('bd-err', 'Abre el tablero por su enlace web para poder validar la clave.');
+        return;
+      }
+      if (h === PIN_HASH) {
+        try { sessionStorage.setItem(PIN_CLAVE, String(Date.now())); } catch (e) {}
+        intentos = 0;
+        cerrar();
+        alEntrar();
+        return;
+      }
+      intentos++;
+      q('#pinIn').value = '';
+      if (intentos >= 5) {
+        bloqueadoHasta = Date.now() + 60000;
+        intentos = 0;
+        decir('bd-err', 'Demasiados intentos. Espera un minuto.');
+      } else {
+        decir('bd-err', `Clave incorrecta. Te quedan ${5 - intentos} intentos.`);
+      }
+    }
+
+    q('#pinOk').onclick = probar;
+    q('#pinIn').onkeydown = e => { if (e.key === 'Enter') probar(); };
+  }
+
   function activar(on, callado) {
     window.MODO_EDICION = !!on;
     try { localStorage.setItem('emisiones.modoEdicion', on ? '1' : ''); } catch (e) {}
@@ -4478,16 +4579,22 @@ refrescarTodo();
       CERRADAS2.length = 0; (ed.c2 || []).forEach(x => CERRADAS2.push(x));
       refrescarTodo();
     }
-    if (localStorage.getItem('emisiones.modoEdicion')) activar(true, true);
+    // tras recargar sólo se reabre si el desbloqueo sigue vigente en esta pestaña
+    if (localStorage.getItem('emisiones.modoEdicion') && desbloqueado()) activar(true, true);
+    else if (localStorage.getItem('emisiones.modoEdicion')) localStorage.removeItem('emisiones.modoEdicion');
   } catch (e) {}
 
+  // todo lo que escribe datos pasa por el pestillo; consultar nunca lo pide
   const btnCierre = document.getElementById('ciNuevo');
-  if (btnCierre) btnCierre.onclick = abrirSelectorCierre;
+  if (btnCierre) btnCierre.onclick = () => pedirPIN(abrirSelectorCierre);
 
-  window.abrirSelectorCierre = abrirSelectorCierre;
+  window.abrirSelectorCierre = () => pedirPIN(abrirSelectorCierre);
   window.abrirFormulario = abrirFormulario;
   window.quitarRegistro = quitarRegistro;
-  window.modoEdicion = activar;
+  window.modoEdicion = (on, callado) => {
+    if (!on) { activar(false, callado); return; }
+    pedirPIN(() => activar(true, callado));
+  };
   window.descartarEdicion = () => {
     try { localStorage.removeItem(CLAVE_ED); } catch (e) {}
     location.reload();
