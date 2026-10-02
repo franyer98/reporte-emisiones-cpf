@@ -2009,6 +2009,24 @@ THREE.OrbitControls = OrbitControls;
     font-size:11.5px;color:var(--text-faint);line-height:1.65;font-family:'JetBrains Mono',monospace}
   html[data-theme="light"] .bd-ok{color:#16803c}
   html[data-theme="light"] .bd-err{color:#b91c1c}
+  /* ---------- SELECTOR DE CIERRE ---------- */
+  .ci-nuevo{margin:0 0 20px;padding:9px 16px}
+  .sel-lista{margin-top:14px;max-height:46vh;overflow-y:auto;display:flex;flex-direction:column;gap:7px}
+  .sel-fila{display:flex;align-items:center;gap:11px;width:100%;text-align:left;cursor:pointer;
+    padding:8px 11px;border-radius:10px;border:1px solid var(--border);background:var(--surface);
+    color:var(--text);font-family:inherit;transition:border-color .15s ease,background .15s ease}
+  .sel-fila:hover{border-color:var(--cool);background:var(--surface-2)}
+  .sel-fila img{width:48px;height:48px;object-fit:cover;border-radius:7px;flex:none}
+  .sf-txt{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+  .sf-txt b{font-family:'Space Grotesk',sans-serif;font-size:14px}
+  .sf-txt .cod{margin-left:0;align-self:flex-start}
+  .sf-txt small{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-faint);
+    text-transform:uppercase;letter-spacing:.04em;overflow:hidden;text-overflow:ellipsis}
+  .sf-tasa{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:14px;white-space:nowrap}
+  .sf-tasa small{font-size:9.5px;font-weight:400;color:var(--text-faint)}
+  .sf-tasa.alto{color:#e81400} .sf-tasa.medio{color:#ffc400} .sf-tasa.bajo{color:#00b828}
+  .sel-vacio{font-size:13px;color:var(--text-faint);padding:18px;text-align:center}
+
   /* Código fijo del punto: es el mismo que va en la columna "ID foto" de la
      hoja, así que sirve para cruzar lo que ves con la fila que hay que tocar. */
   .cod{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.05em;
@@ -2911,6 +2929,8 @@ THREE.OrbitControls = OrbitControls;
         <h2>Hallazgos intervenidos</h2>
         <div class="section-note">EVIDENCIA DE LAS FUGAS YA CORREGIDAS</div>
       </div>
+
+      <button class="bd-b bd-pri ci-nuevo" id="ciNuevo">Registrar un cierre</button>
 
       <div class="ci-kpis">
         <div class="ci-k">
@@ -4120,9 +4140,9 @@ refrescarTodo();
   }
 
   // ---------- formulario ----------
-  function abrirFormulario(d, lista) {
+  function abrirFormulario(d, lista, modoCierre) {
     const nuevo = !d;
-    const cierre = esCierre(lista);
+    const cierre = esCierre(lista) || !!modoCierre;
     const v = d || { area: AREAS[0], equipo: '', punto: PUNTOS[0], elemento: ELEMENTOS[0],
                      diametro: '', tasa: '', hallazgo: '', img: '', imgCierre: '', tasaCierre: 0 };
     let img = v.img || '', imgC = v.imgCierre || '';
@@ -4137,7 +4157,7 @@ refrescarTodo();
         <div class="bd-top">
           <div>
             <div class="bd-kick">${facDe(lista)}${cierre ? ' · CIERRE' : ''}</div>
-            <h3 class="bd-h">${nuevo ? 'Nueva emisión' : 'Editar emisión'}</h3>
+            <h3 class="bd-h">${modoCierre ? 'Cerrar hallazgo' : (nuevo ? 'Nueva emisión' : 'Editar emisión')}</h3>
           </div>
           <button class="bd-x" aria-label="Cerrar">×</button>
         </div>
@@ -4174,9 +4194,11 @@ refrescarTodo();
         </div>
 
         <div class="bd-btns">
-          <button class="bd-b bd-pri" id="edGuardar">Guardar</button>
-          ${!cierre ? '<button class="bd-b" id="edCerrarH">Marcar como reparada</button>' : ''}
-          ${cierre ? '<button class="bd-b" id="edReabrir">Volver a activa</button>' : ''}
+          ${modoCierre
+            ? '<button class="bd-b bd-pri" id="edConfirmar">Confirmar cierre</button>'
+            : '<button class="bd-b bd-pri" id="edGuardar">Guardar</button>'}
+          ${(!cierre && !modoCierre) ? '<button class="bd-b" id="edCerrarH">Marcar como reparada</button>' : ''}
+          ${(cierre && !modoCierre) ? '<button class="bd-b" id="edReabrir">Volver a activa</button>' : ''}
         </div>
         <div id="edMsg"></div>
       </div>`;
@@ -4246,9 +4268,16 @@ refrescarTodo();
       return true;
     };
 
-    q('#edGuardar').onclick = () => aplicarEn(lista, cierre ? {
+    const bGuardar = q('#edGuardar');
+    if (bGuardar) bGuardar.onclick = () => aplicarEn(lista, cierre ? {
       imgCierre: imgC, tasaCierre: parseFloat(q('#edTasaC').value) || 0,
     } : null);
+
+    // viene del selector: confirmar lo pasa directo a la pestaña de cierres
+    const bConf = q('#edConfirmar');
+    if (bConf) bConf.onclick = () => aplicarEn(
+      facDe(lista) === 'CPF-1' ? CERRADAS1 : CERRADAS2,
+      { imgCierre: imgC, tasaCierre: parseFloat(q('#edTasaC').value) || 0 });
 
     const bCerrar = q('#edCerrarH');
     if (bCerrar) bCerrar.onclick = () => {
@@ -4264,6 +4293,87 @@ refrescarTodo();
     const bReabrir = q('#edReabrir');
     if (bReabrir) bReabrir.onclick = () =>
       aplicarEn(facDe(lista) === 'CPF-1' ? DATA1 : DATA2, { imgCierre: '', tasaCierre: undefined });
+  }
+
+  /* Buscar la tarjeta a ojo se presta a error: un tanque puede tener tres o
+     cuatro puntos activos. Aquí se baja por facilidad, área y equipo, y al
+     final quedan sólo los puntos que de verdad pueden cerrarse. */
+  function abrirSelectorCierre() {
+    const activos = [...DATA1.map(d => ({ d, lista: DATA1, fac: 'CPF-1' })),
+                     ...DATA2.map(d => ({ d, lista: DATA2, fac: 'CPF-2' }))];
+
+    const cap = document.createElement('div');
+    cap.className = 'bd-capa';
+    cap.innerHTML = `
+      <div class="bd-caja ed-caja" role="dialog" aria-label="Registrar un cierre">
+        <div class="bd-top">
+          <div>
+            <div class="bd-kick">CIERRE DE HALLAZGO</div>
+            <h3 class="bd-h">¿Cuál emisión reparaste?</h3>
+          </div>
+          <button class="bd-x" aria-label="Cerrar">×</button>
+        </div>
+        <p class="bd-p">Ve filtrando hasta que aparezca el punto. Sólo se listan
+        las emisiones activas: las ya cerradas no vuelven a salir.</p>
+        <div class="ed-rejilla">
+          <label>Facilidad<select id="selFac"></select></label>
+          <label>Área<select id="selArea"></select></label>
+          <label>Tanque<select id="selEq"></select></label>
+        </div>
+        <div class="sel-lista" id="selLista"></div>
+      </div>`;
+    document.body.appendChild(cap);
+
+    const q = s => cap.querySelector(s);
+    const cerrar = () => cap.remove();
+    q('.bd-x').onclick = cerrar;
+    cap.onclick = e => { if (e.target === cap) cerrar(); };
+
+    const opciones = (sel, valores, etiqueta) => {
+      const previo = sel.value;
+      sel.innerHTML = `<option value="">${etiqueta}</option>`
+        + valores.map(v => `<option${v === previo ? ' selected' : ''}>${v}</option>`).join('');
+    };
+    const unicos = (arr, campo) => [...new Set(arr.map(x => x.d[campo] || x[campo]))].sort();
+
+    function filtrados() {
+      const f = q('#selFac').value, a = q('#selArea').value, e = q('#selEq').value;
+      return activos.filter(x => (!f || x.fac === f) && (!a || x.d.area === a) && (!e || x.d.equipo === e));
+    }
+
+    function refrescar(origen) {
+      const porFac = activos.filter(x => !q('#selFac').value || x.fac === q('#selFac').value);
+      if (origen !== 'area') opciones(q('#selArea'), unicos(porFac, 'area'), 'Todas las áreas');
+      const porArea = porFac.filter(x => !q('#selArea').value || x.d.area === q('#selArea').value);
+      if (origen !== 'eq') opciones(q('#selEq'), unicos(porArea, 'equipo'), 'Todos los tanques');
+
+      const lista = filtrados().sort((x, y) => y.d.tasa - x.d.tasa);
+      q('#selLista').innerHTML = lista.length
+        ? lista.map((x, i) => `
+            <button class="sel-fila" data-i="${i}">
+              <img src="${x.d.img}" alt="">
+              <span class="sf-txt">
+                <b>${x.d.equipo}</b><span class="cod">${x.d.fid || ''}</span>
+                <small>${x.fac} · ${x.d.area} · ${x.d.punto} · ${x.d.elemento}</small>
+              </span>
+              <span class="sf-tasa ${x.d.tier}">${x.d.tasa.toLocaleString('es-CO')} <small>g/Hr</small></span>
+            </button>`).join('')
+        : '<p class="sel-vacio">No queda ninguna emisión activa con esos filtros.</p>';
+
+      q('#selLista').querySelectorAll('.sel-fila').forEach(btn => {
+        btn.onclick = () => {
+          const x = lista[parseInt(btn.dataset.i, 10)];
+          cerrar();
+          abrirFormulario(x.d, x.lista, true);
+        };
+      });
+    }
+
+    opciones(q('#selFac'), ['CPF-1', 'CPF-2'], 'Las dos');
+    q('#selFac').onchange = () => { q('#selArea').value = ''; q('#selEq').value = ''; refrescar(); };
+    q('#selArea').onchange = () => { q('#selEq').value = ''; refrescar('area'); };
+    q('#selEq').onchange = () => refrescar('eq');
+    refrescar();
   }
 
   function fidLibre(fac) {
@@ -4369,6 +4479,10 @@ refrescarTodo();
     if (localStorage.getItem('emisiones.modoEdicion')) activar(true, true);
   } catch (e) {}
 
+  const btnCierre = document.getElementById('ciNuevo');
+  if (btnCierre) btnCierre.onclick = abrirSelectorCierre;
+
+  window.abrirSelectorCierre = abrirSelectorCierre;
   window.abrirFormulario = abrirFormulario;
   window.quitarRegistro = quitarRegistro;
   window.modoEdicion = activar;
