@@ -2623,7 +2623,6 @@ THREE.OrbitControls = OrbitControls;
       <div class="nav-group" style="grid-column:1/-1">
         <div class="nav-group-title">DATOS</div>
         <a href="#" class="nav-link" id="navFuente">Fuente de datos · hoja de cálculo</a>
-        <a href="editor/" class="nav-link">Editar datos · requiere acceso</a>
         <a href="#" class="nav-link" id="navInforme">Informe para imprimir o enviar en PDF</a>
       </div>
 
@@ -3002,6 +3001,8 @@ THREE.OrbitControls = OrbitControls;
         <h2>Hallazgos intervenidos</h2>
         <div class="section-note">EVIDENCIA DE LAS FUGAS YA CORREGIDAS</div>
       </div>
+
+      <button class="bd-b bd-pri ci-nuevo" id="ciNuevo">Registrar un cierre</button>
 
       <!-- De dónde se partió y dónde se va -->
       <div class="pg-caja">
@@ -3625,6 +3626,7 @@ function renderPrioridad(data, areaActiva, contenedorId, leadId) {
     row.addEventListener('click', () => { if (item) openLightbox(item); });
     // en modo edición el ranking también se puede tocar, para no tener que
     // bajar hasta las tarjetas
+    if (window.MODO_EDICION && item && editable(data)) marcarEditable(row, item, data);
   });
 }
 
@@ -3698,20 +3700,52 @@ function renderTarjetas(data, areaActiva, gridId) {
       </div>
     `;
     card.addEventListener('click', () => openLightbox(d));
+    if (window.MODO_EDICION && editable(data)) marcarEditable(card, d, data);
     el.appendChild(card);
   });
 
+  if (window.MODO_EDICION && editable(data)) el.appendChild(tarjetaAgregar(data));
 }
 
 // Botones de edición sobre una tarjeta. Se añaden aparte para que el
 // tablero en modo normal quede exactamente igual que antes.
 // Caño Sur se queda fuera de la edición hasta que llegue su cromatografía:
 // el formulario sólo sabe mover puntos entre las listas de CPF-1 y CPF-2.
+function editable(lista) {
+  return lista === DATA1 || lista === DATA2 || lista === CERRADAS1 || lista === CERRADAS2;
+}
 
+function marcarEditable(card, d, lista) {
+  card.classList.add('editable');
+  const barra = document.createElement('div');
+  barra.className = 'ed-acciones' + (card.classList.contains('prio-row') ? ' ed-fila' : '');
+  barra.innerHTML = `
+    <button class="ed-b" title="Editar" aria-label="Editar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 20h9"></path>
+        <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+      </svg>
+    </button>
+    <button class="ed-b ed-del" title="Quitar" aria-label="Quitar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 6 6 18M6 6l12 12"></path>
+      </svg>
+    </button>`;
+  const [bEd, bDel] = barra.querySelectorAll('button');
+  bEd.onclick = e => { e.stopPropagation(); abrirFormulario(d, lista); };
+  bDel.onclick = e => { e.stopPropagation(); quitarRegistro(d, lista); };
+  card.appendChild(barra);
+}
 
-
-
-
+function tarjetaAgregar(lista) {
+  const c = document.createElement('button');
+  c.className = 'card card-nueva';
+  c.innerHTML = `<span class="cn-mas">+</span><span class="cn-t">Agregar emisión</span>`;
+  c.onclick = () => abrirFormulario(null, lista);
+  return c;
+}
 
 function renderGrid1() { renderPrioridad(DATA1, active1, 'prio1', 'prioLead1'); renderTarjetas(DATA1, active1, 'grid1'); }
 function renderFilters1() {
@@ -3889,8 +3923,10 @@ function renderCierres() {
           ${d.fechaCierre ? (() => { const n = diasAbierto(d); return `<div class="cerr-fecha">Reparado el ${fechaLarga(d.fechaCierre)}${n != null ? ` · ${n} días desde la detección` : ''}</div>`; })() : ''}
         </div>`;
       card.addEventListener('click', () => openLightbox(d));
+      if (window.MODO_EDICION) marcarEditable(card, d, g.lista);
       grid.appendChild(card);
     });
+    if (window.MODO_EDICION) grid.appendChild(tarjetaAgregar(g.lista));
     cuerpo.appendChild(grid);
   });
 }
@@ -4177,6 +4213,7 @@ refrescarTodo();
         <div class="bd-btns">
           <button class="bd-b bd-pri" id="bdSync">Conectar y actualizar</button>
           <button class="bd-b" id="bdBase">Usar datos del archivo</button>
+          <button class="bd-b" id="bdEditar">Editar aquí mismo</button>
         </div>
         <div id="bdMsg"></div>
         <div id="bdFotos"></div>
@@ -4212,6 +4249,11 @@ refrescarTodo();
       } catch (e) {
         decir('bd-err', 'No se pudo leer la hoja', e.message);
       }
+    };
+
+    cap.querySelector('#bdEditar').onclick = () => {
+      cerrar();
+      if (window.modoEdicion) window.modoEdicion(true);
     };
 
     cap.querySelector('#bdBase').onclick = () => {
@@ -4291,6 +4333,625 @@ refrescarTodo();
   })();
 })();
 
+/* ============================================================
+   EDICIÓN DIRECTA
+   Permite agregar, corregir y quitar emisiones sin salir del tablero,
+   con la foto tomada del propio equipo. Lo editado queda guardado en
+   este navegador; el botón "Descargar tablero" genera el archivo que
+   se sube al repositorio para que lo vean los demás.
+   ============================================================ */
+(function () {
+  const CLAVE_ED = 'emisiones.edicion';
+  const AREAS = ['PROCESOS', 'SKIM TANK', 'ALMACENAMIENTO', 'FWKOS'];
+  const PUNTOS = ['MANHOLE', 'ESCOTILLA', 'BRIDA', 'BRIDA INSTRUMENTACION', 'VÁLVULA', 'SELLO', 'CONEXIÓN', 'VENTEO'];
+  const ELEMENTOS = ['EMPAQUE', 'ESCOTILLA', 'CIEGO', 'EMPAQUE Y PERNOS', 'SIN EMPAQUE Y SIN PERNOS', 'PERNOS', 'SELLO'];
+
+  const facDe = lista => (lista === DATA1 || lista === CERRADAS1) ? 'CPF-1' : 'CPF-2';
+  const esCierre = lista => (lista === CERRADAS1 || lista === CERRADAS2);
+
+  // ---------- guardado local ----------
+  function guardar() {
+    try {
+      localStorage.setItem(CLAVE_ED, JSON.stringify(
+        { d1: DATA1, d2: DATA2, c1: CERRADAS1, c2: CERRADAS2 }));
+    } catch (e) {
+      avisoFlotante('No se pudo guardar: el navegador se quedó sin espacio. Descarga el tablero para no perder los cambios.');
+    }
+  }
+
+  // ---------- foto: se reduce antes de guardarla ----------
+  function leerFoto(file, listo) {
+    const fr = new FileReader();
+    fr.onload = () => {
+      const im = new Image();
+      im.onload = () => {
+        const ancho = Math.min(860, im.width);
+        const c = document.createElement('canvas');
+        c.width = ancho; c.height = Math.round(im.height * ancho / im.width);
+        c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+        listo(c.toDataURL('image/jpeg', 0.86));
+      };
+      im.onerror = () => listo('');
+      im.src = fr.result;
+    };
+    fr.onerror = () => listo('');
+    fr.readAsDataURL(file);
+  }
+
+  // ---------- formulario ----------
+  function abrirFormulario(d, lista, modoCierre) {
+    const nuevo = !d;
+    const cierre = esCierre(lista) || !!modoCierre;
+    const v = d || { area: AREAS[0], equipo: '', punto: PUNTOS[0], elemento: ELEMENTOS[0],
+                     diametro: '', tasa: '', hallazgo: '', img: '', imgCierre: '', tasaCierre: 0 };
+    let img = v.img || '', imgC = v.imgCierre || '';
+
+    const opc = (arr, sel) => arr.map(o =>
+      `<option${o === sel ? ' selected' : ''}>${o}</option>`).join('');
+
+    const cap = document.createElement('div');
+    cap.className = 'bd-capa';
+    cap.innerHTML = `
+      <div class="bd-caja ed-caja" role="dialog" aria-label="Emisión">
+        <div class="bd-top">
+          <div>
+            <div class="bd-kick">${facDe(lista)}${cierre ? ' · CIERRE' : ''}</div>
+            <h3 class="bd-h">${modoCierre ? 'Cerrar hallazgo' : (nuevo ? 'Nueva emisión' : 'Editar emisión')}</h3>
+          </div>
+          <button class="bd-x" aria-label="Cerrar">×</button>
+        </div>
+
+        <div class="ed-rejilla">
+          <label>Área<select id="edArea">${opc(AREAS, v.area)}</select></label>
+          <label>Equipo<input id="edEq" value="${(v.equipo || '').replace(/"/g, '&quot;')}" placeholder="TK-901A"></label>
+          <label>Punto<select id="edPto">${opc(PUNTOS, v.punto)}</select></label>
+          <label>Elemento<select id="edEle">${opc(ELEMENTOS, v.elemento)}</select></label>
+          <label>Diámetro (pulg)<input id="edDia" type="number" min="0" step="0.5" value="${v.diametro || ''}"></label>
+          <label>Lectura (g/Hr)<input id="edTasa" type="number" min="0" step="1" value="${v.tasa || ''}"></label>
+        </div>
+        <label class="ed-ancho">Hallazgo
+          <textarea id="edHall" rows="2" placeholder="Qué se observó y la tasa medida.">${v.hallazgo || ''}</textarea></label>
+
+        <div class="ed-fotos">
+          <div class="ed-foto">
+            <span class="ed-et">Foto del hallazgo</span>
+            <div class="ed-prev" id="edPrev">${img ? `<img src="${img}">` : '<em>Sin foto</em>'}</div>
+            <!-- el propio input es el botón: algunos visores bloquean abrirlo por código -->
+            <label class="bd-b ed-file" for="edFile" id="edSubir">${img ? 'Cambiar' : 'Elegir foto'}
+              <input type="file" accept="image/*" id="edFile"></label>
+            <input class="ed-url" id="edUrl" placeholder="…o pega aquí el enlace de la foto">
+          </div>
+          <div class="ed-foto" id="edBloqueCierre" style="${cierre ? '' : 'display:none'}">
+            <span class="ed-et">Foto de verificación</span>
+            <div class="ed-prev" id="edPrevC">${imgC ? `<img src="${imgC}">` : '<em>Sin foto</em>'}</div>
+            <label class="bd-b ed-file" for="edFileC" id="edSubirC">${imgC ? 'Cambiar' : 'Elegir foto'}
+              <input type="file" accept="image/*" id="edFileC"></label>
+            <input class="ed-url" id="edUrlC" placeholder="…o pega aquí el enlace de la foto">
+            <label class="ed-cierre-tasa">Lectura tras reparar (g/Hr)
+              <input id="edTasaC" type="number" min="0" step="1" value="${v.tasaCierre != null ? v.tasaCierre : 0}"></label>
+            <label class="ed-cierre-tasa">Fecha de reparación
+              <input id="edFechaC" type="date" value="${v.fechaCierre || ''}"></label>
+          </div>
+        </div>
+
+        <div class="bd-btns">
+          ${modoCierre
+            ? '<button class="bd-b bd-pri" id="edConfirmar">Confirmar cierre</button>'
+            : '<button class="bd-b bd-pri" id="edGuardar">Guardar</button>'}
+          ${(!cierre && !modoCierre) ? '<button class="bd-b" id="edCerrarH">Marcar como reparada</button>' : ''}
+          ${(cierre && !modoCierre) ? '<button class="bd-b" id="edReabrir">Volver a activa</button>' : ''}
+        </div>
+        <div id="edMsg"></div>
+      </div>`;
+    document.body.appendChild(cap);
+
+    const q = s => cap.querySelector(s);
+    const cerrar = () => cap.remove();
+    q('.bd-x').onclick = cerrar;
+    cap.onclick = e => { if (e.target === cap) cerrar(); };
+
+    const engancharFoto = (btn, input, url, prev, set) => {
+      const pintar = (dataUrl, mensaje) => {
+        set(dataUrl);
+        q(prev).innerHTML = dataUrl ? `<img src="${dataUrl}">` : `<em>${mensaje || 'Sin foto'}</em>`;
+        q(btn).firstChild.nodeValue = dataUrl ? 'Cambiar' : 'Elegir foto';
+      };
+      q(input).onchange = e => {
+        const f = e.target.files && e.target.files[0];
+        if (!f) return;
+        q(prev).innerHTML = '<em>Procesando…</em>';
+        leerFoto(f, d => pintar(d, 'No se pudo leer la imagen'));
+      };
+      // salida de emergencia: si el visor no deja abrir la galería, sirve un enlace
+      q(url).onchange = e => {
+        const u = e.target.value.trim();
+        if (!u) return;
+        const d = u.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:.*&)?id=)([a-zA-Z0-9_-]{20,})/);
+        pintar(d ? `https://drive.google.com/thumbnail?id=${d[1]}&sz=w1400` : u);
+      };
+    };
+    const campoFecha = q('#edFechaC');
+    if (campoFecha && !campoFecha.value) {
+      const h = new Date();
+      campoFecha.value = `${h.getFullYear()}-${String(h.getMonth() + 1).padStart(2, '0')}-${String(h.getDate()).padStart(2, '0')}`;
+    }
+
+    engancharFoto('#edSubir', '#edFile', '#edUrl', '#edPrev', u => img = u);
+    engancharFoto('#edSubirC', '#edFileC', '#edUrlC', '#edPrevC', u => imgC = u);
+
+    const recoger = () => {
+      const tasa = parseFloat(q('#edTasa').value);
+      const equipo = q('#edEq').value.trim();
+      if (!equipo) return { error: 'Falta el equipo.' };
+      if (!isFinite(tasa) || tasa <= 0) return { error: 'La lectura debe ser un número mayor que cero.' };
+      return {
+        campo: 'RUBIALES',
+        area: q('#edArea').value,
+        equipo,
+        punto: q('#edPto').value,
+        elemento: q('#edEle').value,
+        diametro: parseFloat(q('#edDia').value) || '',
+        diam: parseFloat(q('#edDia').value) || '',
+        tasa,
+        hallazgo: q('#edHall').value.trim(),
+        img,
+        tier: tierOf(tasa),
+      };
+    };
+
+    const aplicarEn = (destino, extra) => {
+      const r = recoger();
+      if (r.error) { q('#edMsg').innerHTML = `<div class="bd-msg bd-err"><b>${r.error}</b></div>`; return false; }
+      Object.assign(r, extra || {});
+      if (d) {
+        const i = lista.indexOf(d);
+        if (i >= 0) lista.splice(i, 1);
+        r.fid = d.fid || '';
+        if (d.nuevo) r.nuevo = true;
+      } else {
+        r.nuevo = true;   // detectada despues de la campana: no es linea base
+      }
+      if (!r.fid) r.fid = fidLibre(facDe(destino));
+      r.id = destino.length + 1;
+      destino.push(r);
+      guardar(); refrescarTodo(); cerrar();
+      return true;
+    };
+
+    const bGuardar = q('#edGuardar');
+    if (bGuardar) bGuardar.onclick = () => aplicarEn(lista, cierre ? {
+      imgCierre: imgC, tasaCierre: parseFloat(q('#edTasaC').value) || 0,
+      fechaCierre: q('#edFechaC') ? q('#edFechaC').value : '',
+    } : null);
+
+    // viene del selector: confirmar lo pasa directo a la pestaña de cierres
+    const bConf = q('#edConfirmar');
+    if (bConf) bConf.onclick = () => aplicarEn(
+      facDe(lista) === 'CPF-1' ? CERRADAS1 : CERRADAS2,
+      { imgCierre: imgC, tasaCierre: parseFloat(q('#edTasaC').value) || 0,
+        fechaCierre: q('#edFechaC').value });
+
+    const bCerrar = q('#edCerrarH');
+    if (bCerrar) bCerrar.onclick = () => {
+      // pide la verificación antes de mover el hallazgo
+      q('#edBloqueCierre').style.display = '';
+      q('#edBloqueCierre').scrollIntoView({ block: 'nearest' });
+      bCerrar.textContent = 'Confirmar cierre';
+      bCerrar.onclick = () => aplicarEn(
+        facDe(lista) === 'CPF-1' ? CERRADAS1 : CERRADAS2,
+        { imgCierre: imgC, tasaCierre: parseFloat(q('#edTasaC').value) || 0,
+          fechaCierre: q('#edFechaC').value });
+    };
+
+    const bReabrir = q('#edReabrir');
+    if (bReabrir) bReabrir.onclick = () =>
+      aplicarEn(facDe(lista) === 'CPF-1' ? DATA1 : DATA2,
+                { imgCierre: '', tasaCierre: undefined, fechaCierre: '' });
+  }
+
+  /* Buscar la tarjeta a ojo se presta a error: un tanque puede tener tres o
+     cuatro puntos activos. Aquí se baja por facilidad, área y equipo, y al
+     final quedan sólo los puntos que de verdad pueden cerrarse. */
+  function abrirSelectorCierre() {
+    const activos = [...DATA1.map(d => ({ d, lista: DATA1, fac: 'CPF-1' })),
+                     ...DATA2.map(d => ({ d, lista: DATA2, fac: 'CPF-2' }))];
+
+    const cap = document.createElement('div');
+    cap.className = 'bd-capa';
+    cap.innerHTML = `
+      <div class="bd-caja ed-caja" role="dialog" aria-label="Registrar un cierre">
+        <div class="bd-top">
+          <div>
+            <div class="bd-kick">CIERRE DE HALLAZGO</div>
+            <h3 class="bd-h">¿Cuál emisión reparaste?</h3>
+          </div>
+          <button class="bd-x" aria-label="Cerrar">×</button>
+        </div>
+        <p class="bd-p">Ve filtrando hasta que aparezca el punto. Sólo se listan
+        las emisiones activas: las ya cerradas no vuelven a salir.</p>
+        <div class="ed-rejilla">
+          <label>Facilidad<select id="selFac"></select></label>
+          <label>Área<select id="selArea"></select></label>
+          <label>Tanque<select id="selEq"></select></label>
+        </div>
+        <div class="sel-lista" id="selLista"></div>
+      </div>`;
+    document.body.appendChild(cap);
+
+    const q = s => cap.querySelector(s);
+    const cerrar = () => cap.remove();
+    q('.bd-x').onclick = cerrar;
+    cap.onclick = e => { if (e.target === cap) cerrar(); };
+
+    const opciones = (sel, valores, etiqueta) => {
+      const previo = sel.value;
+      sel.innerHTML = `<option value="">${etiqueta}</option>`
+        + valores.map(v => `<option${v === previo ? ' selected' : ''}>${v}</option>`).join('');
+    };
+    const unicos = (arr, campo) => [...new Set(arr.map(x => x.d[campo] || x[campo]))].sort();
+
+    function filtrados() {
+      const f = q('#selFac').value, a = q('#selArea').value, e = q('#selEq').value;
+      return activos.filter(x => (!f || x.fac === f) && (!a || x.d.area === a) && (!e || x.d.equipo === e));
+    }
+
+    function refrescar(origen) {
+      const porFac = activos.filter(x => !q('#selFac').value || x.fac === q('#selFac').value);
+      if (origen !== 'area') opciones(q('#selArea'), unicos(porFac, 'area'), 'Todas las áreas');
+      const porArea = porFac.filter(x => !q('#selArea').value || x.d.area === q('#selArea').value);
+      if (origen !== 'eq') opciones(q('#selEq'), unicos(porArea, 'equipo'), 'Todos los tanques');
+
+      const lista = filtrados().sort((x, y) => y.d.tasa - x.d.tasa);
+      q('#selLista').innerHTML = lista.length
+        ? lista.map((x, i) => `
+            <button class="sel-fila" data-i="${i}">
+              <img src="${x.d.img}" alt="">
+              <span class="sf-txt">
+                <b>${x.d.equipo}</b><span class="cod">${x.d.fid || ''}</span>
+                <small>${x.fac} · ${x.d.area} · ${x.d.punto} · ${x.d.elemento}</small>
+              </span>
+              <span class="sf-tasa ${x.d.tier}">${x.d.tasa.toLocaleString('es-CO')} <small>g/Hr</small></span>
+            </button>`).join('')
+        : '<p class="sel-vacio">No queda ninguna emisión activa con esos filtros.</p>';
+
+      q('#selLista').querySelectorAll('.sel-fila').forEach(btn => {
+        btn.onclick = () => {
+          const x = lista[parseInt(btn.dataset.i, 10)];
+          cerrar();
+          abrirFormulario(x.d, x.lista, true);
+        };
+      });
+    }
+
+    opciones(q('#selFac'), ['CPF-1', 'CPF-2'], 'Las dos');
+    q('#selFac').onchange = () => { q('#selArea').value = ''; q('#selEq').value = ''; refrescar(); };
+    q('#selArea').onchange = () => { q('#selEq').value = ''; refrescar('area'); };
+    q('#selEq').onchange = () => refrescar('eq');
+    refrescar();
+  }
+
+  function fidLibre(fac) {
+    const usados = new Set();
+    [DATA1, DATA2, CERRADAS1, CERRADAS2].forEach(a =>
+      a.forEach(x => { if (x.fid) usados.add(String(x.fid).toUpperCase()); }));
+    for (let n = 1; n < 1000; n++) {
+      const c = `${fac}-${String(n).padStart(2, '0')}`;
+      if (!usados.has(c)) return c;
+    }
+    return fac + '-XX';
+  }
+
+  function quitarRegistro(d, lista) {
+    if (!confirm(`¿Quitar ${d.equipo} · ${d.elemento} (${d.tasa.toLocaleString('es-CO')} g/Hr)?`)) return;
+    const i = lista.indexOf(d);
+    if (i >= 0) lista.splice(i, 1);
+    guardar(); refrescarTodo();
+  }
+
+  // ---------- descargar el tablero con los cambios dentro ----------
+  async function descargarTablero(boton) {
+    const previo = boton.textContent;
+    boton.textContent = 'Generando…';
+    try {
+      const resp = await fetch(location.href);
+      if (!resp.ok) throw new Error('no se pudo leer el archivo');
+      let src = await resp.text();
+      const reemplazar = (nombre, arr) => {
+        const re = new RegExp('let ' + nombre + ' = \\[[\\s\\S]*?\\];\\n');
+        if (!re.test(src)) throw new Error('no se encontró ' + nombre);
+        src = src.replace(re, 'let ' + nombre + ' = ' + JSON.stringify(arr) + ';\n');
+      };
+      reemplazar('DATA1', DATA1); reemplazar('DATA2', DATA2);
+      reemplazar('CERRADAS1', CERRADAS1); reemplazar('CERRADAS2', CERRADAS2);
+
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([src], { type: 'text/html' }));
+      a.download = 'index.html';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      boton.textContent = 'Descargado';
+    } catch (e) {
+      boton.textContent = previo;
+      avisoFlotante('No se pudo generar el archivo desde aquí. Ábrelo por su enlace web (no como archivo local) y vuelve a intentarlo.');
+    }
+    setTimeout(() => { boton.textContent = previo; }, 3000);
+  }
+
+  function avisoFlotante(txt) {
+    const n = document.createElement('div');
+    n.className = 'ed-aviso-flot';
+    n.textContent = txt;
+    document.body.appendChild(n);
+    setTimeout(() => n.remove(), 6000);
+  }
+
+  // ---------- barra de modo edición ----------
+  function barra() {
+    let b = document.getElementById('edBarra');
+    if (!window.MODO_EDICION) { if (b) b.remove(); return; }
+    if (b) return;
+    b = document.createElement('div');
+    b.id = 'edBarra';
+    b.innerHTML = `
+      <span class="ed-punto"></span>
+      <span class="ed-txt">Modo edición</span>
+      <button class="bd-b bd-pri" id="edDesc">Descargar tablero</button>
+      <button class="bd-b" id="edSalir">Salir</button>`;
+    document.body.appendChild(b);
+    b.querySelector('#edDesc').onclick = e => descargarTablero(e.target);
+    b.querySelector('#edSalir').onclick = () => activar(false);
+  }
+
+  /* ---------- PESTILLO DEL MODO EDICIÓN ----------
+     No es un control de acceso: esta página se sirve tal cual al navegador y
+     quien sepa mirar el código entra igual. Lo que evita es que alguien toque
+     sin querer mientras el tablero está proyectado o prestado. El PIN no se
+     guarda en el archivo: sólo queda su huella, de la que no se puede volver
+     al número. Lo que de verdad protege el dato publicado es la cuenta de
+     GitHub, y ahí sí conviene la verificación en dos pasos. */
+  const PIN_SAL  = 'emisiones-cpf-2026';
+  const PIN_HASH = 'f4918944250230c665132f6a68e353e38d300fb7c5741a39ec1eb359a9b6e8e7';
+  const PIN_CLAVE = 'emisiones.desbloqueo';
+  const PIN_VIGENCIA = 2 * 60 * 60 * 1000;   // dos horas
+  let intentos = 0, bloqueadoHasta = 0;
+
+  async function huella(txt) {
+    const datos = new TextEncoder().encode(PIN_SAL + txt);
+    if (window.crypto && crypto.subtle && crypto.subtle.digest) {
+      const h = await crypto.subtle.digest('SHA-256', datos);
+      return [...new Uint8Array(h)].map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+    return null;   // sin contexto seguro (archivo local) no hay cómo calcularla
+  }
+
+  function desbloqueado() {
+    try {
+      const t = parseInt(sessionStorage.getItem(PIN_CLAVE) || '0', 10);
+      return t && (Date.now() - t) < PIN_VIGENCIA;
+    } catch (e) { return false; }
+  }
+
+  /* ---------- SEGUNDO FACTOR: LA HUELLA DEL EQUIPO ----------
+     Una llave de acceso (passkey) guardada en el propio teléfono o portátil.
+     Al entrar, el aparato pide la huella, la cara o el PIN del sistema antes
+     de soltarla, así que a la clave escrita se le suma algo que hay que tener
+     en la mano. Se registra por equipo: el que no la tenga sigue entrando sólo
+     con la clave. Honestamente: sin servidor nadie comprueba la firma, así que
+     esto sube el escalón pero no lo vuelve inviolable. */
+  const LLAVE_EQUIPO = 'emisiones.llaveEquipo';
+
+  const hayBiometria = () => !!(window.PublicKeyCredential && navigator.credentials
+                                && navigator.credentials.create && window.isSecureContext);
+
+  const b64 = buf => btoa(String.fromCharCode(...new Uint8Array(buf)))
+                       .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const deB64 = txt => {
+    const t = txt.replace(/-/g, '+').replace(/_/g, '/');
+    const s = atob(t + '='.repeat((4 - t.length % 4) % 4));
+    return Uint8Array.from(s, c => c.charCodeAt(0));
+  };
+
+  function llaveGuardada() {
+    try { return localStorage.getItem(LLAVE_EQUIPO) || ''; } catch (e) { return ''; }
+  }
+
+  async function registrarLlave() {
+    const cred = await navigator.credentials.create({
+      publicKey: {
+        challenge: crypto.getRandomValues(new Uint8Array(32)),
+        rp: { name: 'Emisiones fugitivas · Campo Rubiales' },
+        user: {
+          id: crypto.getRandomValues(new Uint8Array(16)),
+          name: 'editor',
+          displayName: 'Editor del tablero',
+        },
+        pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+        authenticatorSelection: {
+          authenticatorAttachment: 'platform',   // el propio aparato, no una llave USB
+          userVerification: 'required',          // obliga huella, cara o PIN del sistema
+          residentKey: 'preferred',
+        },
+        timeout: 60000,
+        attestation: 'none',
+      },
+    });
+    if (!cred) throw new Error('sin credencial');
+    localStorage.setItem(LLAVE_EQUIPO, b64(cred.rawId));
+    return true;
+  }
+
+  async function pedirLlave() {
+    const id = llaveGuardada();
+    if (!id) return true;                        // este equipo no la tiene configurada
+    const r = await navigator.credentials.get({
+      publicKey: {
+        challenge: crypto.getRandomValues(new Uint8Array(32)),
+        allowCredentials: [{ type: 'public-key', id: deB64(id) }],
+        userVerification: 'required',
+        timeout: 60000,
+      },
+    });
+    return !!r;
+  }
+
+  function pedirPIN(alEntrar) {
+    if (desbloqueado()) { alEntrar(); return; }
+
+    const cap = document.createElement('div');
+    cap.className = 'bd-capa';
+    cap.innerHTML = `
+      <div class="bd-caja pin-caja" role="dialog" aria-label="Clave de edición">
+        <div class="bd-top">
+          <div>
+            <div class="bd-kick">MODO EDICIÓN</div>
+            <h3 class="bd-h">Clave para editar</h3>
+          </div>
+          <button class="bd-x" aria-label="Cerrar">×</button>
+        </div>
+        <p class="bd-p">Los datos del tablero sólo se cambian con clave. Si no la
+        tienes, puedes seguir consultando todo con normalidad.</p>
+        <input class="bd-in pin-in" id="pinIn" type="password" inputmode="numeric"
+               autocomplete="off" placeholder="••••••••" maxlength="16">
+        <div class="bd-btns"><button class="bd-b bd-pri" id="pinOk">Entrar</button></div>
+        <div id="pinMsg"></div>
+        <div class="pin-llave" id="pinLlave"></div>
+        <div class="bd-pie">Esto evita cambios accidentales mientras el tablero
+        está proyectado o prestado. No sustituye al control de acceso: lo que
+        protege lo publicado es la cuenta de GitHub.</div>
+      </div>`;
+    document.body.appendChild(cap);
+
+    const q = s => cap.querySelector(s);
+    const cerrar = () => cap.remove();
+    q('.bd-x').onclick = cerrar;
+    cap.onclick = e => { if (e.target === cap) cerrar(); };
+    setTimeout(() => q('#pinIn').focus(), 60);
+
+    const decir = (clase, txt) => { q('#pinMsg').innerHTML = `<div class="bd-msg ${clase}"><b>${txt}</b></div>`; };
+
+    async function probar() {
+      const espera = bloqueadoHasta - Date.now();
+      if (espera > 0) { decir('bd-err', `Espera ${Math.ceil(espera / 1000)} segundos.`); return; }
+
+      const h = await huella(q('#pinIn').value.trim());
+      if (h === null) {
+        decir('bd-err', 'Abre el tablero por su enlace web para poder validar la clave.');
+        return;
+      }
+      if (h === PIN_HASH) {
+        // con la clave bien, el equipo todavía tiene que soltar su llave
+        if (llaveGuardada() && hayBiometria()) {
+          decir('bd-espera', 'Confirma con la huella del equipo…');
+          try {
+            await pedirLlave();
+          } catch (e) {
+            decir('bd-err', 'No se confirmó la huella. Vuelve a intentarlo.');
+            return;
+          }
+        }
+        try { sessionStorage.setItem(PIN_CLAVE, String(Date.now())); } catch (e) {}
+        intentos = 0;
+        cerrar();
+        alEntrar();
+        return;
+      }
+      intentos++;
+      q('#pinIn').value = '';
+      if (intentos >= 5) {
+        bloqueadoHasta = Date.now() + 60000;
+        intentos = 0;
+        decir('bd-err', 'Demasiados intentos. Espera un minuto.');
+      } else {
+        decir('bd-err', `Clave incorrecta. Te quedan ${5 - intentos} intentos.`);
+      }
+    }
+
+    // bloque de la llave del equipo: registrar, quitar, o explicar por qué no se puede
+    function pintarLlave() {
+      const caja = q('#pinLlave');
+      if (!hayBiometria()) {
+        caja.innerHTML = `<span class="pl-no">Este navegador no admite huella del equipo.</span>`;
+        return;
+      }
+      caja.innerHTML = llaveGuardada()
+        ? `<span class="pl-si">✓ Huella activada en este equipo</span>
+           <button class="pl-b" id="pinQuitar">Quitar</button>`
+        : `<span class="pl-off">Puedes exigir también la huella de este equipo.</span>
+           <button class="pl-b" id="pinActivar">Activar huella</button>`;
+
+      const bAct = q('#pinActivar');
+      if (bAct) bAct.onclick = async () => {
+        bAct.textContent = 'Confirma…';
+        try {
+          await registrarLlave();
+          decir('bd-ok', 'Huella activada. Desde ahora se pedirá en este equipo.');
+        } catch (e) {
+          decir('bd-err', 'No se pudo activar la huella en este equipo.');
+        }
+        pintarLlave();
+      };
+      const bQui = q('#pinQuitar');
+      if (bQui) bQui.onclick = () => {
+        try { localStorage.removeItem(LLAVE_EQUIPO); } catch (e) {}
+        decir('bd-ok', 'Huella retirada de este equipo.');
+        pintarLlave();
+      };
+    }
+    pintarLlave();
+
+    q('#pinOk').onclick = probar;
+    q('#pinIn').onkeydown = e => { if (e.key === 'Enter') probar(); };
+  }
+
+  function activar(on, callado) {
+    window.MODO_EDICION = !!on;
+    try { localStorage.setItem('emisiones.modoEdicion', on ? '1' : ''); } catch (e) {}
+    barra();
+    refrescarTodo();
+    // al encenderlo, llevar la vista a donde están los botones: si no,
+    // en el móvil queda lejos y parece que no pasó nada
+    if (on && !callado) setTimeout(() => {
+      // sólo sirve el primer botón que esté en una pestaña realmente abierta
+      const visible = [...document.querySelectorAll('.ed-acciones')]
+        .find(b => b.getClientRects().length);
+      if (visible) visible.closest('.prio-row, .card').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      avisoFlotante('Toca el lápiz para corregir una emisión, la equis para quitarla, o “Agregar emisión” al final de la lista.');
+    }, 260);
+  }
+
+  // ---------- arranque ----------
+  try {
+    const ed = JSON.parse(localStorage.getItem(CLAVE_ED) || 'null');
+    const hayHoja = localStorage.getItem('emisiones.fuenteURL');
+    // la hoja manda si está conectada; lo editado aquí es para quien no la usa
+    if (ed && ed.d1 && !hayHoja) {
+      DATA1.length = 0; ed.d1.forEach(x => DATA1.push(x));
+      DATA2.length = 0; ed.d2.forEach(x => DATA2.push(x));
+      CERRADAS1.length = 0; (ed.c1 || []).forEach(x => CERRADAS1.push(x));
+      CERRADAS2.length = 0; (ed.c2 || []).forEach(x => CERRADAS2.push(x));
+      refrescarTodo();
+    }
+    // tras recargar sólo se reabre si el desbloqueo sigue vigente en esta pestaña
+    if (localStorage.getItem('emisiones.modoEdicion') && desbloqueado()) activar(true, true);
+    else if (localStorage.getItem('emisiones.modoEdicion')) localStorage.removeItem('emisiones.modoEdicion');
+  } catch (e) {}
+
+  // todo lo que escribe datos pasa por el pestillo; consultar nunca lo pide
+  const btnCierre = document.getElementById('ciNuevo');
+  if (btnCierre) btnCierre.onclick = () => pedirPIN(abrirSelectorCierre);
+
+  window.abrirSelectorCierre = () => pedirPIN(abrirSelectorCierre);
+  window.abrirFormulario = abrirFormulario;
+  window.quitarRegistro = quitarRegistro;
+  window.modoEdicion = (on, callado) => {
+    if (!on) { activar(false, callado); return; }
+    pedirPIN(() => activar(true, callado));
+  };
+  window.descartarEdicion = () => {
+    try { localStorage.removeItem(CLAVE_ED); } catch (e) {}
+    location.reload();
+  };
+})();
 
 (function () {
   const a = document.getElementById('navFuente');
