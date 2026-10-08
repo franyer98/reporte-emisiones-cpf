@@ -1528,6 +1528,15 @@ THREE.OrbitControls = OrbitControls;
     transition: color .15s ease;
   }
   .nav-link:last-child { border-bottom: none; }
+  /* Entrada al editor: va como botón porque en la lista pasaba desapercibida */
+  .nav-editar{display:flex;flex-direction:column;gap:2px;margin:4px 0 12px;
+    padding:11px 14px;border-radius:10px;text-decoration:none;
+    border:1px solid var(--cool);background:rgba(45,212,238,.07);
+    transition:background .15s ease}
+  .nav-editar:hover{background:rgba(45,212,238,.14)}
+  .nav-editar span{font-size:14.5px;font-weight:600;color:var(--cool)}
+  .nav-editar small{font-family:'JetBrains Mono',monospace;font-size:10.5px;
+    letter-spacing:.04em;color:var(--text-faint)}
   .nav-link:hover { color: var(--cool); }
   @media (max-width: 620px) {
     .brand-sub { display: none; }
@@ -2622,9 +2631,8 @@ THREE.OrbitControls = OrbitControls;
     <div class="nav-menu-grid">
       <div class="nav-group" style="grid-column:1/-1">
         <div class="nav-group-title">DATOS</div>
-        <a href="#" class="nav-link" id="navFuente">Fuente de datos · hoja de cálculo</a>
-        <a href="editor/" class="nav-link">Editar datos · requiere acceso</a>
-        <a href="#" class="nav-link" id="navInforme">Informe para imprimir o enviar en PDF</a>
+        <a href="editor/" class="nav-editar"><span>Editar datos</span><small>Pide tu correo y un código</small></a>
+                        <a href="#" class="nav-link" id="navInforme">Informe para imprimir o enviar en PDF</a>
       </div>
 
       <div class="nav-group">
