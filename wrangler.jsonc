@@ -1,0 +1,11 @@
+{
+  // Sitio de archivos estáticos: no hay programa que ejecutar en el servidor,
+  // sólo páginas que servir. Cloudflare las publica tal cual desde el repositorio.
+  "name": "reporte-emisiones-cpf",
+  "compatibility_date": "2026-01-01",
+  "assets": {
+    "directory": "./",
+    // una dirección sin archivo (…/editor/) sirve el index de esa carpeta
+    "not_found_handling": "404-page"
+  }
+}
