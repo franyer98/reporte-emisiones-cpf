@@ -2532,6 +2532,7 @@ THREE.OrbitControls = OrbitControls;
   .lightbox-badge.alto { background: rgba(232,20,0,.95); color: #fff; }
   .lightbox-badge.medio { background: rgba(255,196,0,.95); color: #1a1200; }
   .lightbox-badge.bajo { background: rgba(0,184,40,.95); color: #fff; }
+  .lightbox-badge.verificada { background: rgba(0,184,40,.95); color: #fff; }
   .lightbox-eq { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 22px; }
   .lightbox-meta { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--text-faint); text-transform: uppercase; letter-spacing: .04em; margin: 6px 0 14px; }
   .lightbox-desc { font-size: 14px; color: var(--text-dim); line-height: 1.6; }
@@ -3422,14 +3423,22 @@ function barGradient(ctx, area, hex) {
 
 // ---------- Lightbox: foto al hacer clic en una barra ----------
 function tierLabelLB(t) { return {alto:'ALTO', medio:'MEDIO', bajo:'BAJO'}[t]; }
-function openLightbox(item) {
-  document.getElementById('lightboxImg').src = item.img;
+/* En una ficha de cierre hay dos tomas. `cual` dice cuál se amplía: sin él
+   se abre la del hallazgo, y con 'cierre' la de verificación. Antes siempre
+   salía la primera, aunque se tocara la foto que marca cero. */
+function openLightbox(item, cual) {
+  const verif = cual === 'cierre' && item.imgCierre;
+  document.getElementById('lightboxImg').src = verif ? item.imgCierre : item.img;
   const badge = document.getElementById('lightboxBadge');
-  badge.textContent = tierLabelLB(item.tier);
-  badge.className = 'lightbox-badge ' + item.tier;
+  badge.textContent = verif ? 'VERIFICADA' : tierLabelLB(item.tier);
+  badge.className = 'lightbox-badge ' + (verif ? 'verificada' : item.tier);
   document.getElementById('lightboxEq').textContent = item.equipo;
-  document.getElementById('lightboxMeta').textContent = `${item.area} · ${item.punto} · ${item.elemento} · ${item.tasa.toLocaleString('es-CO')} g/Hr`;
-  document.getElementById('lightboxDesc').textContent = item.hallazgo;
+  document.getElementById('lightboxMeta').textContent = verif
+    ? `${item.area} · ${item.punto} · ${item.elemento} · ${(item.tasaCierre || 0).toLocaleString('es-CO')} g/Hr tras reparar`
+    : `${item.area} · ${item.punto} · ${item.elemento} · ${item.tasa.toLocaleString('es-CO')} g/Hr`;
+  document.getElementById('lightboxDesc').textContent = verif
+    ? `Medición de verificación posterior a la reparación. Antes marcaba ${item.tasa.toLocaleString('es-CO')} g/Hr.`
+    : item.hallazgo;
   document.getElementById('lightbox').classList.add('open');
 }
 function closeLightbox() {
@@ -3851,7 +3860,7 @@ function renderCierres() {
                <figcaption><span class="cmp-et">ANTES</span>
                  <span class="cmp-v fuga">${d.tasa.toLocaleString('es-CO')} g/Hr</span></figcaption>
              </figure>
-             <figure>
+             <figure data-foto="cierre">
                <img src="${d.imgCierre}" alt="Después: verificación de ${d.equipo}" loading="lazy">
                <figcaption><span class="cmp-et">DESPUÉS</span>
                  <span class="cmp-v ok">${(d.tasaCierre || 0).toLocaleString('es-CO')} g/Hr</span></figcaption>
@@ -3872,7 +3881,10 @@ function renderCierres() {
           <div class="card-periodo cerr-antes">Medición previa: ${d.tasa.toLocaleString('es-CO')} g/Hr${d.cierre ? ' · ' + d.cierre : ''}</div>
           ${d.fechaCierre ? (() => { const n = diasAbierto(d); return `<div class="cerr-fecha">Reparado el ${fechaLarga(d.fechaCierre)}${n != null ? ` · ${n} días desde la detección` : ''}</div>`; })() : ''}
         </div>`;
-      card.addEventListener('click', () => openLightbox(d));
+      card.addEventListener('click', (e) => {
+        const fig = e.target.closest('figure');
+        openLightbox(d, fig && fig.dataset.foto === 'cierre' ? 'cierre' : null);
+      });
       grid.appendChild(card);
     });
     cuerpo.appendChild(grid);
