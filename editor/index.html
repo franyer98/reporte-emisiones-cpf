@@ -4652,6 +4652,29 @@ refrescarTodo();
   }
 
   // ---------- descargar el tablero con los cambios dentro ----------
+  /* Guarda los datos en el servidor. Van a una dirección que cuelga de
+     /editor, que es la ruta protegida: quien no pasó por el código del correo
+     no llega hasta aquí. Lo que se envía son sólo los datos, no la página. */
+  async function guardarEnServidor(boton) {
+    const previo = boton.textContent;
+    boton.textContent = 'Guardando…';
+    boton.disabled = true;
+    try {
+      const r = await fetch('/editor/api/datos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ DATA1, DATA2, CERRADAS1, CERRADAS2 }),
+      });
+      if (!r.ok) throw new Error(r.status + ' ' + (await r.text()));
+      boton.textContent = 'Guardado';
+    } catch (e) {
+      boton.textContent = previo;
+      avisoFlotante('No se pudo guardar en el servidor. Usa "Descargar copia" para no perder el trabajo.');
+    }
+    boton.disabled = false;
+    setTimeout(() => { boton.textContent = previo; }, 3000);
+  }
+
   async function descargarTablero(boton) {
     const previo = boton.textContent;
     boton.textContent = 'Generando…';
@@ -4698,9 +4721,11 @@ refrescarTodo();
     b.innerHTML = `
       <span class="ed-punto"></span>
       <span class="ed-txt">Modo edición</span>
-      <button class="bd-b bd-pri" id="edDesc">Descargar tablero</button>
+      <button class="bd-b bd-pri" id="edGuardar">Guardar</button>
+      <button class="bd-b" id="edDesc">Descargar copia</button>
       <button class="bd-b" id="edSalir">Salir</button>`;
     document.body.appendChild(b);
+    b.querySelector('#edGuardar').onclick = e => guardarEnServidor(e.target);
     b.querySelector('#edDesc').onclick = e => descargarTablero(e.target);
     b.querySelector('#edSalir').onclick = () => activar(false);
   }
@@ -6852,6 +6877,31 @@ ${cssInforme()}
   });
 
   window.informePDF = abrirInforme;
+})();
+</script>
+
+<script>
+/* ============================================================
+   DATOS GUARDADOS EN EL SERVIDOR
+   El archivo trae dentro una copia de los datos, que es la que se ve al
+   instante y la que sirve si se abre sin conexión. Enseguida se pregunta al
+   servidor si hay una versión más reciente —la que dejó quien editó por
+   última vez— y, si la hay, se repinta todo con ella.
+   ============================================================ */
+(function () {
+  if (!/^https?:/.test(location.protocol)) return;   // abierto como archivo local
+  fetch('/api/datos', { cache: 'no-store' })
+    .then(r => (r.ok ? r.json() : null))
+    .then(d => {
+      if (!d || !Array.isArray(d.DATA1)) return;
+      const poner = (arr, nuevos) => { arr.length = 0; (nuevos || []).forEach(x => arr.push(x)); };
+      poner(DATA1, d.DATA1);
+      poner(DATA2, d.DATA2);
+      poner(CERRADAS1, d.CERRADAS1);
+      poner(CERRADAS2, d.CERRADAS2);
+      if (typeof refrescarTodo === 'function') refrescarTodo();
+    })
+    .catch(() => {});   // sin servidor, se queda con los datos de dentro
 })();
 </script>
 

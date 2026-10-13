@@ -1,6 +1,7 @@
 {
-  // Sitio de archivos estáticos: no hay programa que ejecutar en el servidor,
-  // sólo páginas que servir. Cloudflare las publica tal cual desde el repositorio.
+  // El sitio son archivos estáticos. Cuando el almacén de datos esté
+  // configurado, aquí se añaden "main" y "kv_namespaces" para que el
+  // programa de src/index.js guarde y entregue los datos del tablero.
   "name": "reporte-emisiones-cpf",
   "compatibility_date": "2026-01-01",
   "assets": {

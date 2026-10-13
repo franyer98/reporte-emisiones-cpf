@@ -6184,5 +6184,30 @@ ${cssInforme()}
 })();
 </script>
 
+<script>
+/* ============================================================
+   DATOS GUARDADOS EN EL SERVIDOR
+   El archivo trae dentro una copia de los datos, que es la que se ve al
+   instante y la que sirve si se abre sin conexión. Enseguida se pregunta al
+   servidor si hay una versión más reciente —la que dejó quien editó por
+   última vez— y, si la hay, se repinta todo con ella.
+   ============================================================ */
+(function () {
+  if (!/^https?:/.test(location.protocol)) return;   // abierto como archivo local
+  fetch('/api/datos', { cache: 'no-store' })
+    .then(r => (r.ok ? r.json() : null))
+    .then(d => {
+      if (!d || !Array.isArray(d.DATA1)) return;
+      const poner = (arr, nuevos) => { arr.length = 0; (nuevos || []).forEach(x => arr.push(x)); };
+      poner(DATA1, d.DATA1);
+      poner(DATA2, d.DATA2);
+      poner(CERRADAS1, d.CERRADAS1);
+      poner(CERRADAS2, d.CERRADAS2);
+      if (typeof refrescarTodo === 'function') refrescarTodo();
+    })
+    .catch(() => {});   // sin servidor, se queda con los datos de dentro
+})();
+</script>
+
 </body>
 </html>
