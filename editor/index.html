@@ -3936,6 +3936,37 @@ function renderCierres() {
 
 // Vuelve a pintar todo a partir de DATA1/DATA2. Se llama al arrancar y
 // cada vez que llegan datos nuevos desde la hoja de cálculo.
+/* ---------- IDENTIFICADORES INTERNOS ----------
+   Cada registro lleva un `id` con el que la fila del ranking encuentra su
+   dato. Si dos registros comparten id, la búsqueda devuelve siempre el
+   primero: al editar la tercera fila se abría otra. Por eso el id tiene que
+   ser único entre las cuatro listas, no dentro de una sola. */
+function idLibre() {
+  let mayor = 0;
+  [DATA1, DATA2, CERRADAS1, CERRADAS2].forEach(a => a.forEach(x => {
+    const n = parseInt(x.id, 10);
+    if (!isNaN(n) && n > mayor) mayor = n;
+  }));
+  return mayor + 1;
+}
+
+/* Repara los repetidos que ya traían los datos guardados. Cambiar el id no
+   altera nada visible: lo que se muestra es `fid`, que no se toca. */
+function sanearIds() {
+  const vistos = new Set();
+  let mayor = 0;
+  [DATA1, DATA2, CERRADAS1, CERRADAS2].forEach(a => a.forEach(x => {
+    const n = parseInt(x.id, 10);
+    if (!isNaN(n) && n > mayor) mayor = n;
+  }));
+  [DATA1, DATA2, CERRADAS1, CERRADAS2].forEach(a => a.forEach(x => {
+    const n = parseInt(x.id, 10);
+    if (isNaN(n) || vistos.has(n)) x.id = ++mayor;
+    vistos.add(parseInt(x.id, 10));
+  }));
+}
+sanearIds();
+
 function refrescarTodo() {
   applyAggregates();
   updateKPIs();
@@ -4515,7 +4546,9 @@ refrescarTodo();
         r.nuevo = true;   // detectada despues de la campana: no es linea base
       }
       if (!r.fid) r.fid = fidLibre(facDe(destino));
-      r.id = destino.length + 1;
+      // el id tiene que ser único entre las cuatro listas: contar los de una
+      // sola repetía números y la fila del ranking terminaba abriendo otro
+      r.id = (d && parseInt(d.id, 10)) || idLibre();
       destino.push(r);
       guardar(); refrescarTodo(); cerrar();
       return true;
@@ -6989,6 +7022,7 @@ ${cssInforme()}
       poner(DATA2, d.DATA2);
       poner(CERRADAS1, d.CERRADAS1);
       poner(CERRADAS2, d.CERRADAS2);
+      if (typeof sanearIds === 'function') sanearIds();
       if (typeof refrescarTodo === 'function') refrescarTodo();
     })
     .catch(() => {});   // sin servidor, se queda con los datos de dentro
