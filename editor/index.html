@@ -4675,6 +4675,75 @@ refrescarTodo();
     setTimeout(() => { boton.textContent = previo; }, 3000);
   }
 
+  /* Historial: el servidor conserva una copia por cada guardado de los
+     últimos siete días. Pasado ese plazo se borran solas. */
+  function fechaCopia(iso) {
+    const d = new Date(iso);
+    if (isNaN(d)) return iso;
+    return d.toLocaleString('es-CO', { day: '2-digit', month: 'long', year: 'numeric',
+                                       hour: '2-digit', minute: '2-digit' });
+  }
+
+  async function abrirHistorial() {
+    const cap = document.createElement('div');
+    cap.className = 'bd-capa';
+    cap.innerHTML = `
+      <div class="bd-caja ed-caja" role="dialog" aria-label="Historial de cambios">
+        <div class="bd-top">
+          <div>
+            <div class="bd-kick">HISTORIAL</div>
+            <h3 class="bd-h">Volver a una versión anterior</h3>
+          </div>
+          <button class="bd-x" aria-label="Cerrar">×</button>
+        </div>
+        <p class="bd-p">Cada vez que guardas queda una copia. Se conservan las de
+        los últimos siete días; las más viejas se borran solas.</p>
+        <div class="sel-lista" id="histLista"><div class="sel-vacio">Cargando…</div></div>
+      </div>`;
+    document.body.appendChild(cap);
+    const cerrar = () => cap.remove();
+    cap.querySelector('.bd-x').onclick = cerrar;
+    cap.onclick = e => { if (e.target === cap) cerrar(); };
+
+    const lista = cap.querySelector('#histLista');
+    let copias = [];
+    try {
+      const r = await fetch('/editor/api/versiones', { cache: 'no-store' });
+      if (!r.ok) throw new Error(r.status);
+      copias = await r.json();
+    } catch (e) {
+      lista.innerHTML = '<div class="sel-vacio">No se pudo consultar el historial.</div>';
+      return;
+    }
+    if (!copias.length) {
+      lista.innerHTML = '<div class="sel-vacio">Todavía no hay copias guardadas.</div>';
+      return;
+    }
+    lista.innerHTML = copias.map((c, i) => `
+      <button class="sel-fila" data-clave="${c.clave}">
+        <span><strong>${fechaCopia(c.fecha)}</strong>${i === 0 ? ' · la más reciente' : ''}</span>
+      </button>`).join('');
+
+    lista.querySelectorAll('.sel-fila').forEach(fila => {
+      fila.onclick = async () => {
+        if (!confirm('¿Volver a la versión del ' + fila.textContent.trim() + '?\n\n'
+                     + 'Lo que hay ahora queda archivado, así que se puede deshacer.')) return;
+        fila.textContent = 'Restaurando…';
+        try {
+          const r = await fetch('/editor/api/restaurar', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ clave: fila.dataset.clave }),
+          });
+          if (!r.ok) throw new Error(r.status);
+          location.reload();
+        } catch (e) {
+          cerrar();
+          avisoFlotante('No se pudo restaurar esa versión.');
+        }
+      };
+    });
+  }
+
   async function descargarTablero(boton) {
     const previo = boton.textContent;
     boton.textContent = 'Generando…';
@@ -4722,10 +4791,12 @@ refrescarTodo();
       <span class="ed-punto"></span>
       <span class="ed-txt">Modo edición</span>
       <button class="bd-b bd-pri" id="edGuardar">Guardar</button>
+      <button class="bd-b" id="edHist">Historial</button>
       <button class="bd-b" id="edDesc">Descargar copia</button>
       <button class="bd-b" id="edSalir">Salir</button>`;
     document.body.appendChild(b);
     b.querySelector('#edGuardar').onclick = e => guardarEnServidor(e.target);
+    b.querySelector('#edHist').onclick = abrirHistorial;
     b.querySelector('#edDesc').onclick = e => descargarTablero(e.target);
     b.querySelector('#edSalir').onclick = () => activar(false);
   }
