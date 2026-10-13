@@ -1939,6 +1939,31 @@ THREE.OrbitControls = OrbitControls;
   .card-photo.comparar .badge.cerrada{top:auto;bottom:8px;left:8px;z-index:3}
   @media (max-width:420px){ .card-photo.comparar figcaption{font-size:7.5px;padding:4px 5px} }
 
+  /* ---------- COMPARADOR ANTES / DESPUÉS ----------
+     Las dos tomas superpuestas con un tirador en medio: al arrastrarlo, la
+     fuga desaparece. Lado a lado se entendía; así se ve. */
+  .cmp{position:relative;overflow:hidden;background:#0b0f13;touch-action:pan-y;
+    --pos:50%;cursor:ew-resize;user-select:none}
+  .cmp img{width:100%;height:100%;object-fit:cover;display:block;aspect-ratio:4/3;
+    pointer-events:none;-webkit-user-drag:none}
+  .cmp-tras{position:absolute;inset:0;clip-path:inset(0 0 0 var(--pos))}
+  .cmp-linea{position:absolute;top:0;bottom:0;left:var(--pos);width:2px;
+    background:rgba(255,255,255,.9);box-shadow:0 0 0 1px rgba(0,0,0,.35);z-index:4}
+  .cmp-grip{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.94);
+    box-shadow:0 2px 10px rgba(0,0,0,.45);display:flex;align-items:center;
+    justify-content:center;color:#0b0f13;font-size:13px;font-weight:700;letter-spacing:-1px}
+  .cmp-tag{position:absolute;top:8px;z-index:5;font-family:'JetBrains Mono',monospace;
+    font-size:9.5px;letter-spacing:.06em;padding:4px 7px;border-radius:6px;
+    background:rgba(8,11,14,.72);backdrop-filter:blur(3px);white-space:nowrap}
+  .cmp-tag.izq{left:8px}
+  .cmp-tag.der{right:8px}
+  .cmp-tag b{font-weight:700}
+  .cmp-tag.izq b{color:#ff6b52}
+  .cmp-tag.der b{color:#3ce06a}
+  .cmp .badge.cerrada{top:auto;bottom:8px;left:8px;z-index:5}
+  @media (max-width:420px){ .cmp-tag{font-size:8px;padding:3px 5px} .cmp-grip{width:28px;height:28px} }
+
   .ci-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
     gap:13px;margin:22px 0 8px}
   .ci-k{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:17px 19px}
@@ -2006,6 +2031,11 @@ THREE.OrbitControls = OrbitControls;
   .pg-top{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap}
   .pg-kick{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;color:var(--text-faint)}
   .pg-h{font-family:'Space Grotesk',sans-serif;font-size:19px;font-weight:700;margin:4px 0 0}
+  .pg-curva{margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+  .pg-curva-t{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.1em;
+    color:var(--text-faint);margin-bottom:10px}
+  .pg-curva-lienzo{position:relative;height:170px}
+  .pg-curva canvas{width:100%!important;height:100%!important}
   .pg-pct{text-align:right;line-height:1.1}
   .pg-pct span{font-family:'Space Grotesk',sans-serif;font-size:32px;font-weight:700;color:#00b828}
   .pg-pct small{display:block;font-family:'JetBrains Mono',monospace;font-size:9.5px;
@@ -3013,6 +3043,13 @@ THREE.OrbitControls = OrbitControls;
           <span><i class="pg-p activa"></i> Activa <b id="pgActivaG">—</b></span>
         </div>
 
+        <!-- Cómo ha bajado la emisión desde la medición inicial: cada escalón
+             es una reparación, con su fecha. -->
+        <div class="pg-curva" id="pgCurvaCaja">
+          <div class="pg-curva-t">CÓMO HA BAJADO · CADA ESCALÓN ES UNA REPARACIÓN</div>
+          <div class="pg-curva-lienzo"><canvas id="pgCurva"></canvas></div>
+        </div>
+
         <div class="pg-cols">
           <div class="pg-col">
             <div class="pg-l">LÍNEA BASE · <span id="pgCampana">campaña inicial</span></div>
@@ -3676,6 +3713,40 @@ function renderComposicion() {
   });
 }
 
+/* Arrastrar el tirador del comparador. Se marca `_arrastrado` para que el
+   clic que cierra el gesto no abra la foto ampliada sin querer. */
+function comparador(caja) {
+  if (caja._listo) return;
+  caja._listo = true;
+  let moviendo = false;
+
+  const colocar = x => {
+    const r = caja.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(100, (x - r.left) / r.width * 100));
+    caja.style.setProperty('--pos', pct.toFixed(1) + '%');
+  };
+
+  caja.addEventListener('pointerdown', e => {
+    moviendo = true;
+    caja._arrastrado = false;
+    // qué mitad se tocó se decide ANTES de mover el tirador: si no, el propio
+    // clic lo lleva justo donde se pulsó y las dos mitades quedan empatadas
+    const r = caja.getBoundingClientRect();
+    const pos = parseFloat(getComputedStyle(caja).getPropertyValue('--pos')) || 50;
+    caja._mitad = (e.clientX - r.left) / r.width * 100 > pos ? 'cierre' : null;
+    try { caja.setPointerCapture(e.pointerId); } catch (err) {}
+    colocar(e.clientX);
+  });
+  caja.addEventListener('pointermove', e => {
+    if (!moviendo) return;
+    caja._arrastrado = true;
+    colocar(e.clientX);
+  });
+  const soltar = () => { moviendo = false; setTimeout(() => { caja._arrastrado = false; }, 0); };
+  caja.addEventListener('pointerup', soltar);
+  caja.addEventListener('pointercancel', soltar);
+}
+
 // Tarjetas con evidencia fotografica (seccion "Detalle por punto")
 function renderTarjetas(data, areaActiva, gridId) {
   const el = document.getElementById(gridId);
@@ -3751,6 +3822,87 @@ function renderGrid2() { renderPrioridad(DATA2, active2, 'prio2', 'prioLead2'); 
    ella — se cuenta aparte, para que el avance no quede desdibujado. */
 // El nombre de la campaña sale de la medición más antigua, para que no quede
 // una etiqueta escrita a mano contradiciendo las fechas.
+/* La curva de la campaña: arranca en la línea base y baja un escalón por
+   cada reparación, en su fecha. Es la misma historia que cuentan los números
+   de arriba, pero vista de un golpe. Sólo entran los cierres con fecha: sin
+   ella no hay dónde ponerlos. */
+function pintarCurva(baseG, cerrados) {
+  const caja = document.getElementById('pgCurvaCaja');
+  const lienzo = document.getElementById('pgCurva');
+  if (!caja || !lienzo || typeof Chart === 'undefined') return;
+
+  const conFecha = cerrados.filter(d => d.fechaCierre)
+                           .sort((a, b) => a.fechaCierre < b.fechaCierre ? -1 : 1);
+  if (!conFecha.length) { caja.style.display = 'none'; return; }
+  caja.style.display = '';
+
+  const corto = iso => {
+    const d = new Date(iso + 'T12:00:00');
+    return isNaN(d) ? iso : d.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' });
+  };
+
+  // un punto de partida, uno por reparación, y hoy
+  // varias reparaciones del mismo día son un solo escalón: la fecha es el paso
+  const porDia = new Map();
+  conFecha.forEach(d => porDia.set(d.fechaCierre, (porDia.get(d.fechaCierre) || 0) + d.tasa));
+
+  const etiquetas = [campanaBase()], valores = [baseG];
+  let acum = baseG;
+  [...porDia.entries()].forEach(([fecha, g]) => {
+    acum -= g;
+    etiquetas.push(corto(fecha));
+    valores.push(Math.round(acum));
+  });
+  etiquetas.push('hoy');
+  valores.push(Math.round(acum));
+
+  const previo = Chart.getChart(lienzo);
+  if (previo) previo.destroy();
+
+  const estilo = getComputedStyle(document.documentElement);
+  const tenue = estilo.getPropertyValue('--text-faint').trim() || '#8c98a6';
+  const borde = estilo.getPropertyValue('--border').trim() || '#475463';
+
+  new Chart(lienzo, {
+    type: 'line',
+    data: {
+      labels: etiquetas,
+      datasets: [{
+        data: valores,
+        stepped: 'before',
+        borderColor: '#00b828',
+        backgroundColor: 'rgba(0,184,40,.12)',
+        borderWidth: 2,
+        fill: true,
+        pointRadius: 3,
+        pointBackgroundColor: '#00b828',
+        pointBorderWidth: 0,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: c => c.parsed.y.toLocaleString('es-CO') + ' g/Hr activos',
+          },
+        },
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: tenue, font: { size: 10 } } },
+        y: {
+          beginAtZero: false,
+          grid: { color: borde },
+          ticks: { color: tenue, font: { size: 10 },
+                   callback: v => v.toLocaleString('es-CO') },
+        },
+      },
+    },
+  });
+}
+
 function campanaBase() {
   const fechas = [...DATA1, ...DATA2, ...CERRADAS1, ...CERRADAS2]
     .filter(d => !d.nuevo && d.fechaDeteccion).map(d => d.fechaDeteccion).sort();
@@ -3809,6 +3961,8 @@ function renderProgreso() {
     tie.innerHTML = partes.join('');
   }
 
+  pintarCurva(baseG, [...CERRADAS1, ...CERRADAS2]);
+
   const nuevos = [...DATA1, ...DATA2].filter(d => d.nuevo);
   const gNuevos = nuevos.reduce((a, d) => a + d.tasa, 0);
   set('pgNota', elimG === 0
@@ -3866,17 +4020,14 @@ function renderCierres() {
 
       // con verificación posterior se muestran las dos tomas; sin ella, solo el hallazgo
       const foto = d.imgCierre
-        ? `<div class="card-photo comparar">
-             <figure>
-               <img src="${d.img}" alt="Antes: fuga en ${d.equipo}" loading="lazy">
-               <figcaption><span class="cmp-et">ANTES</span>
-                 <span class="cmp-v fuga">${d.tasa.toLocaleString('es-CO')} g/Hr</span></figcaption>
-             </figure>
-             <figure data-foto="cierre">
+        ? `<div class="card-photo cmp">
+             <img src="${d.img}" alt="Antes: fuga en ${d.equipo}" loading="lazy">
+             <div class="cmp-tras">
                <img src="${d.imgCierre}" alt="Después: verificación de ${d.equipo}" loading="lazy">
-               <figcaption><span class="cmp-et">DESPUÉS</span>
-                 <span class="cmp-v ok">${(d.tasaCierre || 0).toLocaleString('es-CO')} g/Hr</span></figcaption>
-             </figure>
+             </div>
+             <div class="cmp-linea"><span class="cmp-grip">‹›</span></div>
+             <span class="cmp-tag izq">ANTES <b>${d.tasa.toLocaleString('es-CO')} g/Hr</b></span>
+             <span class="cmp-tag der">DESPUÉS <b>${(d.tasaCierre || 0).toLocaleString('es-CO')} g/Hr</b></span>
              <div class="badge cerrada">VERIFICADA</div>
            </div>`
         : `<div class="card-photo">
@@ -3894,9 +4045,16 @@ function renderCierres() {
           ${d.fechaCierre ? (() => { const n = diasAbierto(d); return `<div class="cerr-fecha">Reparado el ${fechaLarga(d.fechaCierre)}${n != null ? ` · ${n} días desde la detección` : ''}</div>`; })() : ''}
         </div>`;
       card.addEventListener('click', (e) => {
-        const fig = e.target.closest('figure');
-        openLightbox(d, fig && fig.dataset.foto === 'cierre' ? 'cierre' : null);
+        const cmp = e.target.closest('.cmp');
+        if (cmp) {
+          if (cmp._arrastrado) return;        // venía de mover el tirador
+          openLightbox(d, cmp._mitad);
+          return;
+        }
+        openLightbox(d);
       });
+      const comp = card.querySelector('.cmp');
+      if (comp) comparador(comp);
       grid.appendChild(card);
     });
     cuerpo.appendChild(grid);
