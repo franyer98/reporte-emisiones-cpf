@@ -5818,6 +5818,12 @@ window.addEventListener('resize', () => {
   document.querySelectorAll('.nav-link').forEach(link => {
     link.addEventListener('click', (e) => {
       e.preventDefault();
+      // desde la guía de introducción el tablero aún está oculto: se abre
+      // primero, para que el enlace lleve de verdad a su sección
+      const tablero = document.getElementById('pageDashboard');
+      if (tablero && tablero.style.display !== 'block' && window.abrirDashboard) {
+        window.abrirDashboard();
+      }
       const tabId = link.dataset.tab;
       const targetId = link.dataset.target;
       if (tabId) document.querySelector(`.tab.${tabId}`).click();
@@ -5865,6 +5871,10 @@ window.addEventListener('resize', () => {
       window.dispatchEvent(new Event('resize'));
     }, 60);
   }
+  // El menú vive también en la guía: antes solo aparecía al entrar al tablero,
+  // y quien llegaba por primera vez se quedaba sin forma de moverse.
+  menuToggle.style.display = 'flex';
+  window.abrirDashboard = abrirDashboard;
   btn.addEventListener('click', abrirDashboard);
 })();
 </script>
