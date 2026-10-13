@@ -2232,7 +2232,7 @@ THREE.OrbitControls = OrbitControls;
   .ed-rejilla label,.ed-ancho,.ed-cierre-tasa{display:flex;flex-direction:column;gap:4px;
     font-size:11.5px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.04em}
   .ed-ancho{margin-top:10px}
-  .ed-rejilla input,.ed-rejilla select,.ed-ancho textarea,.ed-cierre-tasa input{
+  .ed-rejilla input,.ed-rejilla select,.ed-ancho textarea,.ed-ancho input,.ed-cierre-tasa input{
     background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;
     padding:8px 10px;color:var(--text);font-family:inherit;font-size:13.5px;text-transform:none;letter-spacing:0}
   .ed-ancho textarea{resize:vertical}
@@ -4570,8 +4570,15 @@ refrescarTodo();
           </div>
           <button class="bd-x" aria-label="Cerrar">×</button>
         </div>
-        <p class="bd-p">Ve filtrando hasta que aparezca el punto. Sólo se listan
-        las emisiones activas: las ya cerradas no vuelven a salir.</p>
+        <p class="bd-p">Escribe el número del tanque y aparecen sus emisiones
+        activas. O ve filtrando con las listas. Sólo salen las activas: las ya
+        cerradas no vuelven a aparecer.</p>
+        <div class="ed-ancho">
+          <label>Buscar tanque
+            <input id="selBuscar" type="text" inputmode="search" autocomplete="off"
+                   placeholder="0201, 901B, TK-904…">
+          </label>
+        </div>
         <div class="ed-rejilla">
           <label>Facilidad<select id="selFac"></select></label>
           <label>Área<select id="selArea"></select></label>
@@ -4593,7 +4600,15 @@ refrescarTodo();
     };
     const unicos = (arr, campo) => [...new Set(arr.map(x => x.d[campo] || x[campo]))].sort();
 
+    /* Lo escrito manda sobre las listas: si tecleas un tanque, se busca en
+       todas partes sin que importe cómo quedaron los desplegables. Se comparan
+       sólo letras y números, así "0201", "tk 0201" y "300-TK-0201" encuentran
+       lo mismo. */
+    const limpio = t => String(t || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+
     function filtrados() {
+      const buscado = limpio(q('#selBuscar').value);
+      if (buscado) return activos.filter(x => limpio(x.d.equipo).includes(buscado));
       const f = q('#selFac').value, a = q('#selArea').value, e = q('#selEq').value;
       return activos.filter(x => (!f || x.fac === f) && (!a || x.d.area === a) && (!e || x.d.equipo === e));
     }
@@ -4615,7 +4630,9 @@ refrescarTodo();
               </span>
               <span class="sf-tasa ${x.d.tier}">${x.d.tasa.toLocaleString('es-CO')} <small>g/Hr</small></span>
             </button>`).join('')
-        : '<p class="sel-vacio">No queda ninguna emisión activa con esos filtros.</p>';
+        : (limpio(q('#selBuscar').value)
+            ? '<p class="sel-vacio">Ningún tanque activo con ese número.</p>'
+            : '<p class="sel-vacio">No queda ninguna emisión activa con esos filtros.</p>');
 
       q('#selLista').querySelectorAll('.sel-fila').forEach(btn => {
         btn.onclick = () => {
@@ -4630,7 +4647,9 @@ refrescarTodo();
     q('#selFac').onchange = () => { q('#selArea').value = ''; q('#selEq').value = ''; refrescar(); };
     q('#selArea').onchange = () => { q('#selEq').value = ''; refrescar('area'); };
     q('#selEq').onchange = () => refrescar('eq');
+    q('#selBuscar').addEventListener('input', () => refrescar('buscar'));
     refrescar();
+    q('#selBuscar').focus();
   }
 
   function fidLibre(fac) {
