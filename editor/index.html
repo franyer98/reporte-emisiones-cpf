@@ -2137,7 +2137,12 @@ THREE.OrbitControls = OrbitControls;
     /* Con margen cero el navegador deja de estampar su encabezado y su pie
        —fecha, título y la dirección web de la página—. El margen real del
        documento lo pone el propio informe. */
-    @page{size:A4;margin:0}
+    /* tamaño automático: sale igual en Carta que en A4, con el papel que
+       tenga seleccionado la impresora o el teléfono */
+    @page{size:auto;margin:0}
+    /* el informe se reduce lo justo para caber en una sola hoja; la medida
+       la calcula encajarEnUnaHoja() antes de abrir el cuadro de impresión */
+    html.imprimiendo #informe{zoom:var(--inf-zoom,1)}
     html.imprimiendo, html.imprimiendo body{
       background:#fff!important;color:#000!important;
       margin:0!important;padding:0!important;width:auto!important;min-height:0!important;
@@ -6707,7 +6712,35 @@ window.addEventListener('resize', () => {
       emisiones fugitivas; los totales coinciden con los que muestra en pantalla.</p>`;
   }
 
+  /* El informe debe salir en una sola hoja. En vez de pedirle al usuario que
+     cambie la escala en el cuadro de impresión —en el celular casi nunca se
+     puede—, se mide el informe a tamaño de hoja real y se reduce lo justo.
+     Se mide sobre una copia fuera de pantalla para no depender de la escala
+     con que el visor lo esté mostrando. La referencia es la hoja Carta, que
+     es la más corta: lo que cabe en Carta cabe también en A4. */
+  function encajarEnUnaHoja() {
+    const inf = document.getElementById('informe');
+    if (!inf) return;
+    const ANCHO = 816, ALTO = 1056;          // 8,5 × 11 pulgadas a 96 ppp
+    const caja = document.createElement('div');
+    caja.style.cssText = 'position:fixed;left:-10000px;top:0;visibility:hidden;width:' + ANCHO + 'px';
+    const copia = inf.cloneNode(true);
+    copia.removeAttribute('id');
+    copia.style.cssText = 'display:block;width:' + ANCHO + 'px;padding:57px 49px;' +
+      'box-sizing:border-box;transform:none;position:static;zoom:1';
+    caja.appendChild(copia);
+    document.body.appendChild(caja);
+    const alto = copia.scrollHeight;
+    caja.remove();
+    // 8 px de respiro: un redondeo del navegador no puede empujar una línea
+    // a una segunda hoja
+    const z = alto > 0 ? Math.min(1, (ALTO - 8) / alto) : 1;
+    inf.style.setProperty('--inf-zoom', z.toFixed(3));
+    return z;
+  }
+
   function imprimir() {
+    encajarEnUnaHoja();
     document.documentElement.classList.add('imprimiendo');
     const limpiar = () => document.documentElement.classList.remove('imprimiendo');
     window.addEventListener('afterprint', limpiar, { once: true });
@@ -6732,17 +6765,20 @@ window.addEventListener('resize', () => {
   }
 
   function descargar() {
+    encajarEnUnaHoja();
     const doc = `<!doctype html><html lang="es"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Informe de emisiones fugitivas</title>
 <style>
 /* margen cero: así el navegador no estampa su encabezado ni su pie con la
    dirección web; el margen del documento lo pone el propio informe */
-@page{size:A4;margin:0}
+@page{size:auto;margin:0}
 body{margin:0;padding:18px;background:#fff;color:#000;
   font-family:system-ui,-apple-system,'Segoe UI',sans-serif}
 #informe{display:block!important;max-width:760px;margin:0 auto}
-@media print{ body{padding:15mm 13mm} #informe{max-width:none} }
+/* la reducción calculada viaja en el propio informe (--inf-zoom), así el
+   archivo descargado también sale en una sola hoja */
+@media print{ body{padding:15mm 13mm} #informe{max-width:none;zoom:var(--inf-zoom,1)} }
 ${cssInforme()}
 </style></head><body>${document.getElementById('informe').outerHTML}</body></html>`;
 
