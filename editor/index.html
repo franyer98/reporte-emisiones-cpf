@@ -2236,6 +2236,11 @@ THREE.OrbitControls = OrbitControls;
     background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;
     padding:8px 10px;color:var(--text);font-family:inherit;font-size:13.5px;text-transform:none;letter-spacing:0}
   .ed-ancho textarea{resize:vertical}
+  /* La lista desplegable la dibuja el sistema, no la página: en Windows sale
+     con fondo blanco y las opciones heredaban el texto claro del campo, así
+     que quedaban blancas sobre blanco. Se les fija color propio. */
+  select{color-scheme:dark}
+  select option{background:#1e2630;color:#f1f4f7}
   .ed-fotos{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:13px;margin-top:13px}
   .ed-foto{display:flex;flex-direction:column;gap:7px}
   .ed-et{font-size:11.5px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.04em}
