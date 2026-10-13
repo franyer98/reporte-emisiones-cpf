@@ -1,12 +1,19 @@
 {
-  // El sitio son archivos estáticos. Cuando el almacén de datos esté
-  // configurado, aquí se añaden "main" y "kv_namespaces" para que el
-  // programa de src/index.js guarde y entregue los datos del tablero.
+  // El sitio son archivos estáticos, más un pequeño programa que guarda y
+  // entrega los datos del tablero (src/index.js).
   "name": "reporte-emisiones-cpf",
   "compatibility_date": "2026-01-01",
+  "main": "src/index.js",
   "assets": {
     "directory": "./",
+    "binding": "ASSETS",
     // una dirección sin archivo (…/editor/) sirve el index de esa carpeta
     "not_found_handling": "404-page"
-  }
+  },
+  "kv_namespaces": [
+    {
+      "binding": "EMISIONES",
+      "id": "c7c10f42c4374dba9b7bc5b8c5f616e9"
+    }
+  ]
 }
