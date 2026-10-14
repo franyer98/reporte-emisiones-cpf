@@ -2083,9 +2083,6 @@ THREE.OrbitControls = OrbitControls;
     letter-spacing:.05em;color:var(--text-faint);text-transform:uppercase;margin-top:4px;line-height:1.5}
   .pg-t.ok b{color:#00b828}
   .pg-t.alerta b{color:#ffc400}
-  .card-dias{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.03em;
-    color:var(--text-faint);margin-top:8px;line-height:1.5}
-  .card-dias.viejo{color:#ffc400}
   .pg-nota{font-size:12.5px;color:var(--text-faint);line-height:1.65;margin:18px 0 0;
     padding-top:15px;border-top:1px solid var(--border)}
   @media (max-width:760px){
@@ -3777,8 +3774,6 @@ function renderTarjetas(data, areaActiva, gridId) {
         <div class="card-periodo">${PERIODO_GLOBAL === 'hora'
           ? d.tasa.toLocaleString('es-CO') + ' g/Hr'
           : masaAcumulada(d.tasa, PERIODO_GLOBAL) + ' ' + PERIODOS[PERIODO_GLOBAL].etiqueta}</div>
-        ${(() => { const n = diasAbierto(d); return n == null ? '' :
-          `<div class="card-dias${n >= 90 ? ' viejo' : ''}">Abierto hace ${n} día${n === 1 ? '' : 's'} · detectado el ${fechaLarga(d.fechaDeteccion)}</div>`; })()}
       </div>
     `;
     card.addEventListener('click', () => openLightbox(d));
