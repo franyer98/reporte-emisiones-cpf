@@ -1978,11 +1978,15 @@ THREE.OrbitControls = OrbitControls;
   /* al llevar el tirador al tope, el rótulo de la foto que ya no se ve se va con ella */
   .cmp-tag.oculto{opacity:0;pointer-events:none}
   .cmp-tag.izq{left:8px}
-  .cmp-tag.der{top:auto;bottom:8px;right:8px}
+  /* El rótulo de la verificación va pegado bajo el tirador, no al pie: abajo
+     a la derecha está el recuadro con la lectura que estampa la cámara. */
+  .cmp-tag.der{top:calc(var(--pos) + 10px);bottom:auto;left:8px;right:auto}
   .cmp-tag b{font-weight:700}
   .cmp-tag.izq b{color:#ff6b52}
   .cmp-tag.der b{color:#3ce06a}
-  .cmp .badge.cerrada{top:auto;bottom:8px;left:8px;z-index:5}
+  /* El distintivo pasa arriba a la derecha: abajo a la izquierda chocaba con
+     el rótulo de la verificación cuando el tirador baja. */
+  .cmp .badge.cerrada{top:8px;bottom:auto;left:auto;right:8px;z-index:5}
   @media (max-width:420px){ .cmp-tag{font-size:8px;padding:3px 5px} .cmp-grip{width:28px;height:28px} }
 
   .ci-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
