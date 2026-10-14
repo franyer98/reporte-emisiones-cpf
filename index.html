@@ -2074,15 +2074,6 @@ THREE.OrbitControls = OrbitControls;
   .pg-col.destacado .pg-v{color:#00b828}
   .pg-s{font-size:11.5px;color:var(--text-faint);line-height:1.5}
   .pg-flecha{font-size:19px;color:var(--text-faint)}
-  .pg-tiempos{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px;padding-top:18px;
-    border-top:1px solid var(--border)}
-  .pg-t{flex:1 1 150px;border:1px solid var(--border);border-radius:10px;padding:11px 13px;
-    background:var(--surface-2)}
-  .pg-t b{display:block;font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700}
-  .pg-t span{display:block;font-family:'JetBrains Mono',monospace;font-size:9.5px;
-    letter-spacing:.05em;color:var(--text-faint);text-transform:uppercase;margin-top:4px;line-height:1.5}
-  .pg-t.ok b{color:#00b828}
-  .pg-t.alerta b{color:#ffc400}
   .pg-nota{font-size:12.5px;color:var(--text-faint);line-height:1.65;margin:18px 0 0;
     padding-top:15px;border-top:1px solid var(--border)}
   @media (max-width:760px){
@@ -3069,7 +3060,6 @@ THREE.OrbitControls = OrbitControls;
           </div>
         </div>
 
-        <div class="pg-tiempos" id="pgTiempos"></div>
         <p class="pg-nota" id="pgNota"></p>
       </div>
 
@@ -3946,23 +3936,6 @@ function renderProgreso() {
 
   const rel = document.getElementById('pgRel');
   if (rel) rel.style.width = Math.max(pct, pct > 0 ? 1.5 : 0) + '%';
-
-  // tiempos: lo que tardó reparar, y lo que llevan esperando las que siguen abiertas
-  const cer = [...CERRADAS1, ...CERRADAS2];
-  const diasCer = cer.map(diasAbierto).filter(n => n != null);
-  const diasAct = [...DATA1, ...DATA2].map(diasAbierto).filter(n => n != null);
-  const prom = a => a.length ? Math.round(a.reduce((x, y) => x + y, 0) / a.length) : null;
-  const caja = (v, et, clase) => `<div class="pg-t ${clase || ''}"><b>${v}</b><span>${et}</span></div>`;
-  const tie = document.getElementById('pgTiempos');
-  if (tie) {
-    const partes = [];
-    if (diasCer.length) partes.push(caja(prom(diasCer) + ' días', 'promedio en reparar', 'ok'));
-    if (diasAct.length) {
-      partes.push(caja(prom(diasAct) + ' días', 'promedio abierto hoy'));
-      partes.push(caja(Math.max(...diasAct) + ' días', 'el más antiguo sin reparar', 'alerta'));
-    }
-    tie.innerHTML = partes.join('');
-  }
 
   pintarCurva(baseG, [...CERRADAS1, ...CERRADAS2]);
 
