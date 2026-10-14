@@ -1957,22 +1957,25 @@ THREE.OrbitControls = OrbitControls;
   /* ---------- COMPARADOR ANTES / DESPUÉS ----------
      Las dos tomas superpuestas con un tirador en medio: al arrastrarlo, la
      fuga desaparece. Lado a lado se entendía; así se ve. */
-  .cmp{position:relative;overflow:hidden;background:#0b0f13;touch-action:pan-y;
-    --pos:50%;cursor:ew-resize;user-select:none}
+  .cmp{position:relative;overflow:hidden;background:#0b0f13;--pos:50%;user-select:none}
   .cmp img{width:100%;height:100%;object-fit:cover;display:block;aspect-ratio:4/3;
     pointer-events:none;-webkit-user-drag:none}
-  .cmp-tras{position:absolute;inset:0;clip-path:inset(0 0 0 var(--pos))}
-  .cmp-linea{position:absolute;top:0;bottom:0;left:var(--pos);width:2px;
+  /* ANTES arriba, DESPUÉS abajo: el corte es horizontal y el tirador sube y
+     baja. Arrastrar sólo desde el tirador, para que en el teléfono el dedo
+     siga sirviendo para desplazar la página sobre la foto. */
+  .cmp-tras{position:absolute;inset:0;clip-path:inset(var(--pos) 0 0 0)}
+  .cmp-linea{position:absolute;left:0;right:0;top:var(--pos);height:2px;
     background:rgba(255,255,255,.9);box-shadow:0 0 0 1px rgba(0,0,0,.35);z-index:4}
   .cmp-grip{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
     width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.94);
     box-shadow:0 2px 10px rgba(0,0,0,.45);display:flex;align-items:center;
-    justify-content:center;color:#0b0f13;font-size:13px;font-weight:700;letter-spacing:-1px}
+    justify-content:center;color:#0b0f13;font-size:12px;font-weight:700;line-height:1;
+    cursor:ns-resize;touch-action:none}
   .cmp-tag{position:absolute;top:8px;z-index:5;font-family:'JetBrains Mono',monospace;
     font-size:9.5px;letter-spacing:.06em;padding:4px 7px;border-radius:6px;
     background:rgba(8,11,14,.72);backdrop-filter:blur(3px);white-space:nowrap}
   .cmp-tag.izq{left:8px}
-  .cmp-tag.der{right:8px}
+  .cmp-tag.der{top:auto;bottom:8px;right:8px}
   .cmp-tag b{font-weight:700}
   .cmp-tag.izq b{color:#ff6b52}
   .cmp-tag.der b{color:#3ce06a}
@@ -3668,40 +3671,6 @@ function renderComposicion() {
   });
 }
 
-/* Arrastrar el tirador del comparador. Se marca `_arrastrado` para que el
-   clic que cierra el gesto no abra la foto ampliada sin querer. */
-function comparador(caja) {
-  if (caja._listo) return;
-  caja._listo = true;
-  let moviendo = false;
-
-  const colocar = x => {
-    const r = caja.getBoundingClientRect();
-    const pct = Math.max(0, Math.min(100, (x - r.left) / r.width * 100));
-    caja.style.setProperty('--pos', pct.toFixed(1) + '%');
-  };
-
-  caja.addEventListener('pointerdown', e => {
-    moviendo = true;
-    caja._arrastrado = false;
-    // qué mitad se tocó se decide ANTES de mover el tirador: si no, el propio
-    // clic lo lleva justo donde se pulsó y las dos mitades quedan empatadas
-    const r = caja.getBoundingClientRect();
-    const pos = parseFloat(getComputedStyle(caja).getPropertyValue('--pos')) || 50;
-    caja._mitad = (e.clientX - r.left) / r.width * 100 > pos ? 'cierre' : null;
-    try { caja.setPointerCapture(e.pointerId); } catch (err) {}
-    colocar(e.clientX);
-  });
-  caja.addEventListener('pointermove', e => {
-    if (!moviendo) return;
-    caja._arrastrado = true;
-    colocar(e.clientX);
-  });
-  const soltar = () => { moviendo = false; setTimeout(() => { caja._arrastrado = false; }, 0); };
-  caja.addEventListener('pointerup', soltar);
-  caja.addEventListener('pointercancel', soltar);
-}
-
 /* Qué pieza falla. Se agrupa por el elemento del hallazgo —empaque,
    escotilla, ciego, pernos— y se ordena por volumen: lo primero de la lista
    es lo que más vale la pena atacar y lo que conviene tener en bodega. */
@@ -3740,6 +3709,48 @@ function pintarElementos(data, listaId) {
   + `<p class="elem-pie"><b>${filas[0][0]}</b> concentra el
      ${Math.round(filas[0][1].g / total * 100)}% de la fuga de esta facilidad,
      en ${filas[0][1].n} punto${filas[0][1].n === 1 ? '' : 's'}.</p>`;
+}
+
+/* Arrastrar el tirador del comparador, de arriba abajo. Sólo se arrastra
+   desde el propio tirador: así, en el teléfono, deslizar sobre la foto sigue
+   desplazando la página. Se marca `_arrastrado` para que el clic que cierra
+   el gesto no abra la foto ampliada sin querer. */
+function comparador(caja) {
+  if (caja._listo) return;
+  caja._listo = true;
+  const grip = caja.querySelector('.cmp-grip');
+  if (!grip) return;
+  let moviendo = false;
+
+  const colocar = y => {
+    const r = caja.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(100, (y - r.top) / r.height * 100));
+    caja.style.setProperty('--pos', pct.toFixed(1) + '%');
+  };
+
+  grip.addEventListener('pointerdown', e => {
+    e.stopPropagation();
+    moviendo = true;
+    caja._arrastrado = false;
+    try { grip.setPointerCapture(e.pointerId); } catch (err) {}
+  });
+  grip.addEventListener('pointermove', e => {
+    if (!moviendo) return;
+    caja._arrastrado = true;
+    colocar(e.clientY);
+  });
+  const soltar = () => { moviendo = false; setTimeout(() => { caja._arrastrado = false; }, 0); };
+  grip.addEventListener('pointerup', soltar);
+  grip.addEventListener('pointercancel', soltar);
+  // tocar el tirador no debe abrir la foto
+  grip.addEventListener('click', e => e.stopPropagation());
+
+  // qué mitad se tocó: arriba el hallazgo, abajo la verificación
+  caja.addEventListener('pointerdown', e => {
+    const r = caja.getBoundingClientRect();
+    const pos = parseFloat(getComputedStyle(caja).getPropertyValue('--pos')) || 50;
+    caja._mitad = (e.clientY - r.top) / r.height * 100 > pos ? 'cierre' : null;
+  });
 }
 
 // Tarjetas con evidencia fotografica (seccion "Detalle por punto")
@@ -4001,7 +4012,7 @@ function renderCierres() {
              <div class="cmp-tras">
                <img src="${d.imgCierre}" alt="Después: verificación de ${d.equipo}" loading="lazy">
              </div>
-             <div class="cmp-linea"><span class="cmp-grip">‹›</span></div>
+             <div class="cmp-linea"><span class="cmp-grip">↕</span></div>
              <span class="cmp-tag izq">ANTES <b>${d.tasa.toLocaleString('es-CO')} g/Hr</b></span>
              <span class="cmp-tag der">DESPUÉS <b>${(d.tasaCierre || 0).toLocaleString('es-CO')} g/Hr</b></span>
              <div class="badge cerrada">VERIFICADA</div>
