@@ -1721,6 +1721,21 @@ THREE.OrbitControls = OrbitControls;
   .sim-lock-error { display: none; color: var(--hot); font-size: 11.5px; margin-top: 10px; }
   .sim-lock-error.show { display: block; }
 
+  /* ---------- POR TIPO DE ELEMENTO ----------
+     Barras, no dona: con dos áreas el anillo repartía 99/1 y no decía nada.
+     La pieza que falla sí es información que no está en ningún otro sitio. */
+  .elem-lista{display:flex;flex-direction:column;gap:14px;padding:4px 0 2px}
+  .elem-fila{display:grid;grid-template-columns:1fr auto auto;gap:4px 12px;align-items:baseline}
+  .elem-nom{font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:.05em;
+    text-transform:uppercase;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .elem-val{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;white-space:nowrap}
+  .elem-pct{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-faint);
+    min-width:34px;text-align:right}
+  .elem-track{grid-column:1/-1;height:7px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+  .elem-fill{display:block;height:100%;border-radius:99px;transition:width .5s ease}
+  .elem-pie{font-size:12px;color:var(--text-dim);margin-top:4px;line-height:1.5}
+  .elem-vacio{font-size:13px;color:var(--text-faint);padding:12px 0}
+
   /* ---------- COMPOSICION: donut con total y lista ---------- */
   .donut-box { display: flex; flex-direction: column; gap: 14px; }
   .donut-canvas { position: relative; }
@@ -2864,14 +2879,8 @@ THREE.OrbitControls = OrbitControls;
       <div class="section-head"><h2>Composición de la fuga</h2><div class="section-note">CÓMO SE REPARTE EL VOLUMEN TOTAL</div></div>
       <div class="chart-grid two">
         <div class="chart-card">
-          <h3>Por área</h3><div class="chart-sub">participación de cada zona</div>
-          <div class="donut-box">
-            <div class="donut-canvas">
-              <canvas id="chartAreaDonut1"></canvas>
-              <div class="donut-center" id="centroArea1"><span class="dc-val">—</span><span class="dc-lbl">total</span></div>
-            </div>
-            <div class="donut-list" id="listaArea1"></div>
-          </div>
+          <h3>Por tipo de elemento</h3><div class="chart-sub">qué pieza está fallando</div>
+          <div class="elem-lista" id="listaElem1"></div>
         </div>
         <div class="chart-card">
           <h3>Por equipo</h3><div class="chart-sub">participación de cada tanque</div>
@@ -2930,14 +2939,8 @@ THREE.OrbitControls = OrbitControls;
       <div class="section-head"><h2>Composición de la fuga</h2><div class="section-note">CÓMO SE REPARTE EL VOLUMEN TOTAL</div></div>
       <div class="chart-grid two">
         <div class="chart-card">
-          <h3>Por área</h3><div class="chart-sub">participación de cada zona</div>
-          <div class="donut-box">
-            <div class="donut-canvas">
-              <canvas id="chartAreaDonut2"></canvas>
-              <div class="donut-center" id="centroArea2"><span class="dc-val">—</span><span class="dc-lbl">total</span></div>
-            </div>
-            <div class="donut-list" id="listaArea2"></div>
-          </div>
+          <h3>Por tipo de elemento</h3><div class="chart-sub">qué pieza está fallando</div>
+          <div class="elem-lista" id="listaElem2"></div>
         </div>
         <div class="chart-card">
           <h3>Por equipo</h3><div class="chart-sub">participación de cada tanque</div>
@@ -3500,7 +3503,7 @@ document.getElementById('lightboxClose').addEventListener('click', closeLightbox
 document.getElementById('lightboxBackdrop').addEventListener('click', closeLightbox);
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLightbox(); });
 
-const CHART_IDS = ['chartPareto1','chartAreaDonut1','chartEqDonut1','chartPareto2','chartAreaDonut2','chartEq2'];
+const CHART_IDS = ['chartPareto1','chartEqDonut1','chartPareto2','chartEq2'];
 function destroyCharts() {
   CHART_IDS.forEach(id => {
     const c = Chart.getChart(id);
@@ -3525,23 +3528,6 @@ function initCharts() {
   Chart.defaults.color = cv('--text-dim');
   Chart.defaults.borderColor = cv('--border');
 
-// ---------- CPF-1: donut por área ----------
-new Chart(document.getElementById('chartAreaDonut1'), {
-  type: 'doughnut',
-  data: {
-    labels: AREA_TASA_LABELS,
-    datasets: [{ data: AREA_TASA_VALUES, backgroundColor: (c) => arcoDegradado(c.chart.ctx, c.chart.chartArea, ['#3fa9f5','#a78bfa','#fb923c'][c.dataIndex]), borderWidth: 0, borderRadius: 9, spacing: 4, hoverOffset: 12 }]
-  },
-  options: {
-    responsive: true, maintainAspectRatio: false,
-    animation: { animateRotate: true, animateScale: true, duration: 1100, easing: 'easeOutQuart' },
-    plugins: {
-      legend: { display: false },
-      tooltip: { ...getTooltipBase(), callbacks: { label: (ctx) => `${ctx.label}: ${moneyG(ctx.raw)} (${(ctx.raw/AREA_TASA_VALUES.reduce((a,b)=>a+b,0)*100).toFixed(0)}%)` } }
-    },
-    cutout: '74%'
-  }
-});
 
 // ---------- CPF-1: donut por equipo ----------
 new Chart(document.getElementById('chartEqDonut1'), {
@@ -3561,23 +3547,6 @@ new Chart(document.getElementById('chartEqDonut1'), {
   }
 });
 
-// ---------- CPF-2: donut por área ----------
-new Chart(document.getElementById('chartAreaDonut2'), {
-  type: 'doughnut',
-  data: {
-    labels: AREA2_LABELS,
-    datasets: [{ data: AREA2_VALUES, backgroundColor: (c) => arcoDegradado(c.chart.ctx, c.chart.chartArea, ['#3fa9f5','#a78bfa'][c.dataIndex]), borderWidth: 0, borderRadius: 9, spacing: 4, hoverOffset: 12 }]
-  },
-  options: {
-    responsive: true, maintainAspectRatio: false,
-    animation: { animateRotate: true, animateScale: true, duration: 1100, easing: 'easeOutQuart' },
-    plugins: {
-      legend: { display: false },
-      tooltip: { ...getTooltipBase(), callbacks: { label: (ctx) => `${ctx.label}: ${moneyG(ctx.raw)} (${(ctx.raw/AREA2_VALUES.reduce((a,b)=>a+b,0)*100).toFixed(0)}%)` } }
-    },
-    cutout: '74%'
-  }
-});
 
 // ---------- CPF-2: donut por equipo ----------
 new Chart(document.getElementById('chartEq2'), {
@@ -3711,9 +3680,8 @@ function renderComposicion() {
       }).join('');
     };
 
-    const coloresArea = ['#3fa9f5', '#a78bfa', '#fb923c', '#f472b6', '#4ade80', '#ffd60a'];
-    pintar('centroArea' + n, 'listaArea' + n, a.areaLabels, a.areaValues, coloresArea);
     pintar('centroEq' + n, 'listaEq' + n, a.eqLabels, a.eqValues, a.eqColors);
+    pintarElementos(n === 1 ? DATA1 : DATA2, 'listaElem' + n);
   });
 }
 
@@ -3749,6 +3717,46 @@ function comparador(caja) {
   const soltar = () => { moviendo = false; setTimeout(() => { caja._arrastrado = false; }, 0); };
   caja.addEventListener('pointerup', soltar);
   caja.addEventListener('pointercancel', soltar);
+}
+
+/* Qué pieza falla. Se agrupa por el elemento del hallazgo —empaque,
+   escotilla, ciego, pernos— y se ordena por volumen: lo primero de la lista
+   es lo que más vale la pena atacar y lo que conviene tener en bodega. */
+function pintarElementos(data, listaId) {
+  const el = document.getElementById(listaId);
+  if (!el) return;
+  if (!data.length) { el.innerHTML = '<div class="elem-vacio">Sin puntos activos.</div>'; return; }
+
+  const mapa = new Map();
+  data.forEach(d => {
+    const clave = (d.elemento || 'SIN CLASIFICAR').trim().toUpperCase();
+    const v = mapa.get(clave) || { g: 0, n: 0 };
+    v.g += d.tasa; v.n++;
+    mapa.set(clave, v);
+  });
+  const filas = [...mapa.entries()].sort((a, b) => b[1].g - a[1].g);
+  const total = filas.reduce((a, f) => a + f[1].g, 0) || 1;
+  const mayor = filas[0][1].g;
+  const colores = ['#ff4757', '#ffb238', '#2dd4ee', '#a78bfa', '#4ade80', '#f472b6', '#8c98a6'];
+
+  const fmt = g => PERIODO_GLOBAL === 'hora'
+    ? Math.round(g).toLocaleString('es-CO') + ' g/Hr'
+    : masaAcumulada(g, PERIODO_GLOBAL);
+
+  el.innerHTML = filas.map(([nombre, v], i) => {
+    const pct = Math.round(v.g / total * 100);
+    const ancho = Math.max(2, v.g / mayor * 100);
+    const color = colores[i % colores.length];
+    return `<div class="elem-fila" title="${v.n} punto${v.n === 1 ? '' : 's'}">
+      <span class="elem-nom">${nombre}</span>
+      <span class="elem-val" style="color:${color}">${fmt(v.g)}</span>
+      <span class="elem-pct">${pct}%</span>
+      <span class="elem-track"><span class="elem-fill" style="width:${ancho}%;background:${color}"></span></span>
+    </div>`;
+  }).join('')
+  + `<p class="elem-pie"><b>${filas[0][0]}</b> concentra el
+     ${Math.round(filas[0][1].g / total * 100)}% de la fuga de esta facilidad,
+     en ${filas[0][1].n} punto${filas[0][1].n === 1 ? '' : 's'}.</p>`;
 }
 
 // Tarjetas con evidencia fotografica (seccion "Detalle por punto")
