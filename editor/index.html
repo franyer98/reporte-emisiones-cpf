@@ -1973,7 +1973,10 @@ THREE.OrbitControls = OrbitControls;
     cursor:ns-resize;touch-action:none}
   .cmp-tag{position:absolute;top:8px;z-index:5;font-family:'JetBrains Mono',monospace;
     font-size:9.5px;letter-spacing:.06em;padding:4px 7px;border-radius:6px;
-    background:rgba(8,11,14,.72);backdrop-filter:blur(3px);white-space:nowrap}
+    background:rgba(8,11,14,.72);backdrop-filter:blur(3px);white-space:nowrap;
+    transition:opacity .18s ease}
+  /* al llevar el tirador al tope, el rótulo de la foto que ya no se ve se va con ella */
+  .cmp-tag.oculto{opacity:0;pointer-events:none}
   .cmp-tag.izq{left:8px}
   .cmp-tag.der{top:auto;bottom:8px;right:8px}
   .cmp-tag b{font-weight:700}
@@ -3726,10 +3729,20 @@ function comparador(caja) {
   if (!grip) return;
   let moviendo = false;
 
+  const antes = caja.querySelector('.cmp-tag.izq');
+  const despues = caja.querySelector('.cmp-tag.der');
+
+  const rotulos = pct => {
+    // con menos de un dedo de foto visible, su rótulo sobra
+    if (antes) antes.classList.toggle('oculto', pct < 14);
+    if (despues) despues.classList.toggle('oculto', pct > 86);
+  };
+
   const colocar = y => {
     const r = caja.getBoundingClientRect();
     const pct = Math.max(0, Math.min(100, (y - r.top) / r.height * 100));
     caja.style.setProperty('--pos', pct.toFixed(1) + '%');
+    rotulos(pct);
   };
 
   grip.addEventListener('pointerdown', e => {
