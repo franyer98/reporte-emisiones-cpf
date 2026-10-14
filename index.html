@@ -3991,17 +3991,27 @@ function renderCierres() {
   cuerpo.innerHTML = '';
   if (!total) return;
 
-  grupos.forEach(g => {
+  /* Una sola rejilla para todos los cierres. Antes cada facilidad abría la
+     suya, y con un cierre en CPF-1 y cuatro en CPF-2 las fichas quedaban
+     escalonadas —una, tres, una— con huecos a la derecha. El resumen por
+     facilidad se conserva en una línea, encima. */
+  const resumen = document.createElement('div');
+  resumen.className = 'ci-fac';
+  resumen.innerHTML = '<span class="ci-ic">✓</span> ' + grupos.map(g => {
     const gg = g.lista.reduce((a, d) => a + d.tasa, 0);
-    const enc = document.createElement('div');
-    enc.className = 'ci-fac';
-    enc.innerHTML = `<span class="ci-ic">✓</span> ${g.fac}
-      <small>${g.lista.length} punto${g.lista.length > 1 ? 's' : ''} · ${gg.toLocaleString('es-CO')} g/Hr</small>`;
-    cuerpo.appendChild(enc);
+    return `${g.fac} <small>${g.lista.length} punto${g.lista.length > 1 ? 's' : ''}`
+         + ` · ${gg.toLocaleString('es-CO')} g/Hr</small>`;
+  }).join(' &nbsp;·&nbsp; ');
+  cuerpo.appendChild(resumen);
 
-    const grid = document.createElement('div');
-    grid.className = 'grid';
-    [...g.lista].sort((a, b) => b.tasa - a.tasa).forEach(d => {
+  const grid = document.createElement('div');
+  grid.className = 'grid';
+
+  [{ lista: grupos.flatMap(g => g.lista.map(d => ({ d, lista: g.lista }))) }].forEach(() => {
+    grupos.flatMap(g => [...g.lista].sort((a, b) => b.tasa - a.tasa)
+                        .map(d => ({ d, lista: g.lista })))
+          .forEach(({ d, lista: listaDe }) => {
+      const g = { lista: listaDe };
       const card = document.createElement('div');
       card.className = d.imgCierre ? 'card card-cerrada verificada' : 'card card-cerrada';
 
@@ -4044,8 +4054,8 @@ function renderCierres() {
       if (comp) comparador(comp);
       grid.appendChild(card);
     });
-    cuerpo.appendChild(grid);
   });
+  cuerpo.appendChild(grid);
 }
 
 // Vuelve a pintar todo a partir de DATA1/DATA2. Se llama al arrancar y

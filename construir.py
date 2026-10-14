@@ -47,7 +47,7 @@ RECORTES = [
     ('    if (window.MODO_EDICION && editable(data)) marcarEditable(card, d, data);\n', ''),
     ('  if (window.MODO_EDICION && editable(data)) el.appendChild(tarjetaAgregar(data));\n', ''),
     ('      if (window.MODO_EDICION) marcarEditable(card, d, g.lista);\n', ''),
-    ('    if (window.MODO_EDICION) grid.appendChild(tarjetaAgregar(g.lista));\n', ''),
+    ('  if (window.MODO_EDICION && grupos.length) grid.appendChild(tarjetaAgregar(grupos[0].lista));\n', ''),
     ('    if (window.MODO_EDICION && item && editable(data)) marcarEditable(row, item, data);\n', ''),
 ]
 
