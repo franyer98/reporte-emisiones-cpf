@@ -4018,7 +4018,7 @@ function renderCierres() {
           <div class="card-meta">${d.area} · ${d.punto} · ${d.elemento}</div>
           <div class="card-desc">${d.hallazgo}</div>
           <div class="card-periodo cerr-antes">Medición previa: ${d.tasa.toLocaleString('es-CO')} g/Hr${d.cierre ? ' · ' + d.cierre : ''}</div>
-          ${d.fechaCierre ? (() => { const n = diasAbierto(d); return `<div class="cerr-fecha">Reparado el ${fechaLarga(d.fechaCierre)}${n != null ? ` · ${n} días desde la detección` : ''}</div>`; })() : ''}
+          ${d.fechaCierre ? `<div class="cerr-fecha">Reparado el ${fechaLarga(d.fechaCierre)}</div>` : ''}
         </div>`;
       card.addEventListener('click', (e) => {
         const cmp = e.target.closest('.cmp');
