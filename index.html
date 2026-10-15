@@ -2038,6 +2038,11 @@ THREE.OrbitControls = OrbitControls;
     margin-right:6px;vertical-align:baseline}
   .ci-fac .pt.fac1{background:#2dd4ee}
   .ci-fac .pt.fac2{background:#ffb020}
+  /* Los cierres van de a dos por fila. Con tres, la ficha quedaba estrecha
+     para una foto de antes/después —que es la evidencia— y la última fila
+     quedaba coja. */
+  #ciCuerpo .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+  @media (max-width:760px){ #ciCuerpo .grid{grid-template-columns:1fr} }
   .card-cerrada{opacity:.62;transition:opacity .18s ease}
   .card-cerrada:hover{opacity:1}
   .card-cerrada .card-photo img{filter:grayscale(.72)}
