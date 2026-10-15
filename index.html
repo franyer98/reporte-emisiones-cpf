@@ -1987,12 +1987,13 @@ THREE.OrbitControls = OrbitControls;
   .cmp .badge.cerrada{top:8px;bottom:auto;left:auto;right:8px;z-index:5}
   /* En pantalla táctil el tirador crece y, sobre todo, aparecen dos botones:
      arrastrar con el dedo sobre una foto compite con el desplazamiento de la
-     página, y el gesto se pierde. Pulsar no falla nunca. */
-  .cmp-botones{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);z-index:6;
-    display:none;gap:6px}
-  .cmp-botones button{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.06em;
-    padding:7px 11px;border-radius:99px;border:1px solid rgba(255,255,255,.28);
-    background:rgba(8,11,14,.78);color:#fff;backdrop-filter:blur(3px);cursor:pointer}
+     página, y el gesto se pierde. Pulsar no falla nunca.
+     Van debajo de la foto, no encima: sobre la imagen tapaban el recuadro
+     donde la cámara estampa la lectura, que es la prueba del cierre. */
+  .cmp-botones{display:none;gap:8px;justify-content:center;padding:11px 14px 0}
+  .cmp-botones button{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.06em;
+    padding:8px 16px;border-radius:99px;border:1px solid var(--border);
+    background:rgba(255,255,255,.04);color:var(--text-dim);cursor:pointer}
   .cmp-botones button.activo{background:#fff;color:#0b0f13;border-color:#fff;font-weight:700}
   @media (hover:none){
     .cmp-botones{display:flex}
@@ -3958,7 +3959,8 @@ function comparador(caja) {
   grip.addEventListener('click', e => e.stopPropagation());
 
   // los botones: en el teléfono son la forma fiable de cambiar de toma
-  const botones = [...caja.querySelectorAll('.cmp-botones button')];
+  // los botones ya no van sobre la foto, sino debajo: se buscan en la ficha
+  const botones = [...(caja.closest('.card') || caja).querySelectorAll('.cmp-botones button')];
   marcar = pct => {
     botones.forEach(b => b.classList.toggle('activo',
       (b.dataset.ver === 'antes' && pct > 86)
@@ -4575,12 +4577,12 @@ function renderCierres() {
                <img src="${d.imgCierre}" alt="Después: verificación de ${d.equipo}" loading="lazy">
              </div>
              <div class="cmp-linea"><span class="cmp-grip">↕</span></div>
-             <div class="cmp-botones">
-               <button type="button" data-ver="antes">ANTES</button>
-               <button type="button" data-ver="despues">DESPUÉS</button>
-             </div>
              <span class="cmp-tag izq">ANTES <b>${d.tasa.toLocaleString('es-CO')}</b><i>→</i>DESPUÉS <b class="post">${(d.tasaCierre || 0).toLocaleString('es-CO')}</b> g/Hr</span>
              <div class="badge cerrada">VERIFICADA</div>
+           </div>
+           <div class="cmp-botones">
+             <button type="button" data-ver="antes">ANTES</button>
+             <button type="button" data-ver="despues">DESPUÉS</button>
            </div>`
         : `<div class="card-photo">
              <img src="${d.img}" alt="Evidencia ${d.equipo}" loading="lazy">
