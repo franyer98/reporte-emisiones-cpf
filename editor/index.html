@@ -2046,8 +2046,9 @@ THREE.OrbitControls = OrbitControls;
   /* A dos columnas, una foto 4:3 se come la pantalla entera y sólo cabe una
      fila. Se le fija una altura atada al alto de la ventana: la foto recorta,
      la ficha no crece y se ven varias de un vistazo. */
-  #ciCuerpo .card-photo{aspect-ratio:auto;height:clamp(180px,26vh,270px)}
+  #ciCuerpo .card-photo{max-height:clamp(210px,34vh,300px)}
   #ciCuerpo .cmp img{aspect-ratio:auto;height:100%}
+  @media (max-width:760px){ #ciCuerpo .card-photo{max-height:none} }
   .card-cerrada{opacity:.62;transition:opacity .18s ease}
   .card-cerrada:hover{opacity:1}
   .card-cerrada .card-photo img{filter:grayscale(.72)}
