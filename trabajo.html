@@ -3239,7 +3239,7 @@ THREE.OrbitControls = OrbitControls;
              es una reparación, con su fecha. -->
         <div class="pg-curva" id="pgCurvaCaja">
           <div class="pg-curva-cab">
-            <div class="pg-curva-t">CÓMO HA BAJADO · CADA ESCALÓN ES UNA REPARACIÓN</div>
+            <div class="pg-curva-t" id="pgCurvaT">CÓMO HA BAJADO · CADA ESCALÓN ES UNA REPARACIÓN</div>
             <div class="pg-curva-bar" id="pgCurvaBar">
               <button type="button" class="cv-play" id="pgCurvaPlay">▶ Recorrer</button>
               <span class="cv-sep"></span>
@@ -4126,6 +4126,12 @@ function curvaFmt(v) {
 }
 function curvaUnidad() { return curvaUni === 'co2' ? 'ton CO₂eq/año' : 'g/Hr'; }
 
+/* El alcance tiene que ir escrito en todas partes: con el filtro en una sola
+   facilidad, los números de la curva no son los de las tarjetas de arriba, y
+   sin decirlo parece una contradicción. */
+function curvaAmbTexto() { return curvaAmb === 'ambas' ? 'CPF-1 + CPF-2' : curvaAmb; }
+function curvaAmbFrase() { return curvaAmb === 'ambas' ? 'entre las dos facilidades' : 'en el ' + curvaAmb; }
+
 /* La curva de la campaña: arranca en la línea base y baja un escalón por
    cada reparación, en su fecha. Sólo entran los cierres con fecha: sin ella
    no hay dónde ponerlos. */
@@ -4138,19 +4144,29 @@ function pintarCurva() {
   if (!hayCierres) { caja.style.display = 'none'; return; }
   caja.style.display = '';
 
+  const rotulo = document.getElementById('pgCurvaT');
+  if (rotulo) rotulo.textContent = 'CÓMO HA BAJADO · CADA ESCALÓN ES UNA REPARACIÓN · ' + curvaAmbTexto();
+
   const esCo2 = curvaUni === 'co2';
   const valorDe = (r, fac) => (esCo2 ? r.tasa * kDe(fac, r.area) : r.tasa);
 
-  let baseV = 0;
-  const cerrados = [];
+  let baseV = 0, nuevosN = 0, nuevosV = 0;
+  const cerrados = [], sinFecha = [];
   curvaConjuntos().forEach(([fac, activos, cerradas]) => {
-    activos.filter(d => !d.nuevo).forEach(r => { baseV += valorDe(r, fac); });
+    activos.forEach(r => {
+      if (r.nuevo) { nuevosN++; nuevosV += valorDe(r, fac); return; }   // fuera de la línea base
+      baseV += valorDe(r, fac);
+    });
     cerradas.forEach(r => {
       baseV += valorDe(r, fac);
-      if (r.fechaCierre) cerrados.push({ fecha: r.fechaCierre, equipo: r.equipo, v: valorDe(r, fac), fac });
+      const f = { fecha: r.fechaCierre, equipo: r.equipo, v: valorDe(r, fac), fac };
+      // un cierre sin fecha también se eliminó: no puede quedarse fuera de la
+      // curva, o la gráfica diría menos de lo que dice el total de arriba
+      (r.fechaCierre ? cerrados : sinFecha).push(f);
     });
   });
   cerrados.sort((a, b) => (a.fecha < b.fecha ? -1 : 1));
+  const sinFechaV = sinFecha.reduce((a, d) => a + d.v, 0);
 
   const corto = iso => {
     const d = new Date(iso + 'T12:00:00');
@@ -4180,11 +4196,14 @@ function pintarCurva() {
     valores.push(acum);
     detalle.push(v);
   });
+  acum -= sinFechaV;
   etiquetas.push('hoy');
   valores.push(acum);
-  detalle.push(null);
+  detalle.push(sinFecha.length
+    ? { g: sinFechaV, equipos: sinFecha, fecha: null, sinFecha: true }
+    : null);
 
-  curvaEstado = { etiquetas, valores, detalle, largo, base: baseV };
+  curvaEstado = { etiquetas, valores, detalle, largo, base: baseV, nuevosN, nuevosV };
   if (curvaSel !== null && curvaSel >= valores.length) curvaSel = null;
   if (curvaPaso !== null && curvaPaso >= valores.length) curvaPaso = null;
 
@@ -4364,8 +4383,14 @@ function pintarCurva() {
 function pintarDetalleCurva() {
   const caja = document.getElementById('pgCurvaDet');
   if (!caja || !curvaEstado) return;
-  const { valores, detalle, largo, base } = curvaEstado;
+  const { valores, detalle, largo, base, nuevosN, nuevosV } = curvaEstado;
   const u = curvaUnidad();
+  // las fugas nuevas no estaban en la medición inicial: no restan del avance,
+  // pero quien mira la curva tiene que saber que existen
+  const avisoNuevos = nuevosN
+    ? ` Aparte, ${nuevosN === 1 ? 'hay una fuga nueva' : `hay ${nuevosN} fugas nuevas`} `
+      + `por ${curvaFmt(nuevosV)} ${u}, detectada${nuevosN === 1 ? '' : 's'} después de la línea base.`
+    : '';
 
   if (curvaSel === null) {
     caja.innerHTML = '<div class="cv-pista">Toca cualquier punto de la curva para ver qué se reparó ese día.</div>';
@@ -4378,11 +4403,12 @@ function pintarDetalleCurva() {
     const inicial = curvaSel === 0;
     const quedan = valores[curvaSel];
     caja.innerHTML = `<div class="cv-det"><div class="cv-det-h">
-        <span class="cv-det-f">${inicial ? 'Medición inicial · ' + esc(campanaBase()) : 'Hoy'}</span>
+        <span class="cv-det-f">${inicial ? 'Medición inicial · ' + esc(campanaBase()) : 'Hoy'} · ${curvaAmbTexto()}</span>
         <span class="cv-det-g">${curvaFmt(quedan)} ${u}</span></div>
         <div class="cv-pista" style="padding:6px 0 0">${inicial
-          ? 'Punto de partida de la campaña, antes de intervenir nada.'
-          : `Se ha eliminado ${curvaFmt(base - quedan)} ${u} de los ${curvaFmt(base)} ${u} medidos al inicio.`}</div></div>`;
+          ? `Punto de partida de la campaña ${curvaAmbFrase()}, antes de intervenir nada.`
+          : `Se ha eliminado ${curvaFmt(base - quedan)} ${u} de los ${curvaFmt(base)} ${u} medidos al inicio `
+            + `${curvaAmbFrase()}.` + avisoNuevos}</div></div>`;
     return;
   }
 
@@ -4391,10 +4417,18 @@ function pintarDetalleCurva() {
     .sort((a, b) => b.v - a.v)
     .map(e => `<li><b>${esc(e.equipo)}</b><span>${esc(e.fac)} · −${curvaFmt(e.v)} ${u}</span></li>`)
     .join('');
+  const cabeza = d.sinFecha
+    ? `Sin fecha de ejecución · ${d.equipos.length} ${d.equipos.length === 1 ? 'cierre' : 'cierres'} · ${curvaAmbTexto()}`
+    : `${esc(largo(d.fecha))} · ${d.equipos.length} ${d.equipos.length === 1 ? 'reparación' : 'reparaciones'} · ${curvaAmbTexto()}`;
+  const pie = d.sinFecha
+    ? `<div class="cv-pista" style="padding:7px 0 0">Estos cierres sí cuentan en el total eliminado, pero`
+      + ` no tienen fecha registrada: por eso bajan aquí, al final, y no en su día.`
+      + ` Al ponerles la fecha de ejecución se acomodan solos en la curva.${avisoNuevos}</div>`
+    : '';
   caja.innerHTML = `<div class="cv-det"><div class="cv-det-h">
-      <span class="cv-det-f">${esc(largo(d.fecha))} · ${d.equipos.length} ${d.equipos.length === 1 ? 'reparación' : 'reparaciones'}</span>
+      <span class="cv-det-f">${cabeza}</span>
       <span class="cv-det-g">−${curvaFmt(d.g)} ${u}</span></div>
-      <ul>${filas}</ul></div>`;
+      <ul>${filas}</ul>${pie}</div>`;
 }
 
 function detenerRecorrido() {
