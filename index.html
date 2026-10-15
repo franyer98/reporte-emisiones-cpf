@@ -6423,7 +6423,7 @@ ${cssInforme()}
   /* El visor sirve para cualquier hoja imprimible: el informe del campo y la
      orden de trabajo de un tanque usan el mismo marco, los mismos botones y
      el mismo ajuste a una página. */
-  function abrirVisor(nodo, etiqueta, conDescarga) {
+  function abrirVisor(nodo, etiqueta, conDescarga, nombrePDF) {
     hojaActual = nodo;
     const cap = document.createElement('div');
     cap.className = 'inf-visor';
@@ -6431,6 +6431,7 @@ ${cssInforme()}
       <div class="inf-barra">
         <span class="inf-bt">${etiqueta}</span>
         <button class="bd-b bd-pri" id="infImp">Imprimir o guardar PDF</button>
+        <button class="bd-b" id="infPdf">Descargar PDF</button>
         ${conDescarga ? '<button class="bd-b" id="infDesc">Descargar</button>' : ''}
         <button class="bd-b" id="infCerrar">Cerrar</button>
       </div>
@@ -6470,13 +6471,17 @@ ${cssInforme()}
     };
     cap.querySelector('#infCerrar').onclick = cerrar;
     cap.querySelector('#infImp').onclick = imprimir;
+    cap.querySelector('#infPdf').onclick = e => {
+      if (window.descargarHojaPDF) window.descargarHojaPDF(nodo, nombrePDF || 'hoja.pdf', e.target);
+    };
     const bd = cap.querySelector('#infDesc');
     if (bd) bd.onclick = descargar;
   }
 
   function abrirInforme() {
     construir();
-    abrirVisor(document.getElementById('informe'), `Informe · ${hoy()}`, true);
+    abrirVisor(document.getElementById('informe'), `Informe · ${hoy()}`, true,
+               `Informe-emisiones-${hoyISO()}.pdf`);
   }
 
   /* ============================================================
@@ -6565,9 +6570,70 @@ ${cssInforme()}
     return true;
   }
 
+  /* Descargar la orden como PDF sin pasar por el cuadro de impresión.
+     El PDF lo arma el propio tablero: se dibuja la hoja en un lienzo y se
+     mete en una página Carta. Las dos librerías que hacen falta se cargan
+     sólo al pulsar el botón —medio mega que no tiene por qué bajar quien
+     nunca lo use— y se sirven desde el mismo sitio, no desde fuera. */
+  function cargarScript(url) {
+    return new Promise((ok, mal) => {
+      if ([...document.scripts].some(s => s.src.endsWith(url))) return ok();
+      const e = document.createElement('script');
+      e.src = url;
+      e.onload = () => ok();
+      e.onerror = () => mal(new Error('no se pudo cargar ' + url));
+      document.head.appendChild(e);
+    });
+  }
+
+  async function descargarPDF(nodo, nombre, boton) {
+    const previo = boton.textContent;
+    boton.textContent = 'Generando…';
+    boton.disabled = true;
+    try {
+      // desde /editor/ hay que subir un nivel para llegar a la carpeta lib
+      const raiz = location.pathname.replace(/[^/]*$/, '').replace(/editor\/$/, '');
+      await cargarScript(raiz + 'lib/html2canvas.min.js');
+      await cargarScript(raiz + 'lib/jspdf.umd.min.js');
+
+      // se dibuja sobre una copia a tamaño de hoja: el visor la tiene
+      // reducida a escala y saldría borrosa
+      const ANCHO = 816;
+      const caja = document.createElement('div');
+      caja.style.cssText = 'position:fixed;left:-10000px;top:0;width:' + ANCHO + 'px;background:#fff';
+      const copia = nodo.cloneNode(true);
+      copia.removeAttribute('id');
+      copia.style.cssText = 'display:block;width:' + ANCHO + 'px;padding:57px 49px;'
+        + 'box-sizing:border-box;transform:none;position:static;zoom:1;background:#fff;color:#000';
+      caja.appendChild(copia);
+      document.body.appendChild(caja);
+
+      const lienzo = await window.html2canvas(copia, { scale: 2, backgroundColor: '#ffffff', logging: false });
+      caja.remove();
+
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ unit: 'pt', format: 'letter', orientation: 'portrait' });
+      const anchoPag = pdf.internal.pageSize.getWidth();
+      const altoPag = pdf.internal.pageSize.getHeight();
+      // la hoja se ajusta a lo ancho; si sobra alto, se reduce para que quepa
+      let w = anchoPag, h = lienzo.height * anchoPag / lienzo.width;
+      if (h > altoPag) { h = altoPag; w = lienzo.width * altoPag / lienzo.height; }
+      pdf.addImage(lienzo.toDataURL('image/jpeg', 0.92), 'JPEG', (anchoPag - w) / 2, 0, w, h);
+      pdf.save(nombre);
+      boton.textContent = 'Descargado';
+    } catch (e) {
+      boton.textContent = previo;
+      alert('No se pudo generar el PDF aquí. Usa "Imprimir o guardar PDF".');
+    }
+    boton.disabled = false;
+    setTimeout(() => { boton.textContent = previo; }, 2500);
+  }
+  window.descargarHojaPDF = descargarPDF;
+
   function abrirOrden(equipo) {
     if (!construirOrden(equipo)) return;
-    abrirVisor(ordenNodo(), `Orden de trabajo · ${equipo}`, false);
+    abrirVisor(ordenNodo(), `Orden de trabajo · ${equipo}`, false,
+               `Orden-${equipo.replace(/[^\w.-]+/g, '-')}-${hoyISO()}.pdf`);
   }
 
   /* Elegir el tanque. Se listan sólo los que tienen algo activo: para los
