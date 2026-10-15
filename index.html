@@ -2715,8 +2715,17 @@ THREE.OrbitControls = OrbitControls;
   .intro-cta { text-align: center; padding: 40px 0 46px; max-width: 760px; margin: 0 auto; }
   .intro-cta h2 { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 22px; margin-bottom: 8px; }
   .intro-cta p { font-size: 14px; color: var(--text-dim); max-width: 480px; margin: 0 auto 20px; }
-  .intro-cta-btn { display: inline-block; background: #00693C; color: #fff; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 14px; padding: 12px 24px; border-radius: 999px; text-decoration: none; cursor: pointer; border: none; }
-  .intro-cta-btn:hover { opacity: .9; }
+  /* El verde corporativo apagado se perdía sobre el fondo oscuro. Va el verde
+     vivo del tablero, con texto oscuro encima y un halo que lo despega. */
+  .intro-cta-btn { display: inline-block; background: #00b828; color: #04140a;
+    font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 15.5px;
+    letter-spacing: .01em; padding: 15px 34px; border-radius: 999px;
+    text-decoration: none; cursor: pointer; border: none;
+    box-shadow: 0 0 0 5px rgba(0,184,40,.14), 0 10px 26px rgba(0,184,40,.26);
+    transition: transform .16s ease, box-shadow .16s ease, background .16s ease; }
+  .intro-cta-btn:hover { background: #10d13c; transform: translateY(-2px);
+    box-shadow: 0 0 0 6px rgba(0,184,40,.18), 0 14px 32px rgba(0,184,40,.34); }
+  .intro-cta-btn:active { transform: translateY(0) }
   @media (max-width: 600px) { .intro-glossary { grid-template-columns: 1fr; } }
 
 </style>
