@@ -1987,7 +1987,20 @@ THREE.OrbitControls = OrbitControls;
   /* El distintivo pasa arriba a la derecha: abajo a la izquierda chocaba con
      el rótulo de la verificación cuando el tirador baja. */
   .cmp .badge.cerrada{top:8px;bottom:auto;left:auto;right:8px;z-index:5}
-  @media (max-width:420px){ .cmp-tag{font-size:8px;padding:3px 5px} .cmp-grip{width:28px;height:28px} }
+  /* En pantalla táctil el tirador crece y, sobre todo, aparecen dos botones:
+     arrastrar con el dedo sobre una foto compite con el desplazamiento de la
+     página, y el gesto se pierde. Pulsar no falla nunca. */
+  .cmp-botones{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);z-index:6;
+    display:none;gap:6px}
+  .cmp-botones button{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.06em;
+    padding:7px 11px;border-radius:99px;border:1px solid rgba(255,255,255,.28);
+    background:rgba(8,11,14,.78);color:#fff;backdrop-filter:blur(3px);cursor:pointer}
+  .cmp-botones button.activo{background:#fff;color:#0b0f13;border-color:#fff;font-weight:700}
+  @media (hover:none){
+    .cmp-botones{display:flex}
+    .cmp-grip{width:44px;height:44px;font-size:15px}
+  }
+  @media (max-width:420px){ .cmp-tag{font-size:8px;padding:3px 5px} }
 
   .ci-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
     gap:13px;margin:22px 0 8px}
@@ -3735,6 +3748,7 @@ function comparador(caja) {
 
   const antes = caja.querySelector('.cmp-tag.izq');
   const despues = caja.querySelector('.cmp-tag.der');
+  let marcar = () => {};
 
   const rotulos = pct => {
     // con menos de un dedo de foto visible, su rótulo sobra
@@ -3747,6 +3761,7 @@ function comparador(caja) {
     const pct = Math.max(0, Math.min(100, (y - r.top) / r.height * 100));
     caja.style.setProperty('--pos', pct.toFixed(1) + '%');
     rotulos(pct);
+    marcar(pct);
   };
 
   grip.addEventListener('pointerdown', e => {
@@ -3765,6 +3780,24 @@ function comparador(caja) {
   grip.addEventListener('pointercancel', soltar);
   // tocar el tirador no debe abrir la foto
   grip.addEventListener('click', e => e.stopPropagation());
+
+  // los botones: en el teléfono son la forma fiable de cambiar de toma
+  const botones = [...caja.querySelectorAll('.cmp-botones button')];
+  marcar = pct => {
+    botones.forEach(b => b.classList.toggle('activo',
+      (b.dataset.ver === 'antes' && pct > 86)
+      || (b.dataset.ver === 'despues' && pct < 14)
+      || (b.dataset.ver === 'ambas' && pct >= 14 && pct <= 86)));
+  };
+  botones.forEach(b => {
+    b.addEventListener('click', e => {
+      e.stopPropagation();        // pulsar no debe ampliar la foto
+      const pct = b.dataset.ver === 'antes' ? 100 : b.dataset.ver === 'despues' ? 0 : 50;
+      caja.style.setProperty('--pos', pct + '%');
+      rotulos(pct); marcar(pct);
+    });
+  });
+  marcar(50);
 
   // qué mitad se tocó: arriba el hallazgo, abajo la verificación
   caja.addEventListener('pointerdown', e => {
@@ -4076,6 +4109,11 @@ function renderCierres() {
                <img src="${d.imgCierre}" alt="Después: verificación de ${d.equipo}" loading="lazy">
              </div>
              <div class="cmp-linea"><span class="cmp-grip">↕</span></div>
+             <div class="cmp-botones">
+               <button type="button" data-ver="antes">ANTES</button>
+               <button type="button" data-ver="ambas">AMBAS</button>
+               <button type="button" data-ver="despues">DESPUÉS</button>
+             </div>
              <span class="cmp-tag izq">ANTES <b>${d.tasa.toLocaleString('es-CO')} g/Hr</b></span>
              <span class="cmp-tag der">DESPUÉS <b>${(d.tasaCierre || 0).toLocaleString('es-CO')} g/Hr</b></span>
              <div class="badge cerrada">VERIFICADA</div>
