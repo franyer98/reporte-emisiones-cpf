@@ -4110,37 +4110,54 @@ function pintarCurva(baseG, cerrados) {
   const tenue = estilo.getPropertyValue('--text-faint').trim() || '#8c98a6';
   const borde = estilo.getPropertyValue('--border').trim() || '#475463';
 
-  /* Rótulos sobre el primer y el último punto: el que mira la gráfica no
-     tiene por qué ir a buscar los números al eje. */
-  const extremos = {
-    id: 'extremosCurva',
+  /* Rótulos sobre cada punto, no sólo en los extremos: en una proyección
+     nadie va a seguir la línea hasta el eje. Si dos se pisan, se omite el de
+     en medio —antes que amontonar texto ilegible— y el globo del cursor
+     sigue dando el detalle. */
+  const rotulos = {
+    id: 'rotulosCurva',
     afterDatasetsDraw(ch) {
       const met = ch.getDatasetMeta(1);
       if (!met || !met.data.length) return;
       const ctx = ch.ctx;
-      const pinta = (punto, texto, color, arriba) => {
-        ctx.save();
-        ctx.font = '700 12px "Space Grotesk", sans-serif';
-        ctx.textAlign = 'center';
-        const an = ctx.measureText(texto).width + 14, alto = 19;
-        const ar = ch.chartArea;
-        // si no cabe por el lado elegido, se voltea: pegado al borde se cortaba
+      const ar = ch.chartArea;
+      const puestos = [];
+      const alto = 19;
+
+      const dibuja = (punto, texto, color, arriba) => {
+        ctx.font = '700 11.5px "Space Grotesk", sans-serif';
+        const an = ctx.measureText(texto).width + 13;
+        // si no cabe por el lado elegido, se voltea
         if (arriba && punto.y - 9 - alto < ar.top) arriba = false;
         else if (!arriba && punto.y + 9 + alto > ar.bottom) arriba = true;
         const x = Math.min(Math.max(punto.x, ar.left + an / 2), ar.right - an / 2);
-        const cajaY = arriba ? punto.y - 9 - alto : punto.y + 9;
-        ctx.fillStyle = 'rgba(8,11,14,.78)';
+        const y = arriba ? punto.y - 9 - alto : punto.y + 9;
+        const caja = { x1: x - an / 2 - 3, y1: y - 3, x2: x + an / 2 + 3, y2: y + alto + 3 };
+        const choca = puestos.some(o => !(caja.x2 < o.x1 || caja.x1 > o.x2 || caja.y2 < o.y1 || caja.y1 > o.y2));
+        if (choca) return false;
+        puestos.push(caja);
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = 'rgba(8,11,14,.8)';
         ctx.beginPath();
-        ctx.roundRect(x - an / 2, cajaY, an, alto, 6);
+        ctx.roundRect(x - an / 2, y, an, alto, 6);
         ctx.fill();
         ctx.fillStyle = color;
-        ctx.textBaseline = 'middle';
-        ctx.fillText(texto, x, cajaY + alto / 2 + 0.5);
+        ctx.fillText(texto, x, y + alto / 2 + 0.5);
         ctx.restore();
+        return true;
       };
-      pinta(met.data[0], n0c(valores[0]) + ' g/Hr', '#f1f4f7', true);
-      // el último también arriba: abajo se montaba con las fechas del eje
-      pinta(met.data[met.data.length - 1], n0c(valores[valores.length - 1]) + ' g/Hr', '#00b828', true);
+
+      const ult = met.data.length - 1;
+      // los extremos mandan: se colocan antes de que nadie les quite el sitio
+      dibuja(met.data[ult], n0c(valores[ult]) + ' g/Hr', '#00b828', true);
+      dibuja(met.data[0], n0c(valores[0]) + ' g/Hr', '#f1f4f7', true);
+      // y después, los escalones donde hubo reparación
+      met.data.forEach((pt, k) => {
+        if (k === 0 || k === ult || !detalle[k]) return;
+        dibuja(pt, n0c(valores[k]) + ' g/Hr', '#cfe9d6', true);
+      });
     },
   };
 
@@ -4208,7 +4225,7 @@ function pintarCurva(baseG, cerrados) {
         },
       },
     },
-    plugins: [extremos],
+    plugins: [rotulos],
   });
 }
 
