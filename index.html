@@ -2020,6 +2020,24 @@ THREE.OrbitControls = OrbitControls;
     font-size:12px;font-weight:700}
   .ci-vacio{background:var(--surface);border:1px solid var(--border);border-radius:13px;
     padding:26px;text-align:center;color:var(--text-dim);font-size:14px;line-height:1.7;margin-top:18px}
+  /* Cada cierre dice a qué facilidad pertenece: franja de color al costado y
+     etiqueta sobre la foto. Con las dos rejillas unidas en una sola, era lo
+     único que faltaba para no tener que adivinar de quién es cada ficha. */
+  .fac-chip{font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:700;
+    letter-spacing:.08em;padding:2px 7px;border-radius:5px;margin-left:8px;
+    vertical-align:middle;white-space:nowrap}
+  .card-cerrada.fac1{border-left:3px solid rgba(45,212,238,.8)}
+  .card-cerrada.fac2{border-left:3px solid rgba(255,176,32,.8)}
+  .fac1 .fac-chip,.fac1 .fac-cod{color:#2dd4ee;background:rgba(45,212,238,.13);
+    box-shadow:inset 0 0 0 1px rgba(45,212,238,.45)}
+  .fac2 .fac-chip,.fac2 .fac-cod{color:#ffb020;background:rgba(255,176,32,.13);
+    box-shadow:inset 0 0 0 1px rgba(255,176,32,.45)}
+  .card-cerrada.fac1 .card-photo{box-shadow:inset 0 -3px 0 rgba(45,212,238,.55)}
+  .card-cerrada.fac2 .card-photo{box-shadow:inset 0 -3px 0 rgba(255,176,32,.55)}
+  .ci-fac .pt{display:inline-block;width:9px;height:9px;border-radius:50%;
+    margin-right:6px;vertical-align:baseline}
+  .ci-fac .pt.fac1{background:#2dd4ee}
+  .ci-fac .pt.fac2{background:#ffb020}
   .card-cerrada{opacity:.62;transition:opacity .18s ease}
   .card-cerrada:hover{opacity:1}
   .card-cerrada .card-photo img{filter:grayscale(.72)}
@@ -4553,8 +4571,10 @@ function renderCierres() {
   resumen.className = 'ci-fac';
   resumen.innerHTML = '<span class="ci-ic">✓</span> ' + grupos.map(g => {
     const gg = g.lista.reduce((a, d) => a + d.tasa, 0);
-    return `${g.fac} <small>${g.lista.length} punto${g.lista.length > 1 ? 's' : ''}`
-         + ` · ${gg.toLocaleString('es-CO')} g/Hr</small>`;
+    const cl = g.fac === 'CPF-1' ? 'fac1' : 'fac2';
+    // el punto de color es la leyenda de las fichas de abajo
+    return `<span><i class="pt ${cl}"></i>${g.fac} <small>${g.lista.length} punto${g.lista.length > 1 ? 's' : ''}`
+         + ` · ${gg.toLocaleString('es-CO')} g/Hr</small></span>`;
   }).join(' &nbsp;·&nbsp; ');
   cuerpo.appendChild(resumen);
 
@@ -4563,11 +4583,16 @@ function renderCierres() {
 
   [{ lista: grupos.flatMap(g => g.lista.map(d => ({ d, lista: g.lista }))) }].forEach(() => {
     grupos.flatMap(g => [...g.lista].sort((a, b) => b.tasa - a.tasa)
-                        .map(d => ({ d, lista: g.lista })))
-          .forEach(({ d, lista: listaDe }) => {
+                        .map(d => ({ d, lista: g.lista, fac: g.fac })))
+          .forEach(({ d, lista: listaDe, fac }) => {
       const g = { lista: listaDe };
+      const clFac = fac === 'CPF-1' ? 'fac1' : 'fac2';
+      // si el consecutivo ya empieza por la facilidad (CPF-2-06), no hace
+      // falta repetirla: basta con darle el color
+      const codFac = !!d.fid && d.fid.indexOf(fac) === 0;
+      const tagFac = codFac ? '' : `<span class="fac-chip">${fac}</span>`;
       const card = document.createElement('div');
-      card.className = d.imgCierre ? 'card card-cerrada verificada' : 'card card-cerrada';
+      card.className = (d.imgCierre ? 'card card-cerrada verificada' : 'card card-cerrada') + ' ' + clFac;
 
       // con verificación posterior se muestran las dos tomas; sin ella, solo el hallazgo
       const foto = d.imgCierre
@@ -4594,7 +4619,7 @@ function renderCierres() {
       card.innerHTML = `
         ${foto}
         <div class="card-body">
-          <div class="card-eq">${d.equipo}${d.fid ? '<span class="cod">' + d.fid + '</span>' : ''}</div>
+          <div class="card-eq">${d.equipo}${tagFac}${d.fid ? `<span class="cod${codFac ? ' fac-cod' : ''}">${d.fid}</span>` : ''}</div>
           <div class="card-meta">${d.area} · ${d.punto} · ${d.elemento}</div>
           <div class="card-desc">${d.hallazgo}</div>
           <div class="card-periodo cerr-antes">Medición previa: ${d.tasa.toLocaleString('es-CO')} g/Hr${d.cierre ? ' · ' + d.cierre : ''}</div>
