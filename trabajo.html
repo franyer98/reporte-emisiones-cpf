@@ -4078,21 +4078,30 @@ function pintarCurva(baseG, cerrados) {
     const d = new Date(iso + 'T12:00:00');
     return isNaN(d) ? iso : d.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' });
   };
+  const n0c = v => Math.round(v).toLocaleString('es-CO');
 
-  // un punto de partida, uno por reparación, y hoy
-  // varias reparaciones del mismo día son un solo escalón: la fecha es el paso
+  /* Varias reparaciones del mismo día son un solo escalón, pero se guarda qué
+     se reparó ese día: es lo que convierte la curva en una historia y no en
+     una línea que baja. */
   const porDia = new Map();
-  conFecha.forEach(d => porDia.set(d.fechaCierre, (porDia.get(d.fechaCierre) || 0) + d.tasa));
+  conFecha.forEach(d => {
+    const v = porDia.get(d.fechaCierre) || { g: 0, equipos: [] };
+    v.g += d.tasa;
+    v.equipos.push(`${d.equipo} · ${n0c(d.tasa)} g/Hr`);
+    porDia.set(d.fechaCierre, v);
+  });
 
-  const etiquetas = [campanaBase()], valores = [baseG];
+  const etiquetas = [campanaBase()], valores = [baseG], detalle = [null];
   let acum = baseG;
-  [...porDia.entries()].forEach(([fecha, g]) => {
-    acum -= g;
+  [...porDia.entries()].forEach(([fecha, v]) => {
+    acum -= v.g;
     etiquetas.push(corto(fecha));
     valores.push(Math.round(acum));
+    detalle.push(v);
   });
   etiquetas.push('hoy');
   valores.push(Math.round(acum));
+  detalle.push(null);
 
   const previo = Chart.getChart(lienzo);
   if (previo) previo.destroy();
@@ -4101,30 +4110,89 @@ function pintarCurva(baseG, cerrados) {
   const tenue = estilo.getPropertyValue('--text-faint').trim() || '#8c98a6';
   const borde = estilo.getPropertyValue('--border').trim() || '#475463';
 
+  /* Rótulos sobre el primer y el último punto: el que mira la gráfica no
+     tiene por qué ir a buscar los números al eje. */
+  const extremos = {
+    id: 'extremosCurva',
+    afterDatasetsDraw(ch) {
+      const met = ch.getDatasetMeta(1);
+      if (!met || !met.data.length) return;
+      const ctx = ch.ctx;
+      const pinta = (punto, texto, color, arriba) => {
+        ctx.save();
+        ctx.font = '700 12px "Space Grotesk", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = arriba ? 'bottom' : 'top';
+        const an = ctx.measureText(texto).width + 14;
+        const ar = ch.chartArea;
+        const x = Math.min(Math.max(punto.x, ar.left + an / 2), ar.right - an / 2);
+        const y = punto.y + (arriba ? -9 : 9);
+        ctx.fillStyle = 'rgba(8,11,14,.78)';
+        ctx.beginPath();
+        ctx.roundRect(x - an / 2, arriba ? y - 19 : y, an, 19, 6);
+        ctx.fill();
+        ctx.fillStyle = color;
+        ctx.fillText(texto, x, arriba ? y - 4 : y + 15);
+        ctx.restore();
+      };
+      pinta(met.data[0], n0c(valores[0]) + ' g/Hr', '#f1f4f7', true);
+      // el último también arriba: abajo se montaba con las fechas del eje
+      pinta(met.data[met.data.length - 1], n0c(valores[valores.length - 1]) + ' g/Hr', '#00b828', true);
+    },
+  };
+
   new Chart(lienzo, {
     type: 'line',
     data: {
       labels: etiquetas,
-      datasets: [{
-        data: valores,
-        stepped: 'before',
-        borderColor: '#00b828',
-        backgroundColor: 'rgba(0,184,40,.12)',
-        borderWidth: 2,
-        fill: true,
-        pointRadius: 3,
-        pointBackgroundColor: '#00b828',
-        pointBorderWidth: 0,
-      }],
+      datasets: [
+        {
+          // la medición inicial, de referencia: lo sombreado entre las dos
+          // líneas es exactamente lo que se ha eliminado
+          label: 'línea base',
+          data: valores.map(() => baseG),
+          borderColor: 'rgba(255,255,255,.22)',
+          borderDash: [5, 5],
+          borderWidth: 1,
+          pointRadius: 0,
+          fill: false,
+        },
+        {
+          label: 'activo',
+          data: valores,
+          stepped: 'before',
+          borderColor: '#00b828',
+          backgroundColor: 'rgba(0,184,40,.13)',
+          borderWidth: 2.5,
+          fill: '-1',
+          pointRadius: ctx => (detalle[ctx.dataIndex] ? 5 : 3.5),
+          pointHoverRadius: 8,
+          pointBackgroundColor: '#00b828',
+          pointBorderColor: '#0b1117',
+          pointBorderWidth: 2,
+        },
+      ],
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      animation: { duration: 1100, easing: 'easeOutQuart' },
+      interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { display: false },
         tooltip: {
+          filter: it => it.datasetIndex === 1,
+          padding: 11,
+          titleFont: { size: 12.5 },
+          bodyFont: { size: 12 },
           callbacks: {
-            label: c => c.parsed.y.toLocaleString('es-CO') + ' g/Hr activos',
+            title: it => etiquetas[it[0].dataIndex],
+            label: c => n0c(c.parsed.y) + ' g/Hr activos',
+            afterBody: it => {
+              const d = detalle[it[0].dataIndex];
+              if (!d) return '';
+              return ['', `Reparado ese día  −${n0c(d.g)} g/Hr`].concat(d.equipos.map(e => '· ' + e));
+            },
           },
         },
       },
@@ -4133,11 +4201,11 @@ function pintarCurva(baseG, cerrados) {
         y: {
           beginAtZero: false,
           grid: { color: borde },
-          ticks: { color: tenue, font: { size: 10 },
-                   callback: v => v.toLocaleString('es-CO') },
+          ticks: { color: tenue, font: { size: 10 }, callback: v => v.toLocaleString('es-CO') },
         },
       },
     },
+    plugins: [extremos],
   });
 }
 
