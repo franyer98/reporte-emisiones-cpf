@@ -4122,17 +4122,20 @@ function pintarCurva(baseG, cerrados) {
         ctx.save();
         ctx.font = '700 12px "Space Grotesk", sans-serif';
         ctx.textAlign = 'center';
-        ctx.textBaseline = arriba ? 'bottom' : 'top';
-        const an = ctx.measureText(texto).width + 14;
+        const an = ctx.measureText(texto).width + 14, alto = 19;
         const ar = ch.chartArea;
+        // si no cabe por el lado elegido, se voltea: pegado al borde se cortaba
+        if (arriba && punto.y - 9 - alto < ar.top) arriba = false;
+        else if (!arriba && punto.y + 9 + alto > ar.bottom) arriba = true;
         const x = Math.min(Math.max(punto.x, ar.left + an / 2), ar.right - an / 2);
-        const y = punto.y + (arriba ? -9 : 9);
+        const cajaY = arriba ? punto.y - 9 - alto : punto.y + 9;
         ctx.fillStyle = 'rgba(8,11,14,.78)';
         ctx.beginPath();
-        ctx.roundRect(x - an / 2, arriba ? y - 19 : y, an, 19, 6);
+        ctx.roundRect(x - an / 2, cajaY, an, alto, 6);
         ctx.fill();
         ctx.fillStyle = color;
-        ctx.fillText(texto, x, arriba ? y - 4 : y + 15);
+        ctx.textBaseline = 'middle';
+        ctx.fillText(texto, x, cajaY + alto / 2 + 0.5);
         ctx.restore();
       };
       pinta(met.data[0], n0c(valores[0]) + ' g/Hr', '#f1f4f7', true);
