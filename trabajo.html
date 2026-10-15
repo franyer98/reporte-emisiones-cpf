@@ -2239,6 +2239,70 @@ THREE.OrbitControls = OrbitControls;
   .inf-metodo p{font-size:8pt;margin:4px 0;text-align:justify}
   .inf-pie{font-size:7.5pt;border-top:1px solid #bbb;padding-top:4px;margin-top:11px}
 
+  /* ---------- MODO PRESENTACIÓN ----------
+     Para proyectar en reunión: una idea por pantalla, tipografía grande y
+     ningún menú a la vista. Se avanza con flechas, clic o deslizando. */
+  .pr-capa{position:fixed;inset:0;z-index:120;background:#0b1117;color:#f1f4f7;
+    display:flex;flex-direction:column;overflow:hidden}
+  .pr-lam{flex:1;display:none;flex-direction:column;justify-content:center;
+    padding:min(7vh,70px) min(7vw,80px);overflow:hidden}
+  .pr-lam.activa{display:flex;animation:prEntra .4s ease}
+  @keyframes prEntra{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  .pr-kick{font-family:'JetBrains Mono',monospace;font-size:clamp(11px,1.4vw,15px);
+    letter-spacing:.2em;color:var(--cool);margin-bottom:min(2.4vh,22px)}
+  .pr-h{font-family:'Space Grotesk',sans-serif;font-weight:700;line-height:1.05;
+    font-size:clamp(28px,4.6vw,62px);margin-bottom:min(2.4vh,22px)}
+  .pr-sub{font-size:clamp(14px,1.7vw,22px);color:var(--text-dim);max-width:46ch;line-height:1.5}
+  .pr-cifras{display:flex;gap:min(4vw,46px);flex-wrap:wrap;margin-top:min(4vh,40px)}
+  .pr-c b{display:block;font-family:'Space Grotesk',sans-serif;font-weight:700;
+    font-size:clamp(34px,6.4vw,86px);line-height:1}
+  .pr-c span{display:block;font-family:'JetBrains Mono',monospace;
+    font-size:clamp(9px,1.05vw,13px);letter-spacing:.14em;color:var(--text-faint);margin-top:9px}
+  .pr-c.verde b{color:#00b828}
+  .pr-c.rojo b{color:var(--hot)}
+  .pr-fila{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));
+    gap:min(2.4vw,26px);margin-top:min(3vh,30px)}
+  .pr-pt{border:1px solid var(--border);border-radius:14px;overflow:hidden;background:#131a22}
+  .pr-pt img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block}
+  .pr-pt-b{padding:min(1.8vh,16px) min(1.4vw,18px)}
+  .pr-pt-eq{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(15px,1.7vw,21px)}
+  .pr-pt-m{font-family:'JetBrains Mono',monospace;font-size:clamp(9.5px,1vw,12px);
+    color:var(--text-faint);margin-top:4px}
+  .pr-pt-t{font-family:'Space Grotesk',sans-serif;font-weight:700;
+    font-size:clamp(17px,2.2vw,30px);color:var(--hot);margin-top:8px}
+  .pr-barras{margin-top:min(3.4vh,34px);display:flex;flex-direction:column;gap:min(2.2vh,20px)}
+  .pr-b-top{display:flex;justify-content:space-between;align-items:baseline;gap:16px;
+    font-family:'JetBrains Mono',monospace;font-size:clamp(12px,1.5vw,18px);letter-spacing:.05em}
+  .pr-b-top em{font-style:normal;font-family:'Space Grotesk',sans-serif;font-weight:700}
+  .pr-pista{height:min(1.6vh,14px);border-radius:99px;background:var(--surface-2);overflow:hidden;margin-top:9px}
+  .pr-relleno{display:block;height:100%;border-radius:99px}
+  .pr-cmp{display:grid;grid-template-columns:1fr 1fr;gap:min(2vw,22px);margin-top:min(3vh,28px)}
+  .pr-cmp figure{margin:0;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:#131a22}
+  .pr-cmp img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block}
+  .pr-cmp figcaption{font-family:'JetBrains Mono',monospace;font-size:clamp(10px,1.2vw,14px);
+    padding:11px 14px;letter-spacing:.06em}
+  .pr-cmp .antes figcaption{color:var(--hot)}
+  .pr-cmp .despues figcaption{color:#00b828}
+  .pr-barra{display:flex;align-items:center;gap:14px;padding:12px min(4vw,40px);
+    border-top:1px solid var(--border);background:#0e151c}
+  .pr-barra .pr-n{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-faint);
+    margin-right:auto;letter-spacing:.08em}
+  .pr-nav{width:42px;height:42px;border-radius:50%;border:1px solid var(--border);
+    background:transparent;color:var(--text);font-size:17px;cursor:pointer;line-height:1}
+  .pr-nav:hover{border-color:var(--cool);color:var(--cool)}
+  .pr-nav[disabled]{opacity:.3;cursor:default}
+  .pr-salir{font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:.08em;
+    background:transparent;border:1px solid var(--border);color:var(--text-dim);
+    padding:10px 15px;border-radius:99px;cursor:pointer}
+  .pr-salir:hover{border-color:var(--hot);color:var(--hot)}
+  .pr-puntos{display:flex;gap:7px}
+  .pr-pto{width:8px;height:8px;border-radius:50%;background:var(--border)}
+  .pr-pto.on{background:var(--cool)}
+  @media (max-width:600px){
+    .pr-cmp{grid-template-columns:1fr}
+    .pr-lam{padding:26px 20px}
+  }
+
   /* ---------- ORDEN DE TRABAJO ----------
      Una hoja por tanque, para que la cuadrilla se la lleve a campo: qué hay
      que intervenir, con su foto, y espacio en blanco para anotar lo hecho. */
@@ -2755,6 +2819,7 @@ THREE.OrbitControls = OrbitControls;
         <a href="#" class="nav-link" id="navFuente">Fuente de datos · hoja de cálculo</a>
         <a href="#" class="nav-link" id="navInforme">Informe para imprimir o enviar en PDF</a>
         <a href="#" class="nav-link" id="navOrden">Orden de trabajo · por tanque</a>
+        <a href="#" class="nav-link" id="navPresentar">Modo presentación · pantalla completa</a>
       </div>
 
       <div class="nav-group">
@@ -7525,6 +7590,229 @@ ${cssInforme()}
     pintar();
     buscador.focus();
   }
+
+  /* ============================================================
+     MODO PRESENTACIÓN
+     Para proyectar en una reunión: una idea por pantalla, letra grande y
+     ningún menú encima. Se arma con los datos que el tablero tenga en ese
+     momento, así que nunca muestra cifras distintas de las de la pantalla.
+
+     Cada campo va por separado. Rubiales (CPF-1 y CPF-2) y Caño Sur son
+     campos distintos y sus totales no se suman.
+     ============================================================ */
+  const n0p = v => Math.round(v).toLocaleString('es-CO');
+
+  function laminas(campo) {
+    const esRub = campo === 'RUBIALES';
+    const activos = esRub ? [...DATA1, ...DATA2]
+                          : (typeof DATACS !== 'undefined' ? DATACS : []);
+    const cerrados = esRub ? [...CERRADAS1, ...CERRADAS2] : [];
+    const facDe = d => esRub ? (DATA1.includes(d) || CERRADAS1.includes(d) ? 'CPF-1' : 'CPF-2') : 'CAÑO SUR';
+    const g = activos.reduce((a, d) => a + d.tasa, 0);
+    const co2 = activos.reduce((a, d) => a + d.tasa * kDe(facDe(d), d.area), 0);
+    const nombre = esRub ? 'Campo Rubiales' : 'Caño Sur';
+    const detalle = esRub ? 'CPF-1 y CPF-2' : 'Facilidad Centauros';
+    const L = [];
+
+    // 1 · dónde estamos
+    L.push(`
+      <div class="pr-kick">INSPECCIÓN TERMOGRÁFICA · CÁMARA OGI/FLIR</div>
+      <div class="pr-h">${nombre}<br>emisiones fugitivas</div>
+      <div class="pr-sub">${detalle} · ${activos.length} puntos cuantificados con medición
+      directa, convertidos a CO2 equivalente con la cromatografía de cada área.</div>
+      <div class="pr-cifras">
+        <div class="pr-c rojo"><b>${n0p(g)}</b><span>g/Hr QUE SE ESCAPAN HOY</span></div>
+        <div class="pr-c"><b>${n0p(co2)}</b><span>ton CO2eq AL AÑO</span></div>
+        <div class="pr-c"><b>${activos.length}</b><span>PUNTOS ACTIVOS</span></div>
+      </div>`);
+
+    // 2 · qué se ha logrado (sólo donde hay cierres)
+    if (cerrados.length) {
+      const elim = cerrados.reduce((a, d) => a + d.tasa, 0);
+      const co2Ev = cerrados.reduce((a, d) => a + d.tasa * kDe(facDe(d), d.area), 0);
+      const base = g + elim;
+      const pct = base ? (elim / base * 100) : 0;
+      L.push(`
+        <div class="pr-kick">AVANCE DE LA CAMPAÑA</div>
+        <div class="pr-h">${pct.toFixed(1).replace('.', ',')}% de la fuga,<br>ya eliminada</div>
+        <div class="pr-sub">De los ${base ? (activos.length + cerrados.length) : 0} puntos medidos al
+        inicio, ${cerrados.length} están intervenidos y verificados con una segunda medición de cámara.</div>
+        <div class="pr-cifras">
+          <div class="pr-c"><b>${n0p(base)}</b><span>g/Hr AL INICIO</span></div>
+          <div class="pr-c verde"><b>−${n0p(elim)}</b><span>g/Hr ELIMINADOS</span></div>
+          <div class="pr-c verde"><b>${n0p(co2Ev)}</b><span>ton CO2eq EVITADAS</span></div>
+        </div>`);
+    }
+
+    // 3 · dónde está concentrado
+    const top = [...activos].sort((a, b) => b.tasa - a.tasa).slice(0, 3);
+    if (top.length) {
+      const sumaTop = top.reduce((a, d) => a + d.tasa, 0);
+      const pctTop = g ? Math.round(sumaTop / g * 100) : 0;
+      L.push(`
+        <div class="pr-kick">DÓNDE ESTÁ EL VOLUMEN</div>
+        <div class="pr-h">${top.length} puntos concentran<br>el ${pctTop}% de la fuga</div>
+        <div class="pr-fila">
+          ${top.map(d => `
+            <div class="pr-pt">
+              ${d.img ? `<img src="${d.img}" alt="${d.equipo}">` : ''}
+              <div class="pr-pt-b">
+                <div class="pr-pt-eq">${d.equipo}</div>
+                <div class="pr-pt-m">${d.area} · ${d.punto}${d.elemento ? ' · ' + d.elemento : ''}</div>
+                <div class="pr-pt-t">${n0p(d.tasa)} g/Hr</div>
+              </div>
+            </div>`).join('')}
+        </div>`);
+    }
+
+    // 4 · qué pieza falla
+    const porElem = new Map();
+    activos.forEach(d => {
+      const k = (d.elemento || 'SIN CLASIFICAR').trim().toUpperCase();
+      porElem.set(k, (porElem.get(k) || 0) + d.tasa);
+    });
+    const elems = [...porElem.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+    if (elems.length) {
+      const may = elems[0][1];
+      const colores = ['#ff4757', '#ffb238', '#2dd4ee', '#a78bfa', '#4ade80'];
+      L.push(`
+        <div class="pr-kick">QUÉ PIEZA ESTÁ FALLANDO</div>
+        <div class="pr-h">${elems[0][0].toLowerCase()}:<br>${Math.round(elems[0][1] / g * 100)}% del volumen</div>
+        <div class="pr-barras">
+          ${elems.map(([nom, v], i) => `
+            <div>
+              <div class="pr-b-top"><span>${nom}</span><em>${n0p(v)} g/Hr</em></div>
+              <div class="pr-pista"><span class="pr-relleno"
+                style="width:${Math.max(3, v / may * 100)}%;background:${colores[i % colores.length]}"></span></div>
+            </div>`).join('')}
+        </div>`);
+    }
+
+    // 5 · la prueba de que se repara
+    const conFoto = cerrados.filter(d => d.imgCierre && d.img)
+                            .sort((a, b) => b.tasa - a.tasa)[0];
+    if (conFoto) {
+      L.push(`
+        <div class="pr-kick">ANTES Y DESPUÉS · ${conFoto.equipo}</div>
+        <div class="pr-h">De ${n0p(conFoto.tasa)} g/Hr<br>a ${n0p(conFoto.tasaCierre || 0)} g/Hr</div>
+        <div class="pr-cmp">
+          <figure class="antes"><img src="${conFoto.img}" alt="Antes">
+            <figcaption>ANTES · ${n0p(conFoto.tasa)} g/Hr</figcaption></figure>
+          <figure class="despues"><img src="${conFoto.imgCierre}" alt="Después">
+            <figcaption>DESPUÉS · ${n0p(conFoto.tasaCierre || 0)} g/Hr</figcaption></figure>
+        </div>`);
+    }
+    return L;
+  }
+
+  function abrirPresentacion(campo) {
+    const L = laminas(campo);
+    if (!L.length) return;
+    const cap = document.createElement('div');
+    cap.className = 'pr-capa';
+    cap.innerHTML = L.map((h, i) => `<div class="pr-lam${i ? '' : ' activa'}">${h}</div>`).join('')
+      + `<div class="pr-barra">
+           <span class="pr-n" id="prN">1 / ${L.length}</span>
+           <div class="pr-puntos">${L.map((_, i) => `<span class="pr-pto${i ? '' : ' on'}"></span>`).join('')}</div>
+           <button class="pr-nav" id="prAnt" aria-label="Anterior">&#8592;</button>
+           <button class="pr-nav" id="prSig" aria-label="Siguiente">&#8594;</button>
+           <button class="pr-salir" id="prSalir">SALIR</button>
+         </div>`;
+    document.body.appendChild(cap);
+    document.body.style.overflow = 'hidden';
+    document.body.classList.add('con-capa');
+    if (window.pausarMapas3D) window.pausarMapas3D();
+    try { if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen(); } catch (e) {}
+
+    const lams = [...cap.querySelectorAll('.pr-lam')];
+    const ptos = [...cap.querySelectorAll('.pr-pto')];
+    let i = 0;
+    const ir = n => {
+      i = Math.max(0, Math.min(lams.length - 1, n));
+      lams.forEach((l, k) => l.classList.toggle('activa', k === i));
+      ptos.forEach((p, k) => p.classList.toggle('on', k === i));
+      cap.querySelector('#prN').textContent = `${i + 1} / ${lams.length}`;
+      cap.querySelector('#prAnt').disabled = i === 0;
+      cap.querySelector('#prSig').disabled = i === lams.length - 1;
+    };
+    ir(0);
+
+    const salir = () => {
+      document.removeEventListener('keydown', tecla);
+      cap.remove();
+      document.body.style.overflow = '';
+      document.body.classList.remove('con-capa');
+      if (window.pausarMapas3D) window.pausarMapas3D();
+      try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) {}
+    };
+    const tecla = e => {
+      if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); ir(i + 1); }
+      else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); ir(i - 1); }
+      else if (e.key === 'Escape') salir();
+    };
+    document.addEventListener('keydown', tecla);
+    cap.querySelector('#prSig').onclick = () => ir(i + 1);
+    cap.querySelector('#prAnt').onclick = () => ir(i - 1);
+    cap.querySelector('#prSalir').onclick = salir;
+
+    // avanzar con un clic en la lámina, y deslizando en el teléfono
+    lams.forEach(l => l.addEventListener('click', () => ir(i + 1)));
+    let x0 = null;
+    cap.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, { passive: true });
+    cap.addEventListener('touchend', e => {
+      if (x0 === null) return;
+      const dx = e.changedTouches[0].clientX - x0;
+      if (Math.abs(dx) > 50) ir(dx < 0 ? i + 1 : i - 1);
+      x0 = null;
+    });
+  }
+
+  /* Elegir campo antes de empezar: no se mezclan en una misma presentación. */
+  function abrirSelectorPresentacion() {
+    const hayCS = typeof DATACS !== 'undefined' && DATACS.length;
+    if (!hayCS) return abrirPresentacion('RUBIALES');
+
+    const cap = document.createElement('div');
+    cap.className = 'bd-capa';
+    cap.innerHTML = `
+      <div class="bd-caja ed-caja" role="dialog" aria-label="Modo presentación">
+        <div class="bd-top">
+          <div>
+            <div class="bd-kick">MODO PRESENTACIÓN</div>
+            <h3 class="bd-h">¿Qué campo vas a presentar?</h3>
+          </div>
+          <button class="bd-x" aria-label="Cerrar">×</button>
+        </div>
+        <p class="bd-p">Pantalla completa, sin menús. Se avanza con las flechas, con un
+        clic o deslizando. Cada campo va por separado: sus totales no se suman.</p>
+        <div class="sel-lista">
+          <button class="sel-fila" data-campo="RUBIALES">
+            <span class="sf-txt"><b>Campo Rubiales</b><small>CPF-1 y CPF-2</small></span>
+            <span class="sf-tasa">${n0p([...DATA1, ...DATA2].reduce((a, d) => a + d.tasa, 0))} <small>g/Hr</small></span>
+          </button>
+          <button class="sel-fila" data-campo="CANOSUR">
+            <span class="sf-txt"><b>Caño Sur</b><small>Facilidad Centauros</small></span>
+            <span class="sf-tasa">${n0p(DATACS.reduce((a, d) => a + d.tasa, 0))} <small>g/Hr</small></span>
+          </button>
+        </div>
+      </div>`;
+    document.body.appendChild(cap);
+    const cerrar = () => cap.remove();
+    cap.querySelector('.bd-x').onclick = cerrar;
+    cap.onclick = e => { if (e.target === cap) cerrar(); };
+    cap.querySelectorAll('.sel-fila').forEach(b => {
+      b.onclick = () => { cerrar(); abrirPresentacion(b.dataset.campo); };
+    });
+  }
+
+  const pres = document.getElementById('navPresentar');
+  if (pres) pres.addEventListener('click', e => {
+    e.preventDefault();
+    const m = document.querySelector('.nav-menu');
+    if (m) m.classList.remove('open');
+    abrirSelectorPresentacion();
+  });
+  window.presentar = abrirPresentacion;
 
   const ot = document.getElementById('navOrden');
   if (ot) ot.addEventListener('click', e => {
