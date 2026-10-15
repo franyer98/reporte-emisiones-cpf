@@ -2630,6 +2630,37 @@ THREE.OrbitControls = OrbitControls;
   h1.intro-title { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: clamp(28px,6vw,42px); letter-spacing: -0.02em; margin-bottom: 16px; }
   .intro-lede { font-size: 16px; color: var(--text-dim); max-width: 560px; margin: 0 auto; }
 
+  /* ---------- VÍDEO DE LA GUÍA ----------
+     Iba suelto, sin marco y pegado al texto. Va igual que la foto: ficha
+     centrada, con su pie debajo. */
+  .intro-video-wrap{margin:20px auto 10px;max-width:620px;background:#000;
+    border:1px solid var(--border);border-radius:14px;overflow:hidden;
+    box-shadow:0 14px 40px rgba(0,0,0,.28);line-height:0}
+  .intro-video-wrap video{display:block;width:100%;height:auto}
+  .intro-video-caption{max-width:620px;margin:0 auto;font-size:12.5px;line-height:1.6;
+    color:var(--text-faint);text-align:center;padding:0 4px}
+
+  /* ---------- UNA TONELADA DE METANO FRENTE A UNA DE CO2 ----------
+     28 cuadros contra uno. Sin estilos eran 29 divs vacíos, es decir, nada. */
+  .intro-gwp-visual{display:flex;align-items:center;justify-content:center;gap:22px;
+    flex-wrap:wrap;margin:22px auto;padding:20px 18px;max-width:620px;
+    background:var(--surface);border:1px solid var(--border);border-radius:14px}
+  .intro-gwp-col{display:flex;flex-direction:column;align-items:center;gap:11px}
+  .igwp-squares{display:flex;align-items:center;justify-content:center;min-height:62px}
+  .igwp-sq{width:13px;height:13px;border-radius:3px}
+  .igwp-sq.co2{background:var(--cool);box-shadow:0 0 0 3px rgba(45,212,238,.16)}
+  .igwp-sq.ch4{background:var(--hot)}
+  .ch4-grid{display:grid;grid-template-columns:repeat(7,13px);gap:4px;min-height:0}
+  .intro-gwp-eq{font-family:'Space Grotesk',sans-serif;font-size:21px;color:var(--text-faint)}
+  .intro-gwp-label{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;
+    text-align:center;line-height:1.7}
+  .intro-gwp-label span{color:var(--text-faint);font-size:9.5px;letter-spacing:.05em}
+  @media (max-width:520px){
+    .intro-gwp-visual{gap:14px;padding:16px 12px}
+    .igwp-sq{width:11px;height:11px}
+    .ch4-grid{grid-template-columns:repeat(7,11px);gap:3px}
+  }
+
   /* ---------- FOTO DE PORTADA DE LA GUÍA ----------
      Estaba sin estilos: la imagen salía suelta y el pie corría a lo ancho,
      en bloque. Va en una ficha, con la lectura sobre la propia imagen. */
@@ -2836,7 +2867,7 @@ THREE.OrbitControls = OrbitControls;
 
 <div class="intro-cta">
   <h2>¿Listo para ver los datos reales?</h2>
-  <p>25 puntos de fuga cuantificados, con evidencia fotográfica, vista 3D de los tanques y el detalle de cada hallazgo.</p>
+  <p><span id="introN">—</span> puntos de fuga cuantificados, con evidencia fotográfica, vista 3D de los tanques y el detalle de cada hallazgo.</p>
   <button class="intro-cta-btn" id="introUnlockBtn">Ver el Dashboard &#8594;</button>
 </div>
 </div> <!-- /pageIntro -->
@@ -7512,6 +7543,21 @@ ${cssInforme()}
 </script>
 
 <script>
+/* La guía anunciaba "25 puntos": un número escrito a mano que envejece con
+   cada cierre. Se cuenta sobre los datos, incluidos los ya reparados y Caño
+   Sur, que es el total cuantificado en la campaña. */
+(function () {
+  const pintar = () => {
+    const el = document.getElementById('introN');
+    if (!el) return;
+    const n = DATA1.length + DATA2.length + CERRADAS1.length + CERRADAS2.length
+            + (typeof DATACS !== 'undefined' ? DATACS.length : 0);
+    el.textContent = n;
+  };
+  pintar();
+  window.contarIntro = pintar;
+})();
+
 /* ============================================================
    DATOS GUARDADOS EN EL SERVIDOR
    El archivo trae dentro una copia de los datos, que es la que se ve al
@@ -7532,6 +7578,7 @@ ${cssInforme()}
       poner(CERRADAS2, d.CERRADAS2);
       if (typeof sanearIds === 'function') sanearIds();
       if (typeof refrescarTodo === 'function') refrescarTodo();
+      if (window.contarIntro) window.contarIntro();
     })
     .catch(() => {});   // sin servidor, se queda con los datos de dentro
 })();
