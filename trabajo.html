@@ -2165,7 +2165,7 @@ THREE.OrbitControls = OrbitControls;
     color:var(--text-faint);margin-top:5px;text-transform:uppercase;line-height:1.5}
 
   /* ---------- INFORME IMPRIMIBLE ---------- */
-  #informe{display:none}
+  .hoja{display:none}
   @media print{
     /* Con margen cero el navegador deja de estampar su encabezado y su pie
        —fecha, título y la dirección web de la página—. El margen real del
@@ -2175,7 +2175,7 @@ THREE.OrbitControls = OrbitControls;
     @page{size:auto;margin:0}
     /* el informe se reduce lo justo para caber en una sola hoja; la medida
        la calcula encajarEnUnaHoja() antes de abrir el cuadro de impresión */
-    html.imprimiendo #informe{zoom:var(--inf-zoom,1)}
+    html.imprimiendo .hoja{zoom:var(--inf-zoom,1)}
     html.imprimiendo, html.imprimiendo body{
       background:#fff!important;color:#000!important;
       margin:0!important;padding:0!important;width:auto!important;min-height:0!important;
@@ -2187,8 +2187,8 @@ THREE.OrbitControls = OrbitControls;
     html.imprimiendo .inf-barra{display:none!important}
     html.imprimiendo .inf-hoja{padding:0!important;margin:0!important;max-width:none!important;
       box-shadow:none!important;border-radius:0!important;overflow:visible!important}
-    html.imprimiendo #informe{display:block!important;width:100%!important;background:#fff!important}
-    html.imprimiendo #informe *{color:#000!important;background:#fff!important;box-shadow:none!important}
+    html.imprimiendo .hoja{display:block!important;width:100%!important;background:#fff!important}
+    html.imprimiendo .hoja *{color:#000!important;background:#fff!important;box-shadow:none!important}
   }
   /* visor en pantalla: hoja blanca sobre fondo oscuro, legible en el celular */
   .inf-visor{position:fixed;inset:0;z-index:95;background:#070a0d;
@@ -2202,13 +2202,13 @@ THREE.OrbitControls = OrbitControls;
   /* el informe conserva el ancho de una hoja A4 y se reduce a escala para
      caber en el teléfono: así se ve igual que saldrá impreso, sin recolocar nada */
   .inf-marco{margin:0 auto;position:relative}
-  .inf-hoja #informe{background:#fff;color:#000;width:720px;padding:26px 24px;
+  .inf-hoja .hoja{background:#fff;color:#000;width:720px;padding:26px 24px;
     border-radius:5px;box-shadow:0 10px 36px rgba(0,0,0,.5);
     transform-origin:top left;position:absolute;top:0;left:0}
   html.imprimiendo .inf-marco{height:auto!important;width:auto!important}
-  html.imprimiendo .inf-hoja #informe{transform:none!important;position:static!important;
+  html.imprimiendo .inf-hoja .hoja{transform:none!important;position:static!important;
     width:auto!important;padding:15mm 13mm!important;border-radius:0!important;box-shadow:none!important}
-  #informe{font-family:'Inter',system-ui,sans-serif;color:#000;font-size:10pt;line-height:1.45}
+  .hoja{font-family:'Inter',system-ui,sans-serif;color:#000;font-size:10pt;line-height:1.45}
   .inf-top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;
     border-bottom:2px solid #000;padding-bottom:6px;margin-bottom:11px}
   .inf-kick{font-family:'JetBrains Mono',monospace;font-size:7.5pt;letter-spacing:.14em}
@@ -2238,6 +2238,30 @@ THREE.OrbitControls = OrbitControls;
   .inf-metodo p{break-inside:avoid}
   .inf-metodo p{font-size:8pt;margin:4px 0;text-align:justify}
   .inf-pie{font-size:7.5pt;border-top:1px solid #bbb;padding-top:4px;margin-top:11px}
+
+  /* ---------- ORDEN DE TRABAJO ----------
+     Una hoja por tanque, para que la cuadrilla se la lleve a campo: qué hay
+     que intervenir, con su foto, y espacio en blanco para anotar lo hecho. */
+  .ot-eq{font-family:'Space Grotesk',sans-serif;font-size:23pt;font-weight:700;margin:2px 0 1px}
+  .ot-meta{font-family:'JetBrains Mono',monospace;font-size:8.5pt;letter-spacing:.05em}
+  .ot-resumen{display:flex;gap:9px;margin:11px 0 13px}
+  .ot-r{flex:1;border:1px solid #000;border-radius:4px;padding:6px 9px}
+  .ot-r b{display:block;font-family:'Space Grotesk',sans-serif;font-size:15pt;line-height:1.1}
+  .ot-r span{font-family:'JetBrains Mono',monospace;font-size:7pt;letter-spacing:.07em}
+  .ot-punto{display:grid;grid-template-columns:118px 1fr;gap:11px;align-items:start;
+    border:1px solid #000;border-radius:5px;padding:9px;margin-bottom:9px;break-inside:avoid}
+  .ot-punto img{width:118px;height:89px;object-fit:cover;border:1px solid #666;display:block}
+  .ot-sin{width:118px;height:89px;border:1px dashed #999;display:flex;align-items:center;
+    justify-content:center;font-size:7.5pt;color:#666}
+  .ot-t{font-family:'Space Grotesk',sans-serif;font-size:11pt;font-weight:700;
+    display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+  .ot-t em{font-style:normal;font-family:'JetBrains Mono',monospace;font-size:10pt}
+  .ot-d{font-size:8.5pt;margin-top:3px}
+  .ot-campos{display:grid;grid-template-columns:1fr 1fr;gap:5px 14px;margin-top:7px}
+  .ot-c{font-family:'JetBrains Mono',monospace;font-size:7pt;letter-spacing:.06em;
+    border-bottom:1px solid #000;padding-bottom:13px}
+  .ot-nota{font-size:8pt;border:1px solid #000;border-radius:4px;padding:7px 9px;margin-top:4px}
+  .ot-firmas{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:16px;break-inside:avoid}
   /* Bloque de firmas: quien elabora va impreso, quien revisa y aprueba firman
      a mano sobre la línea. Se mantiene junto para que nunca lo parta una hoja. */
   .inf-firmas{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;
@@ -2672,6 +2696,7 @@ THREE.OrbitControls = OrbitControls;
         <a href="#" class="nav-editar" id="navEditar"><span>Activar modo edición</span><small>Agregar, corregir y cerrar hallazgos</small></a>
         <a href="#" class="nav-link" id="navFuente">Fuente de datos · hoja de cálculo</a>
         <a href="#" class="nav-link" id="navInforme">Informe para imprimir o enviar en PDF</a>
+        <a href="#" class="nav-link" id="navOrden">Orden de trabajo · por tanque</a>
       </div>
 
       <div class="nav-group">
@@ -6877,7 +6902,8 @@ try { initCharts(); } catch (e) {}
      que siempre coincide con lo que se ve en pantalla. En papel
      (o al guardar como PDF) se oculta todo lo demás.
      ============================================================ -->
-<div id="informe" aria-hidden="true"></div>
+<div id="informe" class="hoja" aria-hidden="true"></div>
+<div id="orden" class="hoja" aria-hidden="true"></div>
 
 <script>
 (function () {
@@ -7087,8 +7113,8 @@ try { initCharts(); } catch (e) {}
      Se mide sobre una copia fuera de pantalla para no depender de la escala
      con que el visor lo esté mostrando. La referencia es la hoja Carta, que
      es la más corta: lo que cabe en Carta cabe también en A4. */
-  function encajarEnUnaHoja() {
-    const inf = document.getElementById('informe');
+  function encajarEnUnaHoja(nodo) {
+    const inf = nodo || document.getElementById('informe');
     if (!inf) return;
     const ANCHO = 816, ALTO = 1056;          // 8,5 × 11 pulgadas a 96 ppp
     const caja = document.createElement('div');
@@ -7108,8 +7134,10 @@ try { initCharts(); } catch (e) {}
     return z;
   }
 
+  let hojaActual = null;
+
   function imprimir() {
-    encajarEnUnaHoja();
+    encajarEnUnaHoja(hojaActual);
     document.documentElement.classList.add('imprimiendo');
     const limpiar = () => document.documentElement.classList.remove('imprimiendo');
     window.addEventListener('afterprint', limpiar, { once: true });
@@ -7127,7 +7155,7 @@ try { initCharts(); } catch (e) {}
       let reglas;
       try { reglas = hoja.cssRules; } catch (e) { continue; }
       for (const r of reglas) {
-        if (r.selectorText && /#informe|\.inf-/.test(r.selectorText)) css += r.cssText + '\n';
+        if (r.selectorText && /#informe|\.hoja|\.inf-|\.ot-/.test(r.selectorText)) css += r.cssText + '\n';
       }
     }
     return css;
@@ -7162,24 +7190,26 @@ ${cssInforme()}
 
   // Se muestra en pantalla antes de imprimir: así el informe siempre aparece,
   // incluso donde el visor no deja abrir el cuadro de impresión.
-  function abrirInforme() {
-    construir();
+  /* El visor sirve para cualquier hoja imprimible: el informe del campo y la
+     orden de trabajo de un tanque usan el mismo marco, los mismos botones y
+     el mismo ajuste a una página. */
+  function abrirVisor(nodo, etiqueta, conDescarga) {
+    hojaActual = nodo;
     const cap = document.createElement('div');
     cap.className = 'inf-visor';
     cap.innerHTML = `
       <div class="inf-barra">
-        <span class="inf-bt">Informe · ${hoy()}</span>
+        <span class="inf-bt">${etiqueta}</span>
         <button class="bd-b bd-pri" id="infImp">Imprimir o guardar PDF</button>
-        <button class="bd-b" id="infDesc">Descargar</button>
+        ${conDescarga ? '<button class="bd-b" id="infDesc">Descargar</button>' : ''}
         <button class="bd-b" id="infCerrar">Cerrar</button>
       </div>
       <div class="inf-hoja" id="infHoja"><div class="inf-marco" id="infMarco"></div></div>`;
     document.body.appendChild(cap);
-    const inf = document.getElementById('informe');
-    cap.querySelector('#infMarco').appendChild(inf);
-    inf.style.display = 'block';
+    cap.querySelector('#infMarco').appendChild(nodo);
+    nodo.style.display = 'block';
     document.body.style.overflow = 'hidden';
-    // con el informe encima no tiene sentido seguir dibujando las vistas 3D
+    // con la hoja encima no tiene sentido seguir dibujando las vistas 3D
     document.body.classList.add('con-capa');
     if (window.pausarMapas3D) window.pausarMapas3D();
 
@@ -7188,9 +7218,9 @@ ${cssInforme()}
     const ajustar = () => {
       const disponible = hoja.clientWidth - 20;
       const esc = Math.min(1, disponible / 720);
-      inf.style.transform = `scale(${esc})`;
+      nodo.style.transform = `scale(${esc})`;
       marco.style.width = (720 * esc) + 'px';
-      marco.style.height = (inf.offsetHeight * esc) + 'px';
+      marco.style.height = (nodo.offsetHeight * esc) + 'px';
     };
     ajustar();
     setTimeout(ajustar, 180);
@@ -7199,18 +7229,190 @@ ${cssInforme()}
 
     const cerrar = () => {
       window.removeEventListener('resize', cap._ajustar);
-      inf.style.display = '';
-      inf.style.transform = '';
-      document.body.appendChild(inf);
+      nodo.style.display = '';
+      nodo.style.transform = '';
+      document.body.appendChild(nodo);
       cap.remove();
+      hojaActual = null;
       document.body.style.overflow = '';
       document.body.classList.remove('con-capa');
       if (window.pausarMapas3D) window.pausarMapas3D();
     };
     cap.querySelector('#infCerrar').onclick = cerrar;
     cap.querySelector('#infImp').onclick = imprimir;
-    cap.querySelector('#infDesc').onclick = descargar;
+    const bd = cap.querySelector('#infDesc');
+    if (bd) bd.onclick = descargar;
   }
+
+  function abrirInforme() {
+    construir();
+    abrirVisor(document.getElementById('informe'), `Informe · ${hoy()}`, true);
+  }
+
+  /* ============================================================
+     ORDEN DE TRABAJO POR TANQUE
+     El informe describe el campo entero; para mandar a reparar no sirve.
+     Esto saca una hoja de un solo tanque, con sus puntos activos, la foto de
+     cada uno y los renglones en blanco que la cuadrilla llena en sitio.
+     ============================================================ */
+  const ordenNodo = () => document.getElementById('orden');
+
+  function puntosDe(equipo) {
+    return [...DATA1.map(d => ({ d, fac: 'CPF-1' })),
+            ...DATA2.map(d => ({ d, fac: 'CPF-2' })),
+            ...(typeof DATACS !== 'undefined' ? DATACS.map(d => ({ d, fac: 'CAÑO SUR' })) : [])]
+      .filter(x => x.d.equipo === equipo)
+      .sort((a, b) => b.d.tasa - a.d.tasa);
+  }
+
+  function construirOrden(equipo) {
+    const lista = puntosDe(equipo);
+    if (!lista.length) return false;
+    const fac = lista[0].fac;
+    const areas = [...new Set(lista.map(x => x.d.area))].join(' · ');
+    const total = lista.reduce((a, x) => a + x.d.tasa, 0);
+    const co2 = lista.reduce((a, x) => a + x.d.tasa * kDe(x.fac, x.d.area), 0);
+    const n0 = v => Math.round(v).toLocaleString('es-CO');
+
+    const puntos = lista.map((x, i) => {
+      const d = x.d;
+      const foto = d.img
+        ? `<img src="${d.img}" alt="Evidencia ${d.equipo}">`
+        : `<div class="ot-sin">sin foto</div>`;
+      return `
+        <div class="ot-punto">
+          ${foto}
+          <div>
+            <div class="ot-t"><span>${i + 1}. ${d.punto}${d.elemento ? ' · ' + d.elemento : ''}</span>
+              <em>${n0(d.tasa)} g/Hr</em></div>
+            <div class="ot-d">${d.hallazgo || ''}</div>
+            <div class="ot-d">Área: ${d.area}${d.diam ? ` · Diámetro: ${d.diam}"` : ''}${d.fid ? ` · Código: ${d.fid}` : ''}</div>
+            <div class="ot-campos">
+              <div class="ot-c">TRABAJO EJECUTADO</div>
+              <div class="ot-c">REPUESTO UTILIZADO</div>
+              <div class="ot-c">LECTURA TRAS REPARAR (g/Hr)</div>
+              <div class="ot-c">FECHA DE EJECUCIÓN</div>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+
+    ordenNodo().innerHTML = `
+      <header class="inf-top">
+        <div>
+          <div class="inf-kick">ORDEN DE TRABAJO · EMISIONES FUGITIVAS</div>
+          <div class="ot-eq">${equipo}</div>
+          <div class="ot-meta">${fac} · ${areas}</div>
+        </div>
+        <div class="inf-fecha">Emitida el ${hoy()}</div>
+      </header>
+
+      <div class="ot-resumen">
+        <div class="ot-r"><b>${lista.length}</b><span>PUNTOS POR INTERVENIR</span></div>
+        <div class="ot-r"><b>${n0(total)}</b><span>g/Hr QUE SE ESCAPAN</span></div>
+        <div class="ot-r"><b>${n0(co2)}</b><span>ton CO2eq/AÑO</span></div>
+      </div>
+
+      ${puntos}
+
+      <p class="ot-nota"><b>Al terminar:</b> volver a medir cada punto con la cámara OGI/FLIR
+      y anotar arriba la lectura obtenida. Un punto queda cerrado sólo con esa segunda
+      medición; sin ella el hallazgo sigue contando como activo.</p>
+
+      <div class="ot-firmas">
+        <div class="inf-firma">
+          <div class="inf-f-rol">EJECUTÓ</div>
+          <div class="inf-f-linea"><div class="inf-f-nom">&nbsp;</div><div class="inf-f-fecha">Fecha:</div></div>
+        </div>
+        <div class="inf-firma">
+          <div class="inf-f-rol">VERIFICÓ</div>
+          <div class="inf-f-linea"><div class="inf-f-nom">&nbsp;</div><div class="inf-f-fecha">Fecha:</div></div>
+        </div>
+      </div>
+
+      <p class="inf-pie">Mecánicos Asociados S.A.S. · Generado desde el tablero de
+      emisiones fugitivas con la medición vigente de ${equipo}.</p>`;
+    return true;
+  }
+
+  function abrirOrden(equipo) {
+    if (!construirOrden(equipo)) return;
+    abrirVisor(ordenNodo(), `Orden de trabajo · ${equipo}`, false);
+  }
+
+  /* Elegir el tanque. Se listan sólo los que tienen algo activo: para los
+     demás no hay nada que mandar a reparar. */
+  function abrirSelectorOrden() {
+    const activos = [...DATA1.map(d => ({ d, fac: 'CPF-1' })),
+                     ...DATA2.map(d => ({ d, fac: 'CPF-2' })),
+                     ...(typeof DATACS !== 'undefined' ? DATACS.map(d => ({ d, fac: 'CAÑO SUR' })) : [])];
+    const porEquipo = new Map();
+    activos.forEach(x => {
+      const v = porEquipo.get(x.d.equipo) || { fac: x.fac, n: 0, g: 0, areas: new Set() };
+      v.n++; v.g += x.d.tasa; v.areas.add(x.d.area);
+      porEquipo.set(x.d.equipo, v);
+    });
+    const filas = [...porEquipo.entries()].sort((a, b) => b[1].g - a[1].g);
+
+    const cap = document.createElement('div');
+    cap.className = 'bd-capa';
+    cap.innerHTML = `
+      <div class="bd-caja ed-caja" role="dialog" aria-label="Orden de trabajo">
+        <div class="bd-top">
+          <div>
+            <div class="bd-kick">ORDEN DE TRABAJO</div>
+            <h3 class="bd-h">¿Para qué tanque?</h3>
+          </div>
+          <button class="bd-x" aria-label="Cerrar">×</button>
+        </div>
+        <p class="bd-p">Sale una hoja con los puntos activos de ese equipo, su foto y
+        espacio para que la cuadrilla anote lo que hizo.</p>
+        <div class="ed-ancho">
+          <label>Buscar tanque
+            <input id="otBuscar" type="text" inputmode="search" autocomplete="off"
+                   placeholder="0201, 901B, TK-904…">
+          </label>
+        </div>
+        <div class="sel-lista" id="otLista"></div>
+      </div>`;
+    document.body.appendChild(cap);
+    const cerrar = () => cap.remove();
+    cap.querySelector('.bd-x').onclick = cerrar;
+    cap.onclick = e => { if (e.target === cap) cerrar(); };
+
+    const limpio = t => String(t || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const lista = cap.querySelector('#otLista');
+    const buscador = cap.querySelector('#otBuscar');
+
+    const pintar = () => {
+      const q = limpio(buscador.value);
+      const vis = filas.filter(([eq]) => !q || limpio(eq).includes(q));
+      lista.innerHTML = vis.length
+        ? vis.map(([eq, v]) => `
+            <button class="sel-fila" data-eq="${eq}">
+              <span class="sf-txt"><b>${eq}</b>
+                <small>${v.fac} · ${[...v.areas].join(' · ')} · ${v.n} punto${v.n === 1 ? '' : 's'}</small>
+              </span>
+              <span class="sf-tasa">${Math.round(v.g).toLocaleString('es-CO')} <small>g/Hr</small></span>
+            </button>`).join('')
+        : '<p class="sel-vacio">Ningún tanque activo con ese número.</p>';
+      lista.querySelectorAll('.sel-fila').forEach(b => {
+        b.onclick = () => { cerrar(); abrirOrden(b.dataset.eq); };
+      });
+    };
+    buscador.addEventListener('input', pintar);
+    pintar();
+    buscador.focus();
+  }
+
+  const ot = document.getElementById('navOrden');
+  if (ot) ot.addEventListener('click', e => {
+    e.preventDefault();
+    const m = document.querySelector('.nav-menu');
+    if (m) m.classList.remove('open');
+    abrirSelectorOrden();
+  });
+  window.ordenTrabajo = abrirOrden;
 
   const a = document.getElementById('navInforme');
   if (a) a.addEventListener('click', e => {
@@ -7221,6 +7423,7 @@ ${cssInforme()}
   });
 
   window.informePDF = abrirInforme;
+  window.visorHoja = abrirVisor;
 })();
 </script>
 
