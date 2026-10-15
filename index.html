@@ -2071,8 +2071,35 @@ THREE.OrbitControls = OrbitControls;
   .pg-h{font-family:'Space Grotesk',sans-serif;font-size:19px;font-weight:700;margin:4px 0 0}
   .pg-curva{margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
   .pg-curva-t{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.1em;
-    color:var(--text-faint);margin-bottom:10px}
+    color:var(--text-faint)}
+  .pg-curva-cab{display:flex;align-items:center;justify-content:space-between;gap:10px;
+    flex-wrap:wrap;margin-bottom:10px}
+  .pg-curva-bar{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+  .pg-curva-bar button{background:transparent;color:var(--text-dim);border:1px solid transparent;
+    border-radius:6px;padding:4px 9px;font-family:'JetBrains Mono',monospace;font-size:10px;
+    cursor:pointer;transition:all .15s ease}
+  .pg-curva-bar button:hover{color:var(--text);border-color:var(--border)}
+  .pg-curva-bar button.active{background:rgba(0,184,40,.16);color:#00b828;
+    border-color:rgba(0,184,40,.45);font-weight:700}
+  .pg-curva-bar .cv-play{border-color:var(--border);color:var(--text)}
+  .pg-curva-bar .cv-play:hover{border-color:#00b828;color:#00b828}
+  .cv-sep{width:1px;height:15px;background:var(--border);margin:0 3px}
   .pg-curva-lienzo{position:relative;height:170px}
+  .pg-curva-det{margin-top:11px}
+  .cv-det{border:1px solid var(--border);border-left:3px solid #00b828;border-radius:9px;
+    padding:10px 13px;background:rgba(255,255,255,.03)}
+  .cv-det-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+  .cv-det-f{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.08em;
+    color:var(--text-faint);text-transform:uppercase}
+  .cv-det-g{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:#00b828}
+  .cv-det ul{margin:8px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:5px}
+  .cv-det li{font-size:12.5px;color:var(--text-dim);display:flex;justify-content:space-between;gap:12px}
+  .cv-det li b{color:var(--text);font-weight:600}
+  .cv-pista{font-size:11.5px;color:var(--text-faint);padding:3px 2px}
+  @media(max-width:620px){
+    .pg-curva-bar button{padding:4px 7px;font-size:9.5px}
+    .pg-curva-cab{gap:7px}
+  }
   .pg-curva canvas{width:100%!important;height:100%!important}
   .pg-pct{text-align:right;line-height:1.1}
   .pg-pct span{font-family:'Space Grotesk',sans-serif;font-size:32px;font-weight:700;color:#00b828}
@@ -3208,8 +3235,21 @@ THREE.OrbitControls = OrbitControls;
         <!-- Cómo ha bajado la emisión desde la medición inicial: cada escalón
              es una reparación, con su fecha. -->
         <div class="pg-curva" id="pgCurvaCaja">
-          <div class="pg-curva-t">CÓMO HA BAJADO · CADA ESCALÓN ES UNA REPARACIÓN</div>
+          <div class="pg-curva-cab">
+            <div class="pg-curva-t">CÓMO HA BAJADO · CADA ESCALÓN ES UNA REPARACIÓN</div>
+            <div class="pg-curva-bar" id="pgCurvaBar">
+              <button type="button" class="cv-play" id="pgCurvaPlay">▶ Recorrer</button>
+              <span class="cv-sep"></span>
+              <button type="button" data-amb="ambas" class="active">Ambas</button>
+              <button type="button" data-amb="CPF-1">CPF-1</button>
+              <button type="button" data-amb="CPF-2">CPF-2</button>
+              <span class="cv-sep"></span>
+              <button type="button" data-uni="g" class="active">g/Hr</button>
+              <button type="button" data-uni="co2">ton CO₂eq</button>
+            </div>
+          </div>
           <div class="pg-curva-lienzo"><canvas id="pgCurva"></canvas></div>
+          <div class="pg-curva-det" id="pgCurvaDet"></div>
         </div>
 
         <div class="pg-cols">
@@ -4028,44 +4068,89 @@ function renderGrid2() { renderPrioridad(DATA2, active2, 'prio2', 'prioLead2'); 
    cada reparación, en su fecha. Es la misma historia que cuentan los números
    de arriba, pero vista de un golpe. Sólo entran los cierres con fecha: sin
    ella no hay dónde ponerlos. */
-function pintarCurva(baseG, cerrados) {
+/* Estado de la curva: qué facilidad se está mirando, en qué unidad, qué
+   escalón está señalado y en qué punto va el recorrido. Vive fuera de la
+   función porque sobrevive a cada repintado. */
+let curvaUni = 'g', curvaAmb = 'ambas', curvaSel = null, curvaPaso = null;
+let curvaCh = null, curvaReloj = null, curvaEstado = null;
+
+/* Ambas facilidades son de Campo Rubiales, así que se pueden sumar entre
+   ellas. Caño Sur no entra aquí: es otro campo y se lleva aparte. */
+function curvaConjuntos() {
+  const c = [];
+  if (curvaAmb !== 'CPF-2') c.push(['CPF-1', DATA1, CERRADAS1]);
+  if (curvaAmb !== 'CPF-1') c.push(['CPF-2', DATA2, CERRADAS2]);
+  return c;
+}
+
+function curvaFmt(v) {
+  return curvaUni === 'co2'
+    ? v.toLocaleString('es-CO', { maximumFractionDigits: 0 })
+    : Math.round(v).toLocaleString('es-CO');
+}
+function curvaUnidad() { return curvaUni === 'co2' ? 'ton CO₂eq/año' : 'g/Hr'; }
+
+/* La curva de la campaña: arranca en la línea base y baja un escalón por
+   cada reparación, en su fecha. Sólo entran los cierres con fecha: sin ella
+   no hay dónde ponerlos. */
+function pintarCurva() {
   const caja = document.getElementById('pgCurvaCaja');
   const lienzo = document.getElementById('pgCurva');
   if (!caja || !lienzo || typeof Chart === 'undefined') return;
 
-  const conFecha = cerrados.filter(d => d.fechaCierre)
-                           .sort((a, b) => a.fechaCierre < b.fechaCierre ? -1 : 1);
-  if (!conFecha.length) { caja.style.display = 'none'; return; }
+  const hayCierres = CERRADAS1.length + CERRADAS2.length > 0;
+  if (!hayCierres) { caja.style.display = 'none'; return; }
   caja.style.display = '';
+
+  const esCo2 = curvaUni === 'co2';
+  const valorDe = (r, fac) => (esCo2 ? r.tasa * kDe(fac, r.area) : r.tasa);
+
+  let baseV = 0;
+  const cerrados = [];
+  curvaConjuntos().forEach(([fac, activos, cerradas]) => {
+    activos.filter(d => !d.nuevo).forEach(r => { baseV += valorDe(r, fac); });
+    cerradas.forEach(r => {
+      baseV += valorDe(r, fac);
+      if (r.fechaCierre) cerrados.push({ fecha: r.fechaCierre, equipo: r.equipo, v: valorDe(r, fac), fac });
+    });
+  });
+  cerrados.sort((a, b) => (a.fecha < b.fecha ? -1 : 1));
 
   const corto = iso => {
     const d = new Date(iso + 'T12:00:00');
     return isNaN(d) ? iso : d.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' });
   };
-  const n0c = v => Math.round(v).toLocaleString('es-CO');
+  const largo = iso => {
+    const d = new Date(iso + 'T12:00:00');
+    return isNaN(d) ? iso : d.toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
+  };
 
   /* Varias reparaciones del mismo día son un solo escalón, pero se guarda qué
      se reparó ese día: es lo que convierte la curva en una historia y no en
      una línea que baja. */
   const porDia = new Map();
-  conFecha.forEach(d => {
-    const v = porDia.get(d.fechaCierre) || { g: 0, equipos: [] };
-    v.g += d.tasa;
-    v.equipos.push(`${d.equipo} · ${n0c(d.tasa)} g/Hr`);
-    porDia.set(d.fechaCierre, v);
+  cerrados.forEach(d => {
+    const v = porDia.get(d.fecha) || { g: 0, equipos: [], fecha: d.fecha };
+    v.g += d.v;
+    v.equipos.push({ equipo: d.equipo, v: d.v, fac: d.fac });
+    porDia.set(d.fecha, v);
   });
 
-  const etiquetas = [campanaBase()], valores = [baseG], detalle = [null];
-  let acum = baseG;
+  const etiquetas = [campanaBase()], valores = [baseV], detalle = [null];
+  let acum = baseV;
   [...porDia.entries()].forEach(([fecha, v]) => {
     acum -= v.g;
     etiquetas.push(corto(fecha));
-    valores.push(Math.round(acum));
+    valores.push(acum);
     detalle.push(v);
   });
   etiquetas.push('hoy');
-  valores.push(Math.round(acum));
+  valores.push(acum);
   detalle.push(null);
+
+  curvaEstado = { etiquetas, valores, detalle, largo, base: baseV };
+  if (curvaSel !== null && curvaSel >= valores.length) curvaSel = null;
+  if (curvaPaso !== null && curvaPaso >= valores.length) curvaPaso = null;
 
   const previo = Chart.getChart(lienzo);
   if (previo) previo.destroy();
@@ -4073,6 +4158,8 @@ function pintarCurva(baseG, cerrados) {
   const estilo = getComputedStyle(document.documentElement);
   const tenue = estilo.getPropertyValue('--text-faint').trim() || '#8c98a6';
   const borde = estilo.getPropertyValue('--border').trim() || '#475463';
+  const tope = () => (curvaPaso === null ? valores.length - 1 : curvaPaso);
+  const recorte = () => valores.map((v, i) => (i <= tope() ? v : null));
 
   /* Rótulos sobre cada punto, no sólo en los extremos: en una proyección
      nadie va a seguir la línea hasta el eje. Si dos se pisan, se omite el de
@@ -4087,6 +4174,7 @@ function pintarCurva(baseG, cerrados) {
       const ar = ch.chartArea;
       const puestos = [];
       const alto = 19;
+      const lim = tope();
 
       const dibuja = (punto, texto, color, arriba) => {
         ctx.font = '700 11.5px "Space Grotesk", sans-serif';
@@ -4113,19 +4201,41 @@ function pintarCurva(baseG, cerrados) {
         return true;
       };
 
-      const ult = met.data.length - 1;
+      // el escalón señalado se marca con una vertical, para que al proyectar
+      // se vea de qué punto habla el detalle de abajo
+      if (curvaSel !== null && met.data[curvaSel] && curvaSel <= lim) {
+        const pt = met.data[curvaSel];
+        ctx.save();
+        ctx.strokeStyle = 'rgba(0,184,40,.45)';
+        ctx.setLineDash([4, 4]);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(pt.x, ar.top);
+        ctx.lineTo(pt.x, ar.bottom);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 9, 0, Math.PI * 2);
+        ctx.strokeStyle = '#00b828';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      const ult = lim;
+      const uCorta = curvaUni === 'co2' ? ' ton' : ' g/Hr';
       // los extremos mandan: se colocan antes de que nadie les quite el sitio
-      dibuja(met.data[ult], n0c(valores[ult]) + ' g/Hr', '#00b828', true);
-      dibuja(met.data[0], n0c(valores[0]) + ' g/Hr', '#f1f4f7', true);
+      dibuja(met.data[ult], curvaFmt(valores[ult]) + uCorta, '#00b828', true);
+      dibuja(met.data[0], curvaFmt(valores[0]), '#f1f4f7', true);
       // y después, los escalones donde hubo reparación
       met.data.forEach((pt, k) => {
-        if (k === 0 || k === ult || !detalle[k]) return;
-        dibuja(pt, n0c(valores[k]) + ' g/Hr', '#cfe9d6', true);
+        if (k === 0 || k === ult || k > lim || !detalle[k]) return;
+        dibuja(pt, curvaFmt(valores[k]), '#cfe9d6', true);
       });
     },
   };
 
-  new Chart(lienzo, {
+  curvaCh = new Chart(lienzo, {
     type: 'line',
     data: {
       labels: etiquetas,
@@ -4134,7 +4244,7 @@ function pintarCurva(baseG, cerrados) {
           // la medición inicial, de referencia: lo sombreado entre las dos
           // líneas es exactamente lo que se ha eliminado
           label: 'línea base',
-          data: valores.map(() => baseG),
+          data: valores.map(() => baseV),
           borderColor: 'rgba(255,255,255,.22)',
           borderDash: [5, 5],
           borderWidth: 1,
@@ -4143,7 +4253,7 @@ function pintarCurva(baseG, cerrados) {
         },
         {
           label: 'activo',
-          data: valores,
+          data: recorte(),
           stepped: 'before',
           borderColor: '#00b828',
           backgroundColor: 'rgba(0,184,40,.13)',
@@ -4162,20 +4272,36 @@ function pintarCurva(baseG, cerrados) {
       maintainAspectRatio: false,
       animation: { duration: 1100, easing: 'easeOutQuart' },
       interaction: { mode: 'index', intersect: false },
+      onHover: (e, els) => { e.native.target.style.cursor = els.length ? 'pointer' : 'default'; },
+      onClick: (e, els, ch) => {
+        const pts = ch.getElementsAtEventForMode(e, 'index', { intersect: false }, true);
+        if (!pts.length) return;
+        const k = pts[0].index;
+        curvaSel = curvaSel === k ? null : k;
+        detenerRecorrido();
+        pintarDetalleCurva();
+        ch.update('none');
+      },
       plugins: {
         legend: { display: false },
         tooltip: {
+          // en pantalla táctil el globo tapa media gráfica y además el detalle
+          // ya queda escrito debajo: ahí sobra
+          enabled: !window.matchMedia('(hover:none)').matches,
           filter: it => it.datasetIndex === 1,
           padding: 11,
           titleFont: { size: 12.5 },
           bodyFont: { size: 12 },
           callbacks: {
-            title: it => etiquetas[it[0].dataIndex],
-            label: c => n0c(c.parsed.y) + ' g/Hr activos',
+            // durante el recorrido hay puntos todavía sin dibujar: el globo
+            // puede quedarse sin nada que mostrar y no debe reventar
+            title: it => (it[0] ? etiquetas[it[0].dataIndex] : ''),
+            label: c => curvaFmt(c.parsed.y) + ' ' + curvaUnidad() + ' activos',
             afterBody: it => {
-              const d = detalle[it[0].dataIndex];
+              const d = it[0] && detalle[it[0].dataIndex];
               if (!d) return '';
-              return ['', `Reparado ese día  −${n0c(d.g)} g/Hr`].concat(d.equipos.map(e => '· ' + e));
+              return ['', `Reparado ese día  −${curvaFmt(d.g)} ${curvaUnidad()}`]
+                .concat(d.equipos.map(e => `· ${e.equipo} · ${curvaFmt(e.v)}`));
             },
           },
         },
@@ -4185,11 +4311,119 @@ function pintarCurva(baseG, cerrados) {
         y: {
           beginAtZero: false,
           grid: { color: borde },
-          ticks: { color: tenue, font: { size: 10 }, callback: v => v.toLocaleString('es-CO') },
+          ticks: { color: tenue, font: { size: 10 }, callback: v => curvaFmt(v) },
         },
       },
     },
     plugins: [rotulos],
+  });
+
+  curvaCh.recorte = recorte;
+  pintarDetalleCurva();
+  prepararBarraCurva();
+}
+
+/* Lo que se reparó el día señalado, escrito debajo de la gráfica: en una
+   reunión nadie va a dejar el cursor quieto sobre un punto. */
+function pintarDetalleCurva() {
+  const caja = document.getElementById('pgCurvaDet');
+  if (!caja || !curvaEstado) return;
+  const { valores, detalle, largo, base } = curvaEstado;
+  const u = curvaUnidad();
+
+  if (curvaSel === null) {
+    caja.innerHTML = '<div class="cv-pista">Toca cualquier punto de la curva para ver qué se reparó ese día.</div>';
+    return;
+  }
+  const esc = (t) => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const d = detalle[curvaSel];
+
+  if (!d) {
+    const inicial = curvaSel === 0;
+    const quedan = valores[curvaSel];
+    caja.innerHTML = `<div class="cv-det"><div class="cv-det-h">
+        <span class="cv-det-f">${inicial ? 'Medición inicial · ' + esc(campanaBase()) : 'Hoy'}</span>
+        <span class="cv-det-g">${curvaFmt(quedan)} ${u}</span></div>
+        <div class="cv-pista" style="padding:6px 0 0">${inicial
+          ? 'Punto de partida de la campaña, antes de intervenir nada.'
+          : `Se ha eliminado ${curvaFmt(base - quedan)} ${u} de los ${curvaFmt(base)} ${u} medidos al inicio.`}</div></div>`;
+    return;
+  }
+
+  const filas = d.equipos
+    .slice()
+    .sort((a, b) => b.v - a.v)
+    .map(e => `<li><b>${esc(e.equipo)}</b><span>${esc(e.fac)} · −${curvaFmt(e.v)} ${u}</span></li>`)
+    .join('');
+  caja.innerHTML = `<div class="cv-det"><div class="cv-det-h">
+      <span class="cv-det-f">${esc(largo(d.fecha))} · ${d.equipos.length} ${d.equipos.length === 1 ? 'reparación' : 'reparaciones'}</span>
+      <span class="cv-det-g">−${curvaFmt(d.g)} ${u}</span></div>
+      <ul>${filas}</ul></div>`;
+}
+
+function detenerRecorrido() {
+  if (curvaReloj) { clearInterval(curvaReloj); curvaReloj = null; }
+  const b = document.getElementById('pgCurvaPlay');
+  if (b) b.textContent = '▶ Recorrer';
+}
+
+/* Recorrido paso a paso: la curva se dibuja escalón por escalón y el detalle
+   de abajo va contando qué se reparó en cada uno. Es la gráfica contándose
+   sola, que es lo que sirve al proyectarla. */
+function recorrerCurva() {
+  if (!curvaCh || !curvaEstado) return;
+  if (curvaReloj) { detenerRecorrido(); curvaPaso = null; dibujaPaso(); return; }
+
+  const n = curvaEstado.valores.length;
+  curvaPaso = 0;
+  curvaSel = 0;
+  dibujaPaso();
+  const b = document.getElementById('pgCurvaPlay');
+  if (b) b.textContent = '⏸ Detener';
+
+  curvaReloj = setInterval(() => {
+    curvaPaso++;
+    curvaSel = curvaPaso;
+    if (curvaPaso >= n - 1) {
+      dibujaPaso();
+      detenerRecorrido();
+      curvaPaso = null;
+      return;
+    }
+    dibujaPaso();
+  }, 1100);
+}
+
+function dibujaPaso() {
+  if (!curvaCh) return;
+  // si el cursor dejó un globo abierto, estorba al recorrido
+  try { curvaCh.setActiveElements([]); curvaCh.tooltip.setActiveElements([], { x: 0, y: 0 }); } catch (e) {}
+  curvaCh.data.datasets[1].data = curvaCh.recorte();
+  curvaCh.update();
+  pintarDetalleCurva();
+}
+
+function prepararBarraCurva() {
+  const bar = document.getElementById('pgCurvaBar');
+  if (!bar || bar.dataset.listo) return;
+  bar.dataset.listo = '1';
+
+  bar.addEventListener('click', ev => {
+    const b = ev.target.closest('button');
+    if (!b) return;
+    if (b.id === 'pgCurvaPlay') { recorrerCurva(); return; }
+
+    detenerRecorrido();
+    curvaPaso = null;
+    curvaSel = null;
+    if (b.dataset.amb) {
+      curvaAmb = b.dataset.amb;
+      bar.querySelectorAll('[data-amb]').forEach(o => o.classList.toggle('active', o === b));
+    } else if (b.dataset.uni) {
+      curvaUni = b.dataset.uni;
+      bar.querySelectorAll('[data-uni]').forEach(o => o.classList.toggle('active', o === b));
+    }
+    pintarCurva();
   });
 }
 
@@ -4234,7 +4468,7 @@ function renderProgreso() {
   const rel = document.getElementById('pgRel');
   if (rel) rel.style.width = Math.max(pct, pct > 0 ? 1.5 : 0) + '%';
 
-  pintarCurva(baseG, [...CERRADAS1, ...CERRADAS2]);
+  pintarCurva();
 
   const nuevos = [...DATA1, ...DATA2].filter(d => d.nuevo);
   const gNuevos = nuevos.reduce((a, d) => a + d.tasa, 0);
