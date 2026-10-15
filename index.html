@@ -1975,15 +1975,13 @@ THREE.OrbitControls = OrbitControls;
     font-size:9.5px;letter-spacing:.06em;padding:4px 7px;border-radius:6px;
     background:rgba(8,11,14,.72);backdrop-filter:blur(3px);white-space:nowrap;
     transition:opacity .18s ease}
-  /* al llevar el tirador al tope, el rótulo de la foto que ya no se ve se va con ella */
-  .cmp-tag.oculto{opacity:0;pointer-events:none}
+  /* Un solo rótulo, quieto arriba a la izquierda: las dos lecturas juntas.
+     Antes el de la verificación seguía al tirador y, según dónde quedara,
+     tapaba el sello de la cámara o su propio recuadro de lectura. */
   .cmp-tag.izq{left:8px}
-  /* El rótulo de la verificación va pegado bajo el tirador, no al pie: abajo
-     a la derecha está el recuadro con la lectura que estampa la cámara. */
-  .cmp-tag.der{top:calc(var(--pos) + 10px);bottom:auto;left:8px;right:auto}
-  .cmp-tag b{font-weight:700}
-  .cmp-tag.izq b{color:#ff6b52}
-  .cmp-tag.der b{color:#3ce06a}
+  .cmp-tag b{font-weight:700;color:#ff6b52}
+  .cmp-tag b.post{color:#3ce06a}
+  .cmp-tag i{font-style:normal;color:rgba(255,255,255,.5);margin:0 5px}
   /* El distintivo pasa arriba a la derecha: abajo a la izquierda chocaba con
      el rótulo de la verificación cuando el tirador baja. */
   .cmp .badge.cerrada{top:8px;bottom:auto;left:auto;right:8px;z-index:5}
@@ -3933,21 +3931,12 @@ function comparador(caja) {
   if (!grip) return;
   let moviendo = false;
 
-  const antes = caja.querySelector('.cmp-tag.izq');
-  const despues = caja.querySelector('.cmp-tag.der');
   let marcar = () => {};
-
-  const rotulos = pct => {
-    // con menos de un dedo de foto visible, su rótulo sobra
-    if (antes) antes.classList.toggle('oculto', pct < 14);
-    if (despues) despues.classList.toggle('oculto', pct > 86);
-  };
 
   const colocar = y => {
     const r = caja.getBoundingClientRect();
     const pct = Math.max(0, Math.min(100, (y - r.top) / r.height * 100));
     caja.style.setProperty('--pos', pct.toFixed(1) + '%');
-    rotulos(pct);
     marcar(pct);
   };
 
@@ -3973,15 +3962,14 @@ function comparador(caja) {
   marcar = pct => {
     botones.forEach(b => b.classList.toggle('activo',
       (b.dataset.ver === 'antes' && pct > 86)
-      || (b.dataset.ver === 'despues' && pct < 14)
-      || (b.dataset.ver === 'ambas' && pct >= 14 && pct <= 86)));
+      || (b.dataset.ver === 'despues' && pct < 14)));
   };
   botones.forEach(b => {
     b.addEventListener('click', e => {
       e.stopPropagation();        // pulsar no debe ampliar la foto
-      const pct = b.dataset.ver === 'antes' ? 100 : b.dataset.ver === 'despues' ? 0 : 50;
+      const pct = b.dataset.ver === 'antes' ? 100 : 0;
       caja.style.setProperty('--pos', pct + '%');
-      rotulos(pct); marcar(pct);
+      marcar(pct);
     });
   });
   marcar(50);
@@ -4589,11 +4577,9 @@ function renderCierres() {
              <div class="cmp-linea"><span class="cmp-grip">↕</span></div>
              <div class="cmp-botones">
                <button type="button" data-ver="antes">ANTES</button>
-               <button type="button" data-ver="ambas">AMBAS</button>
                <button type="button" data-ver="despues">DESPUÉS</button>
              </div>
-             <span class="cmp-tag izq">ANTES <b>${d.tasa.toLocaleString('es-CO')} g/Hr</b></span>
-             <span class="cmp-tag der">DESPUÉS <b>${(d.tasaCierre || 0).toLocaleString('es-CO')} g/Hr</b></span>
+             <span class="cmp-tag izq">ANTES <b>${d.tasa.toLocaleString('es-CO')}</b><i>→</i>DESPUÉS <b class="post">${(d.tasaCierre || 0).toLocaleString('es-CO')}</b> g/Hr</span>
              <div class="badge cerrada">VERIFICADA</div>
            </div>`
         : `<div class="card-photo">
