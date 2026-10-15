@@ -26,23 +26,19 @@ FIN_EDICION = "})();\n\n(function () {\n  const ed = document.getElementById('na
 # Enganches sueltos que viven fuera del módulo
 RECORTES = [
     # el enganche del menú al modo edición
-    ('''  const ed = document.getElementById('navEditar');
+    ('''(function () {
+  const ed = document.getElementById('navEditar');
   if (ed) ed.addEventListener('click', e => {
     e.preventDefault();
     const m = document.querySelector('.nav-menu');
     if (m) m.classList.remove('open');
     if (window.modoEdicion) window.modoEdicion(true);
   });
+})();
 
 ''', ''),
     # botón "Registrar un cierre" de la pestaña Cierres
     ('      <button class="bd-b bd-pri ci-nuevo" id="ciNuevo">Registrar un cierre</button>\n\n', ''),
-    # botón "Editar aquí mismo" del panel de fuente de datos
-    ("""          <button class="bd-b" id="bdEditar">Editar aquí mismo</button>\n""", ''),
-    ("""    cap.querySelector('#bdEditar').onclick = () => {
-      cerrar();
-      if (window.modoEdicion) window.modoEdicion(true);
-    };\n\n""", ''),
     # marcas de edición en tarjetas, filas y cierres
     ('    if (window.MODO_EDICION && editable(data)) marcarEditable(card, d, data);\n', ''),
     ('  if (window.MODO_EDICION && editable(data)) el.appendChild(tarjetaAgregar(data));\n', ''),
@@ -90,11 +86,6 @@ def publica(src):
     out = out.replace(
         '<a href="#" class="nav-editar" id="navEditar"><span>Activar modo edición</span>'
         '<small>Agregar, corregir y cerrar hallazgos</small></a>\n', '')
-
-    # La fuente de datos es cosa de quien edita: en la pública sólo confunde,
-    # y tocarla deja al visitante viendo otra cosa en su propio navegador.
-    out = out.replace(
-        '<a href="#" class="nav-link" id="navFuente">Fuente de datos · hoja de cálculo</a>\n', '')
 
     # El acceso al editor va como botón, no como un renglón más entre quince:
     # puesto en la lista pasaba desapercibido incluso para quien lo buscaba.

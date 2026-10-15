@@ -2053,7 +2053,7 @@ THREE.OrbitControls = OrbitControls;
   .cerr-antes{color:var(--text-faint) !important;text-decoration:line-through;
     text-decoration-color:rgba(150,160,170,.5)}
 
-  /* ---------- PANEL DE FUENTE DE DATOS ---------- */
+  /* ---------- VENTANAS EMERGENTES ---------- */
   .bd-capa{position:fixed;inset:0;background:rgba(6,9,12,.72);backdrop-filter:blur(3px);
     z-index:2000;display:flex;align-items:center;justify-content:center;padding:18px}
   .bd-caja{background:var(--surface);border:1px solid var(--border);border-radius:16px;
@@ -2289,69 +2289,43 @@ THREE.OrbitControls = OrbitControls;
   .inf-metodo p{font-size:8pt;margin:4px 0;text-align:justify}
   .inf-pie{font-size:7.5pt;border-top:1px solid #bbb;padding-top:4px;margin-top:11px}
 
-  /* ---------- MODO PRESENTACIÓN ----------
-     Para proyectar en reunión: una idea por pantalla, tipografía grande y
-     ningún menú a la vista. Se avanza con flechas, clic o deslizando. */
-  .pr-capa{position:fixed;inset:0;z-index:120;background:#0b1117;color:#f1f4f7;
-    display:flex;flex-direction:column;overflow:hidden}
-  .pr-lam{flex:1;display:none;flex-direction:column;justify-content:center;
-    padding:min(7vh,70px) min(7vw,80px);overflow:hidden}
-  .pr-lam.activa{display:flex;animation:prEntra .4s ease}
-  @keyframes prEntra{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
-  .pr-kick{font-family:'JetBrains Mono',monospace;font-size:clamp(11px,1.4vw,15px);
-    letter-spacing:.2em;color:var(--cool);margin-bottom:min(2.4vh,22px)}
-  .pr-h{font-family:'Space Grotesk',sans-serif;font-weight:700;line-height:1.05;
-    font-size:clamp(28px,4.6vw,62px);margin-bottom:min(2.4vh,22px)}
-  .pr-sub{font-size:clamp(14px,1.7vw,22px);color:var(--text-dim);max-width:46ch;line-height:1.5}
-  .pr-cifras{display:flex;gap:min(4vw,46px);flex-wrap:wrap;margin-top:min(4vh,40px)}
-  .pr-c b{display:block;font-family:'Space Grotesk',sans-serif;font-weight:700;
-    font-size:clamp(34px,6.4vw,86px);line-height:1}
-  .pr-c span{display:block;font-family:'JetBrains Mono',monospace;
-    font-size:clamp(9px,1.05vw,13px);letter-spacing:.14em;color:var(--text-faint);margin-top:9px}
-  .pr-c.verde b{color:#00b828}
-  .pr-c.rojo b{color:var(--hot)}
-  .pr-fila{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));
-    gap:min(2.4vw,26px);margin-top:min(3vh,30px)}
-  .pr-pt{border:1px solid var(--border);border-radius:14px;overflow:hidden;background:#131a22}
-  .pr-pt img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block}
-  .pr-pt-b{padding:min(1.8vh,16px) min(1.4vw,18px)}
-  .pr-pt-eq{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(15px,1.7vw,21px)}
-  .pr-pt-m{font-family:'JetBrains Mono',monospace;font-size:clamp(9.5px,1vw,12px);
-    color:var(--text-faint);margin-top:4px}
-  .pr-pt-t{font-family:'Space Grotesk',sans-serif;font-weight:700;
-    font-size:clamp(17px,2.2vw,30px);color:var(--hot);margin-top:8px}
-  .pr-barras{margin-top:min(3.4vh,34px);display:flex;flex-direction:column;gap:min(2.2vh,20px)}
-  .pr-b-top{display:flex;justify-content:space-between;align-items:baseline;gap:16px;
-    font-family:'JetBrains Mono',monospace;font-size:clamp(12px,1.5vw,18px);letter-spacing:.05em}
-  .pr-b-top em{font-style:normal;font-family:'Space Grotesk',sans-serif;font-weight:700}
-  .pr-pista{height:min(1.6vh,14px);border-radius:99px;background:var(--surface-2);overflow:hidden;margin-top:9px}
-  .pr-relleno{display:block;height:100%;border-radius:99px}
-  .pr-cmp{display:grid;grid-template-columns:1fr 1fr;gap:min(2vw,22px);margin-top:min(3vh,28px)}
-  .pr-cmp figure{margin:0;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:#131a22}
-  .pr-cmp img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block}
-  .pr-cmp figcaption{font-family:'JetBrains Mono',monospace;font-size:clamp(10px,1.2vw,14px);
-    padding:11px 14px;letter-spacing:.06em}
-  .pr-cmp .antes figcaption{color:var(--hot)}
-  .pr-cmp .despues figcaption{color:#00b828}
-  .pr-barra{display:flex;align-items:center;gap:14px;padding:12px min(4vw,40px);
-    border-top:1px solid var(--border);background:#0e151c}
-  .pr-barra .pr-n{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-faint);
-    margin-right:auto;letter-spacing:.08em}
-  .pr-nav{width:42px;height:42px;border-radius:50%;border:1px solid var(--border);
-    background:transparent;color:var(--text);font-size:17px;cursor:pointer;line-height:1}
-  .pr-nav:hover{border-color:var(--cool);color:var(--cool)}
-  .pr-nav[disabled]{opacity:.3;cursor:default}
-  .pr-salir{font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:.08em;
-    background:transparent;border:1px solid var(--border);color:var(--text-dim);
-    padding:10px 15px;border-radius:99px;cursor:pointer}
-  .pr-salir:hover{border-color:var(--hot);color:var(--hot)}
-  .pr-puntos{display:flex;gap:7px}
-  .pr-pto{width:8px;height:8px;border-radius:50%;background:var(--border)}
-  .pr-pto.on{background:var(--cool)}
-  @media (max-width:600px){
-    .pr-cmp{grid-template-columns:1fr}
-    .pr-lam{padding:26px 20px}
-  }
+  /* ---------- SIMULADOR ----------
+     Una tasa medida, la cromatografía que le corresponde, y la cadena de
+     cálculo del GOP-F-006 paso a paso. Sirve para responder "¿y si
+     reparamos este?" sin abrir la hoja, y para que cualquiera verifique de
+     dónde sale cada tonelada. */
+  .sim-rejilla{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0 0}
+  .sim-rejilla label{display:flex;flex-direction:column;gap:5px;font-size:11.5px;
+    color:var(--text-faint);text-transform:uppercase;letter-spacing:.04em}
+  .sim-rejilla input,.sim-rejilla select{background:rgba(255,255,255,.04);
+    border:1px solid var(--border);border-radius:8px;padding:9px 11px;color:var(--text);
+    font-family:inherit;font-size:14px;text-transform:none;letter-spacing:0;width:100%}
+  .sim-rejilla input:focus,.sim-rejilla select:focus{outline:none;border-color:#00b828}
+  .sim-nota{font-size:11.5px;color:var(--text-faint);margin:9px 0 0;line-height:1.6}
+  .sim-res{margin:18px 0 0;border:1px solid var(--border);border-left:3px solid #00b828;
+    border-radius:11px;padding:15px 17px;background:rgba(0,184,40,.06)}
+  .sim-res-l{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.11em;
+    color:var(--text-faint)}
+  .sim-res-v{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:34px;
+    color:#00b828;line-height:1.1;margin:4px 0 2px}
+  .sim-res-s{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim)}
+  .sim-cadena{margin:16px 0 0;border-top:1px solid var(--border)}
+  .sim-f{display:flex;align-items:baseline;justify-content:space-between;gap:14px;
+    padding:9px 2px;border-bottom:1px solid var(--border)}
+  .sim-f-t{font-size:13px;color:var(--text-dim)}
+  .sim-f-t i{font-style:normal;color:var(--text-faint);font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;margin-right:8px}
+  .sim-f-v{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text);
+    white-space:nowrap;font-weight:700}
+  .sim-f:last-child .sim-f-v{color:#00b828}
+  .sim-ok{display:flex;align-items:center;gap:9px;margin:14px 0 0;font-size:12.5px;
+    color:var(--text-dim);line-height:1.6}
+  .sim-ok .pico{flex:none;width:21px;height:21px;border-radius:50%;display:flex;
+    align-items:center;justify-content:center;font-size:12px;font-weight:700}
+  .sim-ok.bien .pico{background:rgba(0,184,40,.16);color:#00b828}
+  .sim-ok.mal{color:var(--hot)}
+  .sim-ok.mal .pico{background:rgba(255,71,87,.16);color:var(--hot)}
+  @media (max-width:560px){ .sim-rejilla{grid-template-columns:1fr} }
 
   /* ---------- ORDEN DE TRABAJO ----------
      Una hoja por tanque, para que la cuadrilla se la lleve a campo: qué hay
@@ -2866,9 +2840,9 @@ THREE.OrbitControls = OrbitControls;
       <div class="nav-group" style="grid-column:1/-1">
         <div class="nav-group-title">DATOS</div>
         <a href="editor/" class="nav-editar"><span>Editar datos</span><small>Pide tu correo y un código</small></a>
-                        <a href="#" class="nav-link" id="navInforme">Informe para imprimir o enviar en PDF</a>
+                <a href="#" class="nav-link" id="navInforme">Informe para imprimir o enviar en PDF</a>
         <a href="#" class="nav-link" id="navOrden">Orden de trabajo · por tanque</a>
-        <a href="#" class="nav-link" id="navPresentar">Modo presentación · pantalla completa</a>
+        <a href="#" class="nav-link" id="navSimulador">Simulador · cuánto deja de emitirse</a>
       </div>
 
       <div class="nav-group">
@@ -4697,394 +4671,6 @@ function refrescarTodo() {
 refrescarTodo();
 
 
-// ============================================================
-//  FUENTE DE DATOS EXTERNA
-//  Lee la hoja de cálculo publicada como CSV y reemplaza los
-//  registros. Si algo falla, el tablero sigue con los datos
-//  incluidos en el archivo, que nunca se pierden.
-// ============================================================
-(function () {
-  const CLAVE_URL   = 'emisiones.fuenteURL';
-  const CLAVE_CACHE = 'emisiones.cache';
-  const CLAVE_FECHA = 'emisiones.fecha';
-
-  // copia intacta de lo que trae el archivo, como respaldo
-  const BASE1 = JSON.parse(JSON.stringify(DATA1));
-  const BASE2 = JSON.parse(JSON.stringify(DATA2));
-  const BASEC1 = JSON.parse(JSON.stringify(CERRADAS1));
-  const BASEC2 = JSON.parse(JSON.stringify(CERRADAS2));
-
-  // ---------- lectura de CSV (respeta comillas y saltos internos) ----------
-  function leerCSV(texto) {
-    const filas = [];
-    let fila = [], campo = '', comillas = false;
-    for (let i = 0; i < texto.length; i++) {
-      const c = texto[i];
-      if (comillas) {
-        if (c === '"') {
-          if (texto[i + 1] === '"') { campo += '"'; i++; }
-          else comillas = false;
-        } else campo += c;
-      } else if (c === '"') comillas = true;
-      else if (c === ',') { fila.push(campo); campo = ''; }
-      else if (c === '\n') { fila.push(campo); filas.push(fila); fila = []; campo = ''; }
-      else if (c !== '\r') campo += c;
-    }
-    if (campo !== '' || fila.length) { fila.push(campo); filas.push(fila); }
-    return filas.filter(f => f.some(x => x.trim() !== ''));
-  }
-
-  const normalizar = t => (t || '').toString().trim().toUpperCase()
-    .normalize('NFD').replace(/[̀-ͯ]/g, '');
-
-  // acepta 13.000 · 13,000 · 13000
-  function aNumero(t) {
-    if (t === null || t === undefined) return NaN;
-    let x = t.toString().trim().replace(/\s/g, '');
-    if (x === '') return NaN;
-    if (x.includes('.') && x.includes(',')) x = x.replace(/\./g, '').replace(',', '.');
-    else if ((x.match(/\./g) || []).length > 1) x = x.replace(/\./g, '');
-    else if (/,\d{1,2}$/.test(x)) x = x.replace(',', '.');
-    else x = x.replace(/,/g, '');
-    return parseFloat(x);
-  }
-
-  // ---------- convierte las filas de la hoja a registros del tablero ----------
-  function interpretar(filas) {
-    if (!filas.length) throw new Error('La hoja está vacía.');
-
-    const encabezado = t => normalizar(t).replace(/[^A-Z0-9]+/g, ' ').trim();
-    const enc = filas[0].map(encabezado);
-    const col = nombres => {
-      for (const n of nombres) {
-        const i = enc.findIndex(e => e.includes(n));
-        if (i >= 0) return i;
-      }
-      return -1;
-    };
-    const iFac = col(['FACILIDAD']), iArea = col(['AREA']), iEq = col(['EQUIPO']);
-    const iPto = col(['PUNTO']), iEle = col(['ELEMENTO']), iDia = col(['DIAMETRO']);
-    const iTasa = enc.findIndex(e => /^LECTURA( CAMARA)?( G HR)?$/.test(e) || /^TASA/.test(e));
-    const iHall = col(['HALLAZGO', 'OBSERV']);
-    const iEst = col(['ESTADO']), iFoto = col(['ID FOTO', 'FOTO ID']);
-    const iTasaC = col(['TRAS REPARAR', 'LECTURA CIERRE']);
-    const iFotoC = col(['VERIFICACION', 'FOTO CIERRE', 'FOTO DE VERIFICACION']);
-    const iFechaC = col(['FECHA DE REPARACION', 'FECHA REPARACION', 'FECHA CIERRE']);
-    const iFechaD = col(['FECHA DE DETECCION', 'FECHA DETECCION', 'FECHA MEDICION']);
-
-    if (iFac < 0 || iTasa < 0)
-      throw new Error('Faltan las columnas Facilidad y Lectura (g/Hr).');
-
-    // las fotos del archivo se recuperan por su identificador
-    // El identificador fijo (fid) no depende del orden de las filas: aunque
-    // reordenes la hoja, cada registro sigue encontrando su imagen.
-    const fotos = {};
-    [[BASE1, 'CPF-1'], [BASEC1, 'CPF-1'], [BASE2, 'CPF-2'], [BASEC2, 'CPF-2']]
-      .forEach(([arr, fac]) => arr.forEach(r => {
-        if (r.fid) {
-          if (r.img) fotos[r.fid] = r.img;
-          if (r.imgCierre) fotos[r.fid + '-V'] = r.imgCierre;   // foto de verificación
-        }
-        if (r.img) fotos[fac + '-' + r.id] = fotos[fac + '-' + r.id] || r.img;
-      }));
-
-    const salida = { 'CPF-1': [], 'CPF-2': [] }, avisos = [];
-    const cerradas = { 'CPF-1': [], 'CPF-2': [] };
-    let descartadas = 0;
-
-    filas.slice(1).forEach((f, n) => {
-      const fac = normalizar(f[iFac]);
-      if (!fac) return;
-      if (fac !== 'CPF-1' && fac !== 'CPF-2') {
-        if (!avisos.includes(fac)) avisos.push(fac);
-        return;
-      }
-      const estado = iEst >= 0 ? normalizar(f[iEst]) : 'ACTIVA';
-      const tasa = aNumero(f[iTasa]);
-      if (!isFinite(tasa) || tasa <= 0) { descartadas++; return; }
-
-      // una fuga reparada no emite, pero queda como evidencia de la intervención
-      const lista = estado === 'REPARADA' ? cerradas[fac] : salida[fac];
-      const id = lista.length + 1;
-      // La foto admite tres formas:
-      //   · el identificador de una imagen ya incluida en el archivo
-      //   · un enlace completo (https://…)
-      //   · el nombre de un archivo subido a la carpeta "fotos" del repositorio
-      //   · un enlace de Google Drive, que se traduce solo a su forma visible
-      const resolverFoto = (val) => {
-        const v = (val || '').trim();
-        if (!v) return '';
-        if (/^https?:\/\//i.test(v)) {
-          // El enlace que Drive copia abre un visor, no la imagen. Esta otra
-          // ruta entrega el archivo en sí, que es lo que <img> necesita.
-          const d = v.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:.*&)?id=)([a-zA-Z0-9_-]{20,})/);
-          if (d) return `https://drive.google.com/thumbnail?id=${d[1]}&sz=w1400`;
-          return v;
-        }
-        if (fotos[v]) return fotos[v];
-        return 'fotos/' + (/\.(jpe?g|png|webp|gif)$/i.test(v) ? v : v + '.jpg');
-      };
-      const imagen = resolverFoto(iFoto >= 0 ? f[iFoto] : '');
-      const imagenCierre = resolverFoto(iFotoC >= 0 ? f[iFotoC] : '');
-      const tasaCierre = iTasaC >= 0 ? aNumero(f[iTasaC]) : NaN;
-
-      lista.push({
-        id,
-        fid: (iFoto >= 0 ? (f[iFoto] || '').trim() : ''),
-        campo: 'RUBIALES',
-        area:     iArea >= 0 ? normalizar(f[iArea]) : 'SIN ÁREA',
-        equipo:   iEq  >= 0 ? (f[iEq]  || '').trim() : '',
-        punto:    iPto >= 0 ? normalizar(f[iPto]) : '',
-        elemento: iEle >= 0 ? normalizar(f[iEle]) : '',
-        diam:     iDia >= 0 ? aNumero(f[iDia]) || '' : '',
-        diametro: iDia >= 0 ? aNumero(f[iDia]) || '' : '',
-        tasa,
-        hallazgo: iHall >= 0 ? (f[iHall] || '').trim() : '',
-        img: imagen,
-        fechaCierre: iFechaC >= 0 ? normalizarFecha(f[iFechaC]) : '',
-        fechaDeteccion: iFechaD >= 0 ? normalizarFecha(f[iFechaD]) : '',
-        tier: tierOf(tasa),
-        tier_label: tierOf(tasa).toUpperCase(),
-        cerrado: estado === 'REPARADA',
-        cierre: '',
-        imgCierre: imagenCierre,
-        tasaCierre: isFinite(tasaCierre) ? tasaCierre : 0,
-      });
-    });
-
-    if (!salida['CPF-1'].length && !salida['CPF-2'].length)
-      throw new Error('No se encontró ningún registro válido.');
-
-    return { d1: salida['CPF-1'], d2: salida['CPF-2'],
-             c1: cerradas['CPF-1'], c2: cerradas['CPF-2'], avisos, descartadas };
-  }
-
-  // ---------- aplicar ----------
-  function aplicar(r) {
-    DATA1.length = 0; r.d1.forEach(x => DATA1.push(x));
-    DATA2.length = 0; r.d2.forEach(x => DATA2.push(x));
-    CERRADAS1.length = 0; (r.c1 || []).forEach(x => CERRADAS1.push(x));
-    CERRADAS2.length = 0; (r.c2 || []).forEach(x => CERRADAS2.push(x));
-    active1 = 'Todas'; active2 = 'Todas';
-    refrescarTodo();
-  }
-
-  function restaurar() {
-    DATA1.length = 0; JSON.parse(JSON.stringify(BASE1)).forEach(x => DATA1.push(x));
-    DATA2.length = 0; JSON.parse(JSON.stringify(BASE2)).forEach(x => DATA2.push(x));
-    CERRADAS1.length = 0; JSON.parse(JSON.stringify(BASEC1)).forEach(x => CERRADAS1.push(x));
-    CERRADAS2.length = 0; JSON.parse(JSON.stringify(BASEC2)).forEach(x => CERRADAS2.push(x));
-    active1 = 'Todas'; active2 = 'Todas';
-    refrescarTodo();
-  }
-
-  // Rutas por las que una hoja de Google puede entregar su contenido como CSV.
-  // La primera (gviz) funciona con el enlace normal de "Compartir", sin publicar
-  // nada: es la única que responde con permiso de origen cruzado.
-  const HOJA = 'Emisiones';
-  function candidatasURL(u) {
-    u = (u || '').trim();
-    if (!u) return [];
-    // ya viene publicado: se respeta tal cual
-    if (u.includes('/pub')) {
-      return [u.includes('output=csv') ? u : u + (u.includes('?') ? '&' : '?') + 'output=csv'];
-    }
-    const m = u.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
-    if (!m) return [u];
-    const id = m[1];
-    const gid = (u.match(/[#&?]gid=(\d+)/) || [])[1];
-    const base = `https://docs.google.com/spreadsheets/d/${id}`;
-    const lista = [];
-    if (gid) lista.push(`${base}/gviz/tq?tqx=out:csv&gid=${gid}`);
-    lista.push(`${base}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(HOJA)}`);
-    lista.push(`${base}/gviz/tq?tqx=out:csv`);
-    lista.push(`${base}/export?format=csv${gid ? '&gid=' + gid : ''}`);
-    return lista;
-  }
-  function normalizarURL(u) { return candidatasURL(u)[0] || ''; }
-
-  async function sincronizar(url, silencioso) {
-    const rutas = candidatasURL(url);
-    if (!rutas.length) throw new Error('Pega primero el enlace de la hoja.');
-
-    let texto = '', ultimo = '';
-    for (const u of rutas) {
-      try {
-        // el parámetro evita que el navegador sirva una copia vieja
-        const resp = await fetch(u + (u.includes('?') ? '&' : '?') + '_=' + Date.now());
-        if (!resp.ok) { ultimo = `La hoja respondió ${resp.status}.`; continue; }
-        const t = await resp.text();
-        if (t.trim().startsWith('<')) { ultimo = 'El enlace devolvió una página, no un CSV.'; continue; }
-        texto = t; break;
-      } catch (e) {
-        ultimo = 'El navegador no pudo leer la hoja (permiso de origen cruzado).';
-      }
-    }
-    if (!texto)
-      throw new Error(`${ultimo} Revisa que la hoja esté compartida como "Cualquier persona con el enlace · Lector", y que la pestaña se llame ${HOJA}.`);
-
-    const r = interpretar(leerCSV(texto));
-    aplicar(r);
-    try {
-      localStorage.setItem(CLAVE_CACHE, JSON.stringify({ d1: r.d1, d2: r.d2, c1: r.c1, c2: r.c2 }));
-      localStorage.setItem(CLAVE_FECHA, new Date().toISOString());
-    } catch (e) {}
-    return r;
-  }
-
-  // ---------- panel ----------
-  function abrirPanel() {
-    let url = '';
-    try { url = localStorage.getItem(CLAVE_URL) || ''; } catch (e) {}
-    let fecha = '';
-    try { fecha = localStorage.getItem(CLAVE_FECHA) || ''; } catch (e) {}
-
-    const cap = document.createElement('div');
-    cap.className = 'bd-capa';
-    cap.innerHTML = `
-      <div class="bd-caja" role="dialog" aria-label="Fuente de datos">
-        <div class="bd-top">
-          <div>
-            <div class="bd-kick">FUENTE DE DATOS</div>
-            <h3 class="bd-h">Hoja de cálculo conectada</h3>
-          </div>
-          <button class="bd-x" aria-label="Cerrar">×</button>
-        </div>
-        <p class="bd-p">
-          Pega el enlace de la hoja tal como lo entrega el botón <b>Compartir</b> de
-          Google Sheets. Debe estar en <b>Cualquier persona con el enlace · Lector</b>
-          y la pestaña llamarse <b>Emisiones</b>. El tablero la lee al abrir y recalcula
-          todo: ranking, composición, mapa 3D y emisiones.
-        </p>
-        <input class="bd-in" id="bdUrl" placeholder="https://docs.google.com/spreadsheets/d/.../edit?usp=sharing" value="${url.replace(/"/g,'&quot;')}">
-        <div class="bd-btns">
-          <button class="bd-b bd-pri" id="bdSync">Conectar y actualizar</button>
-          <button class="bd-b" id="bdBase">Usar datos del archivo</button>
-        </div>
-        <div id="bdMsg"></div>
-        <div id="bdFotos"></div>
-        <div class="bd-pie">
-          ${fecha ? 'Última sincronización: ' + new Date(fecha).toLocaleString('es-CO') : 'Sin sincronizar todavía.'}
-          <br>Enlace del botón Compartir de Google Sheets, en modo “Cualquier persona con el enlace · Lector”.
-        </div>
-      </div>`;
-    document.body.appendChild(cap);
-
-    const cerrar = () => cap.remove();
-    cap.querySelector('.bd-x').onclick = cerrar;
-    cap.onclick = e => { if (e.target === cap) cerrar(); };
-
-    const msg = cap.querySelector('#bdMsg');
-    const decir = (clase, titulo, det) => {
-      msg.innerHTML = `<div class="bd-msg ${clase}"><b>${titulo}</b>${det || ''}</div>`;
-    };
-
-    cap.querySelector('#bdSync').onclick = async () => {
-      const v = cap.querySelector('#bdUrl').value;
-      decir('bd-espera', 'Leyendo la hoja…');
-      try {
-        const r = await sincronizar(v);
-        try { localStorage.setItem(CLAVE_URL, v.trim()); } catch (e) {}
-        let det = `${r.d1.length + r.d2.length} emisiones activas cargadas.`;
-        const nc = (r.c1 || []).length + (r.c2 || []).length;
-        if (nc) det += ` ${nc} ya intervenida(s), mostradas aparte.`;
-        if (r.descartadas) det += ` ${r.descartadas} fila(s) sin lectura válida.`;
-        if (r.avisos.length) det += ` Facilidad sin reconocer: ${r.avisos.join(', ')}.`;
-        decir('bd-ok', 'Datos actualizados', det);
-        listarFotosPendientes(cap.querySelector('#bdFotos'));
-      } catch (e) {
-        decir('bd-err', 'No se pudo leer la hoja', e.message);
-      }
-    };
-
-    cap.querySelector('#bdBase').onclick = () => {
-      restaurar();
-      try { localStorage.removeItem(CLAVE_URL); localStorage.removeItem(CLAVE_CACHE); } catch (e) {}
-      decir('bd-ok', 'Restaurado', 'El tablero volvió a los datos incluidos en el archivo.');
-    };
-  }
-
-  // Los registros sin imagen no son un error: el tablero funciona igual.
-  // Aquí solo se dice, punto por punto, con qué nombre esperar el archivo,
-  // para que baste con renombrar la foto y soltarla en la carpeta "fotos".
-  function listarFotosPendientes(caja) {
-    if (!caja) return;
-    const usados = new Set();
-    [DATA1, DATA2, CERRADAS1, CERRADAS2].forEach(a =>
-      a.forEach(d => { if (d.fid) usados.add(d.fid.toUpperCase()); }));
-
-    const siguiente = (fac) => {
-      for (let n = 1; n < 1000; n++) {
-        const c = `${fac}-${String(n).padStart(2, '0')}`;
-        if (!usados.has(c)) { usados.add(c); return c; }
-      }
-      return fac + '-XX';
-    };
-
-    const faltan = [];
-    [[DATA1, 'CPF-1'], [CERRADAS1, 'CPF-1'], [DATA2, 'CPF-2'], [CERRADAS2, 'CPF-2']]
-      .forEach(([arr, fac]) => arr.forEach(d => {
-        if (d.img) return;                       // ya tiene imagen resuelta
-        const cod = /^CPF-[12]-\d+/i.test(d.fid || '') ? d.fid.toUpperCase() : siguiente(fac);
-        faltan.push({ cod, equipo: d.equipo, elemento: d.elemento, nuevo: cod !== (d.fid || '').toUpperCase() });
-      }));
-
-    if (!faltan.length) {
-      caja.innerHTML = `<div class="bd-msg bd-ok"><b>Todas las emisiones tienen su foto.</b></div>`;
-      return;
-    }
-
-    const filas = faltan.map(f => `
-      <li><code>${f.cod}.jpg</code>
-        <span>${f.equipo} · ${f.elemento}</span>
-        ${f.nuevo ? '<em>escribe también <b>' + f.cod + '</b> en la columna ID foto</em>' : ''}
-      </li>`).join('');
-
-    caja.innerHTML = `
-      <div class="bd-msg bd-aviso">
-        <b>${faltan.length} emisión(es) sin foto</b>
-        <p>Renombra cada imagen con el código de abajo y súbelas de una vez a la
-        carpeta <code>fotos</code> del repositorio. No hay que pegar ningún enlace.</p>
-        <ul class="bd-fotos">${filas}</ul>
-        <button class="bd-b" id="bdCopiar">Copiar la lista</button>
-      </div>`;
-
-    caja.querySelector('#bdCopiar').onclick = (e) => {
-      const txt = faltan.map(f => `${f.cod}.jpg\t${f.equipo} · ${f.elemento}`).join('\n');
-      navigator.clipboard.writeText(txt).then(
-        () => { e.target.textContent = 'Copiada'; },
-        () => { e.target.textContent = 'No se pudo copiar'; });
-    };
-  }
-
-  window.abrirFuenteDatos = abrirPanel;
-
-  // ---------- al arrancar ----------
-  (function () {
-    let url = '', cache = null;
-    try {
-      url = localStorage.getItem(CLAVE_URL) || '';
-      cache = JSON.parse(localStorage.getItem(CLAVE_CACHE) || 'null');
-    } catch (e) {}
-    if (!url) return;
-
-    // lo último sincronizado se muestra de inmediato; la red llega después
-    if (cache && cache.d1) { try { aplicar(cache); } catch (e) {} }
-    sincronizar(url, true).catch(() => {});
-  })();
-})();
-
-
-(function () {
-  const a = document.getElementById('navFuente');
-  if (!a) return;
-  a.addEventListener('click', e => {
-    e.preventDefault();
-    const m = document.querySelector('.nav-menu');
-    if (m) m.classList.remove('open');
-    abrirFuenteDatos();
-  });
-})();
 
 // ---------- Control global de periodo ----------
 (function() {
@@ -7190,227 +6776,151 @@ ${cssInforme()}
   }
 
   /* ============================================================
-     MODO PRESENTACIÓN
-     Para proyectar en una reunión: una idea por pantalla, letra grande y
-     ningún menú encima. Se arma con los datos que el tablero tenga en ese
-     momento, así que nunca muestra cifras distintas de las de la pantalla.
+     SIMULADOR
+     "¿Cuánto deja de emitirse si reparamos este punto?" — con la
+     cromatografía que uno elija y la cadena de cálculo a la vista, tal
+     como la hace el GOP-F-006:
 
-     Cada campo va por separado. Rubiales (CPF-1 y CPF-2) y Caño Sur son
-     campos distintos y sus totales no se suman.
+        g/Hr  ×  horas al año  ÷  1.000.000  =  ton de TOC al año
+        ton de TOC  ×  F  =  ton CO2eq al año
+
+     donde F = %mCH4/%mTOC × 28 + %mCO2/%mTOC sale de la cromatografía del
+     área. El tablero guarda ese mismo cálculo condensado en K (ton CO2eq
+     por cada g/Hr), así que al final se comprueba que las dos cuentas den
+     lo mismo: si alguna vez dejan de coincidir, el simulador lo dice.
      ============================================================ */
-  const n0p = v => Math.round(v).toLocaleString('es-CO');
+  const HORAS_ANIO = 8760;
 
-  function laminas(campo) {
-    const esRub = campo === 'RUBIALES';
-    const activos = esRub ? [...DATA1, ...DATA2]
-                          : (typeof DATACS !== 'undefined' ? DATACS : []);
-    const cerrados = esRub ? [...CERRADAS1, ...CERRADAS2] : [];
-    const facDe = d => esRub ? (DATA1.includes(d) || CERRADAS1.includes(d) ? 'CPF-1' : 'CPF-2') : 'CAÑO SUR';
-    const g = activos.reduce((a, d) => a + d.tasa, 0);
-    const co2 = activos.reduce((a, d) => a + d.tasa * kDe(facDe(d), d.area), 0);
-    const nombre = esRub ? 'Campo Rubiales' : 'Caño Sur';
-    const detalle = esRub ? 'CPF-1 y CPF-2' : 'Facilidad Centauros';
-    const L = [];
-
-    // 1 · dónde estamos
-    L.push(`
-      <div class="pr-kick">INSPECCIÓN TERMOGRÁFICA · CÁMARA OGI/FLIR</div>
-      <div class="pr-h">${nombre}<br>emisiones fugitivas</div>
-      <div class="pr-sub">${detalle} · ${activos.length} puntos cuantificados con medición
-      directa, convertidos a CO2 equivalente con la cromatografía de cada área.</div>
-      <div class="pr-cifras">
-        <div class="pr-c rojo"><b>${n0p(g)}</b><span>g/Hr QUE SE ESCAPAN HOY</span></div>
-        <div class="pr-c"><b>${n0p(co2)}</b><span>ton CO2eq AL AÑO</span></div>
-        <div class="pr-c"><b>${activos.length}</b><span>PUNTOS ACTIVOS</span></div>
-      </div>`);
-
-    // 2 · qué se ha logrado (sólo donde hay cierres)
-    if (cerrados.length) {
-      const elim = cerrados.reduce((a, d) => a + d.tasa, 0);
-      const co2Ev = cerrados.reduce((a, d) => a + d.tasa * kDe(facDe(d), d.area), 0);
-      const base = g + elim;
-      const pct = base ? (elim / base * 100) : 0;
-      L.push(`
-        <div class="pr-kick">AVANCE DE LA CAMPAÑA</div>
-        <div class="pr-h">${pct.toFixed(1).replace('.', ',')}% de la fuga,<br>ya eliminada</div>
-        <div class="pr-sub">De los ${base ? (activos.length + cerrados.length) : 0} puntos medidos al
-        inicio, ${cerrados.length} están intervenidos y verificados con una segunda medición de cámara.</div>
-        <div class="pr-cifras">
-          <div class="pr-c"><b>${n0p(base)}</b><span>g/Hr AL INICIO</span></div>
-          <div class="pr-c verde"><b>−${n0p(elim)}</b><span>g/Hr ELIMINADOS</span></div>
-          <div class="pr-c verde"><b>${n0p(co2Ev)}</b><span>ton CO2eq EVITADAS</span></div>
-        </div>`);
-    }
-
-    // 3 · dónde está concentrado
-    const top = [...activos].sort((a, b) => b.tasa - a.tasa).slice(0, 3);
-    if (top.length) {
-      const sumaTop = top.reduce((a, d) => a + d.tasa, 0);
-      const pctTop = g ? Math.round(sumaTop / g * 100) : 0;
-      L.push(`
-        <div class="pr-kick">DÓNDE ESTÁ EL VOLUMEN</div>
-        <div class="pr-h">${top.length} puntos concentran<br>el ${pctTop}% de la fuga</div>
-        <div class="pr-fila">
-          ${top.map(d => `
-            <div class="pr-pt">
-              ${d.img ? `<img src="${d.img}" alt="${d.equipo}">` : ''}
-              <div class="pr-pt-b">
-                <div class="pr-pt-eq">${d.equipo}</div>
-                <div class="pr-pt-m">${d.area} · ${d.punto}${d.elemento ? ' · ' + d.elemento : ''}</div>
-                <div class="pr-pt-t">${n0p(d.tasa)} g/Hr</div>
-              </div>
-            </div>`).join('')}
-        </div>`);
-    }
-
-    // 4 · qué pieza falla
-    const porElem = new Map();
-    activos.forEach(d => {
-      const k = (d.elemento || 'SIN CLASIFICAR').trim().toUpperCase();
-      porElem.set(k, (porElem.get(k) || 0) + d.tasa);
-    });
-    const elems = [...porElem.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
-    if (elems.length) {
-      const may = elems[0][1];
-      const colores = ['#ff4757', '#ffb238', '#2dd4ee', '#a78bfa', '#4ade80'];
-      L.push(`
-        <div class="pr-kick">QUÉ PIEZA ESTÁ FALLANDO</div>
-        <div class="pr-h">${elems[0][0].toLowerCase()}:<br>${Math.round(elems[0][1] / g * 100)}% del volumen</div>
-        <div class="pr-barras">
-          ${elems.map(([nom, v], i) => `
-            <div>
-              <div class="pr-b-top"><span>${nom}</span><em>${n0p(v)} g/Hr</em></div>
-              <div class="pr-pista"><span class="pr-relleno"
-                style="width:${Math.max(3, v / may * 100)}%;background:${colores[i % colores.length]}"></span></div>
-            </div>`).join('')}
-        </div>`);
-    }
-
-    // 5 · la prueba de que se repara
-    const conFoto = cerrados.filter(d => d.imgCierre && d.img)
-                            .sort((a, b) => b.tasa - a.tasa)[0];
-    if (conFoto) {
-      L.push(`
-        <div class="pr-kick">ANTES Y DESPUÉS · ${conFoto.equipo}</div>
-        <div class="pr-h">De ${n0p(conFoto.tasa)} g/Hr<br>a ${n0p(conFoto.tasaCierre || 0)} g/Hr</div>
-        <div class="pr-cmp">
-          <figure class="antes"><img src="${conFoto.img}" alt="Antes">
-            <figcaption>ANTES · ${n0p(conFoto.tasa)} g/Hr</figcaption></figure>
-          <figure class="despues"><img src="${conFoto.imgCierre}" alt="Después">
-            <figcaption>DESPUÉS · ${n0p(conFoto.tasaCierre || 0)} g/Hr</figcaption></figure>
-        </div>`);
-    }
-    return L;
-  }
-
-  function abrirPresentacion(campo) {
-    const L = laminas(campo);
-    if (!L.length) return;
-    const cap = document.createElement('div');
-    cap.className = 'pr-capa';
-    cap.innerHTML = L.map((h, i) => `<div class="pr-lam${i ? '' : ' activa'}">${h}</div>`).join('')
-      + `<div class="pr-barra">
-           <span class="pr-n" id="prN">1 / ${L.length}</span>
-           <div class="pr-puntos">${L.map((_, i) => `<span class="pr-pto${i ? '' : ' on'}"></span>`).join('')}</div>
-           <button class="pr-nav" id="prAnt" aria-label="Anterior">&#8592;</button>
-           <button class="pr-nav" id="prSig" aria-label="Siguiente">&#8594;</button>
-           <button class="pr-salir" id="prSalir">SALIR</button>
-         </div>`;
-    document.body.appendChild(cap);
-    document.body.style.overflow = 'hidden';
-    document.body.classList.add('con-capa');
-    if (window.pausarMapas3D) window.pausarMapas3D();
-    try { if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen(); } catch (e) {}
-
-    const lams = [...cap.querySelectorAll('.pr-lam')];
-    const ptos = [...cap.querySelectorAll('.pr-pto')];
-    let i = 0;
-    const ir = n => {
-      i = Math.max(0, Math.min(lams.length - 1, n));
-      lams.forEach((l, k) => l.classList.toggle('activa', k === i));
-      ptos.forEach((p, k) => p.classList.toggle('on', k === i));
-      cap.querySelector('#prN').textContent = `${i + 1} / ${lams.length}`;
-      cap.querySelector('#prAnt').disabled = i === 0;
-      cap.querySelector('#prSig').disabled = i === lams.length - 1;
-    };
-    ir(0);
-
-    const salir = () => {
-      document.removeEventListener('keydown', tecla);
-      cap.remove();
-      document.body.style.overflow = '';
-      document.body.classList.remove('con-capa');
-      if (window.pausarMapas3D) window.pausarMapas3D();
-      try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) {}
-    };
-    const tecla = e => {
-      if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); ir(i + 1); }
-      else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); ir(i - 1); }
-      else if (e.key === 'Escape') salir();
-    };
-    document.addEventListener('keydown', tecla);
-    cap.querySelector('#prSig').onclick = () => ir(i + 1);
-    cap.querySelector('#prAnt').onclick = () => ir(i - 1);
-    cap.querySelector('#prSalir').onclick = salir;
-
-    // avanzar con un clic en la lámina, y deslizando en el teléfono
-    lams.forEach(l => l.addEventListener('click', () => ir(i + 1)));
-    let x0 = null;
-    cap.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, { passive: true });
-    cap.addEventListener('touchend', e => {
-      if (x0 === null) return;
-      const dx = e.changedTouches[0].clientX - x0;
-      if (Math.abs(dx) > 50) ir(dx < 0 ? i + 1 : i - 1);
-      x0 = null;
+  function simOpciones() {
+    return Object.keys(K_AREA).map(clave => {
+      const [fac, area] = clave.split('|');
+      return { clave, fac, area, k: K_AREA[clave] };
     });
   }
 
-  /* Elegir campo antes de empezar: no se mezclan en una misma presentación. */
-  function abrirSelectorPresentacion() {
-    const hayCS = typeof DATACS !== 'undefined' && DATACS.length;
-    if (!hayCS) return abrirPresentacion('RUBIALES');
+  function simDecimales(v, d) {
+    return v.toLocaleString('es-CO', { minimumFractionDigits: d, maximumFractionDigits: d });
+  }
 
+  function abrirSimulador() {
+    const ops = simOpciones();
     const cap = document.createElement('div');
     cap.className = 'bd-capa';
     cap.innerHTML = `
-      <div class="bd-caja ed-caja" role="dialog" aria-label="Modo presentación">
+      <div class="bd-caja ed-caja" role="dialog" aria-label="Simulador">
         <div class="bd-top">
           <div>
-            <div class="bd-kick">MODO PRESENTACIÓN</div>
-            <h3 class="bd-h">¿Qué campo vas a presentar?</h3>
+            <div class="bd-kick">SIMULADOR</div>
+            <h3 class="bd-h">¿Cuánto deja de emitirse al reparar?</h3>
           </div>
           <button class="bd-x" aria-label="Cerrar">×</button>
         </div>
-        <p class="bd-p">Pantalla completa, sin menús. Se avanza con las flechas, con un
-        clic o deslizando. Cada campo va por separado: sus totales no se suman.</p>
-        <div class="sel-lista">
-          <button class="sel-fila" data-campo="RUBIALES">
-            <span class="sf-txt"><b>Campo Rubiales</b><small>CPF-1 y CPF-2</small></span>
-            <span class="sf-tasa">${n0p([...DATA1, ...DATA2].reduce((a, d) => a + d.tasa, 0))} <small>g/Hr</small></span>
-          </button>
-          <button class="sel-fila" data-campo="CANOSUR">
-            <span class="sf-txt"><b>Caño Sur</b><small>Facilidad Centauros</small></span>
-            <span class="sf-tasa">${n0p(DATACS.reduce((a, d) => a + d.tasa, 0))} <small>g/Hr</small></span>
-          </button>
+        <p class="bd-p">Escribe la tasa que marcó la cámara y elige la cromatografía del
+        área. Abajo queda la cuenta completa, paso a paso.</p>
+        <div class="sim-rejilla">
+          <label>Tasa medida · g/Hr
+            <input type="number" id="simTasa" min="0" step="1" value="1000" inputmode="decimal">
+          </label>
+          <label>Cromatografía
+            <select id="simCrom">
+              ${ops.map((o, i) => `<option value="${i}">${o.fac} · ${o.area}</option>`).join('')}
+            </select>
+          </label>
+          <label>Horas al año
+            <input type="number" id="simHoras" min="1" step="1" value="${HORAS_ANIO}">
+          </label>
+          <label>Potencial de calentamiento · CH₄
+            <input type="text" id="simGwp" value="28 (AR5)" readonly>
+          </label>
         </div>
+        <p class="sim-nota" id="simNota"></p>
+        <div class="sim-res">
+          <div class="sim-res-l">EMISIÓN EQUIVALENTE</div>
+          <div class="sim-res-v" id="simV">—</div>
+          <div class="sim-res-s" id="simS">—</div>
+        </div>
+        <div class="sim-cadena" id="simCadena"></div>
+        <div class="sim-ok" id="simOk"></div>
       </div>`;
     document.body.appendChild(cap);
+
     const cerrar = () => cap.remove();
     cap.querySelector('.bd-x').onclick = cerrar;
     cap.onclick = e => { if (e.target === cap) cerrar(); };
-    cap.querySelectorAll('.sel-fila').forEach(b => {
-      b.onclick = () => { cerrar(); abrirPresentacion(b.dataset.campo); };
+    document.addEventListener('keydown', function esc(ev) {
+      if (ev.key === 'Escape') { cerrar(); document.removeEventListener('keydown', esc); }
     });
+
+    const tasaEl = cap.querySelector('#simTasa');
+    const cromEl = cap.querySelector('#simCrom');
+    const horasEl = cap.querySelector('#simHoras');
+
+    function calcular() {
+      const o = ops[+cromEl.value] || ops[0];
+      const tasa = Math.max(0, parseFloat(tasaEl.value) || 0);
+      const horas = Math.max(1, parseFloat(horasEl.value) || HORAS_ANIO);
+
+      // F: toneladas de CO2eq por cada tonelada de TOC, según la cromatografía
+      const F = o.k * 1e6 / HORAS_ANIO;
+      const gAnio = tasa * horas;
+      const tonToc = gAnio / 1e6;
+      const co2 = tonToc * F;
+
+      cap.querySelector('#simV').textContent = simDecimales(co2, 2) + ' ton';
+      cap.querySelector('#simS').textContent = 'CO₂eq al año · ' + o.fac + ' · ' + o.area;
+
+      cap.querySelector('#simCadena').innerHTML = [
+        ['1', 'Tasa medida con la cámara', simDecimales(tasa, 0) + ' g/Hr'],
+        ['2', `× ${simDecimales(horas, 0)} horas al año`, simDecimales(gAnio, 0) + ' g/año'],
+        ['3', '÷ 1.000.000 · de gramos a toneladas', simDecimales(tonToc, 4) + ' ton TOC/año'],
+        ['4', `× ${simDecimales(F, 4)} · CO₂eq por tonelada de TOC`, simDecimales(co2, 2) + ' ton CO₂eq/año'],
+      ].map(([n, t, v]) =>
+        `<div class="sim-f"><span class="sim-f-t"><i>${n}</i>${t}</span>`
+        + `<span class="sim-f-v">${v}</span></div>`).join('');
+
+      // La comprobación: el tablero multiplica la tasa por K. Con las horas
+      // del método (8.760) las dos cuentas tienen que dar lo mismo.
+      const kTablero = kDe(o.fac, o.area);
+      const delTablero = tasa * kTablero;
+      const mismasHoras = Math.abs(horas - HORAS_ANIO) < 1e-9;
+      const cuadra = mismasHoras && Math.abs(co2 - delTablero) < 1e-9;
+      const ok = cap.querySelector('#simOk');
+      ok.className = 'sim-ok ' + (mismasHoras ? (cuadra ? 'bien' : 'mal') : 'bien');
+      ok.innerHTML = mismasHoras
+        ? `<span class="pico">${cuadra ? '✓' : '!'}</span><span>`
+          + (cuadra
+              ? `Coincide con el tablero: ${simDecimales(tasa, 0)} g/Hr × ${simDecimales(kTablero, 7)}`
+                + ` = <b>${simDecimales(delTablero, 2)} ton CO₂eq/año</b>. Es la misma cuenta,`
+                + ` condensada en el factor K del área.`
+              : `No coincide con el tablero (${simDecimales(delTablero, 2)} ton). Revisa el factor`
+                + ` del área antes de usar este número.`)
+          + '</span>'
+        : `<span class="pico">✓</span><span>Con ${simDecimales(horas, 0)} horas en vez de las`
+          + ` ${simDecimales(HORAS_ANIO, 0)} del método, el resultado ya no es comparable con el`
+          + ` del tablero: sirve para un supuesto, no para reportar.</span>`;
+
+      cap.querySelector('#simNota').innerHTML = o.clave === 'CAÑO SUR|SKIM TANK'
+        ? 'El SKIM TANK de Caño Sur no tiene análisis propio: se aplica el del SKIM TANK de CPF-1.'
+        : `Factor del área · K = ${simDecimales(o.k, 7)} ton CO₂eq por cada g/Hr.`;
+    }
+
+    [tasaEl, cromEl, horasEl].forEach(el => {
+      el.addEventListener('input', calcular);
+      el.addEventListener('change', calcular);
+    });
+    calcular();
+    tasaEl.focus();
+    tasaEl.select();
   }
 
-  const pres = document.getElementById('navPresentar');
-  if (pres) pres.addEventListener('click', e => {
+  const sim = document.getElementById('navSimulador');
+  if (sim) sim.addEventListener('click', e => {
     e.preventDefault();
     const m = document.querySelector('.nav-menu');
     if (m) m.classList.remove('open');
-    abrirSelectorPresentacion();
+    abrirSimulador();
   });
-  window.presentar = abrirPresentacion;
+  window.simulador = abrirSimulador;
 
   const ot = document.getElementById('navOrden');
   if (ot) ot.addEventListener('click', e => {
