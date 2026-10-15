@@ -7,6 +7,17 @@
 <meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CPF-1 & CPF-2 · Inspección Termográfica de Fugas</title>
+<!-- Para instalarlo como aplicación en el teléfono. El manifiesto va con
+     ruta relativa: en la raíz toma el del tablero público y dentro de
+     /editor el suyo, que abre directo en el editor. -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0e1620">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Emisiones">
+<link rel="apple-touch-icon" href="/icono/icono-ios-180.png">
+<link rel="icon" type="image/png" href="/icono/icono-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script>/*!
@@ -6978,6 +6989,14 @@ ${cssInforme()}
     })
     .catch(() => {});   // sin servidor, se queda con los datos de dentro
 })();
+
+/* El ayudante que deja abrir el tablero sin señal. Sólo tiene sentido
+   servido por web: abierto como archivo local no se registra y no estorba. */
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
 </script>
 
 </body>

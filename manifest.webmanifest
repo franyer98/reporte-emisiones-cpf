@@ -1,0 +1,20 @@
+{
+  "name": "Emisiones fugitivas · CPF-1 y CPF-2",
+  "short_name": "Emisiones",
+  "description": "Inspección termográfica de fugas en Campo Rubiales y Caño Sur: tasas medidas, avance de la campaña y evidencia de los cierres.",
+  "lang": "es-CO",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0e1620",
+  "theme_color": "#0e1620",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    { "src": "/icono/icono-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icono/icono-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icono/icono-192-recortable.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icono/icono-512-recortable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
