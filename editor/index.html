@@ -1586,6 +1586,13 @@ THREE.OrbitControls = OrbitControls;
   }
   .hero-sub { font-size: clamp(15px,2.2vw,18px); color: var(--text-dim); max-width: 680px; margin-top: 14px; }
   .hero-sub b { color: var(--text); font-weight: 600; }
+  .hero-formula{margin-top:14px;max-width:680px;border-left:3px solid var(--border);
+    padding:9px 0 9px 13px;font-family:'JetBrains Mono',monospace;font-size:12px;
+    line-height:1.9;color:var(--text-faint)}
+  .hero-formula b{color:var(--text);font-weight:700}
+  .hero-formula em{font-style:normal;color:#00b828;font-weight:700}
+  .hero-formula .hf-t{display:block;font-size:9.5px;letter-spacing:.11em;margin-bottom:3px}
+  @media (max-width:600px){ .hero-formula{font-size:11px;line-height:1.95} }
   .facility-row {
     display: grid; grid-template-columns: 0.9fr 1fr 1fr; gap: 14px;
     margin-top: 40px;
@@ -1709,6 +1716,25 @@ THREE.OrbitControls = OrbitControls;
   @media (max-width: 900px) {
     .chart-grid, .chart-grid.two { grid-template-columns: 1fr; }
   }
+
+  /* ---------- DESGLOSE DE CÁLCULO ----------
+     La cuenta completa, punto por punto, para quien quiera rehacerla a mano
+     o en Excel. Es la respuesta a "¿de dónde salen estas toneladas?". */
+  .bd-caja.ancha{max-width:1040px}
+  .dg-tabla{width:100%;border-collapse:collapse;margin-top:14px;font-size:12px}
+  .dg-tabla th{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.07em;
+    color:var(--text-faint);text-align:right;padding:7px 8px;border-bottom:1px solid var(--border);
+    white-space:nowrap;position:sticky;top:0;background:var(--surface)}
+  .dg-tabla th.izq,.dg-tabla td.izq{text-align:left}
+  .dg-tabla td{padding:7px 8px;text-align:right;border-bottom:1px solid rgba(255,255,255,.05);
+    font-family:'JetBrains Mono',monospace;color:var(--text-dim);white-space:nowrap}
+  .dg-tabla td.izq{font-family:inherit;color:var(--text)}
+  .dg-tabla tr.dg-fac td{background:rgba(255,255,255,.05);color:var(--text);font-weight:700;
+    border-top:1px solid var(--border)}
+  .dg-tabla tr.dg-campo td{background:rgba(0,184,40,.12);color:#00b828;font-weight:700}
+  .dg-scroll{max-height:46vh;overflow:auto;border:1px solid var(--border);border-radius:10px}
+  .dg-pie{font-size:11.5px;color:var(--text-faint);line-height:1.7;margin:13px 0 0}
+  .dg-acciones{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}
 
   /* ---------- SIMULADOR ---------- */
   .sim-lock {
@@ -2859,6 +2885,7 @@ THREE.OrbitControls = OrbitControls;
         <a href="#" class="nav-link" id="navInforme">Informe para imprimir o enviar en PDF</a>
         <a href="#" class="nav-link" id="navOrden">Orden de trabajo · por tanque</a>
         <a href="#" class="nav-link" id="navSimulador">Simulador · cuánto deja de emitirse</a>
+        <a href="#" class="nav-link" id="navDesglose">Desglose de cálculo · punto por punto</a>
       </div>
 
       <div class="nav-group">
@@ -2998,6 +3025,15 @@ THREE.OrbitControls = OrbitControls;
       <button data-period="sem">Al semestre</button>
       <button data-period="anio">Al año</button>
     </div>
+    <!-- La unidad se elige aparte del periodo: hay quien necesita el número
+         siempre en toneladas, aunque quede en 0,28. -->
+    <div class="period-global" id="unidadGlobal" style="display:none">
+      <span class="pg-label">UNIDAD</span>
+      <button data-unidad="auto" class="active">Automática</button>
+      <button data-unidad="ton">Toneladas</button>
+      <button data-unidad="kg">Kilogramos</button>
+      <button data-unidad="g">Gramos</button>
+    </div>
     <div class="hero-tags">
       <span class="hero-tag direct">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
@@ -3009,6 +3045,9 @@ THREE.OrbitControls = OrbitControls;
         <span class="hero-co2-info" title="Estimado a partir de la composición de gas promedio por facilidad (cromatografía Plantilla GEI-GOR) y GWP del CH4 = 28 (IPCC AR5). No es una medición directa de CO2 por punto.">ⓘ</span>
       </div>
     </div>
+    <!-- La cuenta escrita con los números que están en pantalla: es la forma
+         de que nadie tenga que creer en el tablero, sino comprobarlo. -->
+    <div class="hero-formula" id="kpiFormula" style="display:none"></div>
     <div class="hero-sub" id="kpiSub">de gas fugitivo detectado entre dos facilidades — <b>CPF-1</b> (11 puntos, 45.959 g/Hr) y <b>CPF-2</b> (11 puntos, 12.100 g/Hr) — la misma lectura que registra la ficha GOP-F-006.</div>
     <div class="facility-row">
       <div class="fcard total">
@@ -3565,6 +3604,28 @@ function updateKPIs() {
       + ` y <b>CPF-2</b> (${AGG2.nPuntos} puntos, ${t2.toLocaleString('es-CO')} g/Hr) — la misma lectura que registra la ficha GOP-F-006.`
     : `de gas fugitivo proyectado${et} entre dos facilidades — <b>CPF-1</b> (${AGG1.nPuntos} puntos, ${masaAcumulada(t1, P)})`
       + ` y <b>CPF-2</b> (${AGG2.nPuntos} puntos, ${masaAcumulada(t2, P)}) — a partir de una tasa medida de <b>${tt.toLocaleString('es-CO')} g/Hr</b>.`);
+  /* La cadena completa, con los números de la pantalla y en las tres unidades.
+     El jefe no tiene por qué fiarse del tablero: aquí puede rehacer la cuenta
+     con una calculadora. */
+  const cajaF = document.getElementById('kpiFormula');
+  if (cajaF) {
+    if (esTasa) {
+      cajaF.style.display = 'none';
+    } else {
+      const h = PERIODOS[P].horas;
+      const g = tt * h;
+      const n = (v, d) => v.toLocaleString('es-CO', { maximumFractionDigits: d });
+      cajaF.style.display = '';
+      cajaF.innerHTML =
+        `<span class="hf-t">CÓMO SALE ESTE NÚMERO</span>`
+        + `<b>${n(tt, 0)} g/Hr</b> × <b>${n(h, 0)} h</b> (${PERIODOS[P].etiqueta})`
+        + ` = <b>${n(g, 0)} g</b><br>`
+        + `<b>${n(g, 0)} g</b> ÷ 1.000 = <b>${n(g / 1000, 1)} kg</b><br>`
+        + `<b>${n(g, 0)} g</b> ÷ 1.000.000 = <em>${n(g / 1e6, 3)} ton</em><br>`
+        + `masa de TOC (la mezcla de hidrocarburo), no de CO₂eq.`;
+    }
+  }
+
   set('kpiTotPuntos', AGG1.nPuntos + AGG2.nPuntos);
   set('kpiTotSub', esTasa ? `${tt.toLocaleString('es-CO')} g/Hr · ${AGG1.nPuntos + AGG2.nPuntos} puntos medidos`
                           : `${masaAcumulada(tt, P)}${et}`);
@@ -5458,22 +5519,44 @@ refrescarTodo();
   });
 })();
 
-// ---------- Control global de periodo ----------
+// ---------- Control global de periodo y de unidad ----------
+function repintarPorPeriodo() {
+  updateKPIs();
+  renderGrid1(); renderGrid2();
+  renderComposicion();
+  // los mapas 3D siguen el mismo periodo
+  [map3d1, map3d2].forEach(m => { if (m && m.setPeriodo) m.setPeriodo(PERIODO_GLOBAL); });
+}
+
 (function() {
   const bar = document.getElementById('periodGlobal');
+  const barU = document.getElementById('unidadGlobal');
   if (!bar) return;
+
+  // con la tasa medida todo va en g/Hr: ahí elegir unidad no significa nada
+  const verUnidades = () => {
+    if (barU) barU.style.display = PERIODO_GLOBAL === 'hora' ? 'none' : 'flex';
+  };
+
   bar.querySelectorAll('button').forEach(btn => {
     btn.addEventListener('click', () => {
       bar.querySelectorAll('button').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       PERIODO_GLOBAL = btn.dataset.period;
-      updateKPIs();
-      renderGrid1(); renderGrid2();
-      renderComposicion();
-      // los mapas 3D siguen el mismo periodo
-      [map3d1, map3d2].forEach(m => { if (m && m.setPeriodo) m.setPeriodo(PERIODO_GLOBAL); });
+      verUnidades();
+      repintarPorPeriodo();
     });
   });
+
+  if (barU) barU.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      barU.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      UNIDAD_MASA = btn.dataset.unidad;
+      repintarPorPeriodo();
+    });
+  });
+  verUnidades();
 })();
 
 // ---------- Mapa por area ----------
@@ -5553,11 +5636,19 @@ const PERIODOS = {
   anio: { horas: 8760, etiqueta: 'al año' },
 };
 
-// convierte g/Hr al acumulado del periodo, con la unidad mas legible
+/* Convierte g/Hr al acumulado del periodo. Por defecto escoge la unidad más
+   legible, pero se puede fijar: quien revisa suele querer todo en la misma
+   unidad para sumar de un vistazo, aunque alguna cifra quede en 0,28 ton. */
+let UNIDAD_MASA = 'auto';
+
 function masaAcumulada(gramosPorHora, periodo) {
   const g = gramosPorHora * PERIODOS[periodo].horas;
-  if (g >= 1e6) return (g/1e6).toLocaleString('es-CO', {maximumFractionDigits: 2}) + ' ton';
-  if (g >= 1000) return (g/1000).toLocaleString('es-CO', {maximumFractionDigits: 1}) + ' kg';
+  const n = (v, d) => v.toLocaleString('es-CO', { maximumFractionDigits: d });
+  if (UNIDAD_MASA === 'ton') return n(g / 1e6, 3) + ' ton';
+  if (UNIDAD_MASA === 'kg')  return n(g / 1000, 1) + ' kg';
+  if (UNIDAD_MASA === 'g')   return Math.round(g).toLocaleString('es-CO') + ' g';
+  if (g >= 1e6)  return n(g / 1e6, 2) + ' ton';
+  if (g >= 1000) return n(g / 1000, 1) + ' kg';
   return Math.round(g).toLocaleString('es-CO') + ' g';
 }
 
@@ -7698,6 +7789,163 @@ ${cssInforme()}
     tasaEl.focus();
     tasaEl.select();
   }
+
+  /* ============================================================
+     DESGLOSE DE CÁLCULO
+     La misma cuenta del tablero, abierta punto por punto, para que
+     cualquiera la rehaga con una calculadora o en Excel. Cada columna es
+     un paso del GOP-F-006 y el total de la última columna es, exactamente,
+     la cifra que muestra el tablero.
+
+     Los campos van separados y no se suman entre ellos: Rubiales (CPF-1 y
+     CPF-2) por un lado y Caño Sur por el otro.
+     ============================================================ */
+  function dgGrupos() {
+    return [
+      { campo: 'CAMPO RUBIALES', fac: 'CPF-1', lista: DATA1 },
+      { campo: 'CAMPO RUBIALES', fac: 'CPF-2', lista: DATA2 },
+      { campo: 'CAÑO SUR', fac: 'CAÑO SUR', lista: (typeof DATACS !== 'undefined' ? DATACS : []) },
+    ].filter(g => g.lista.length);
+  }
+
+  function dgFilas() {
+    const filas = [];
+    dgGrupos().forEach(g => {
+      [...g.lista].sort((a, b) => b.tasa - a.tasa).forEach(d => {
+        const k = kDe(g.fac, d.area);
+        const gAnio = d.tasa * HORAS_ANIO;
+        filas.push({
+          campo: g.campo, fac: g.fac, equipo: d.equipo, area: d.area,
+          tasa: d.tasa, gAnio, tonToc: gAnio / 1e6, k, co2: d.tasa * k,
+        });
+      });
+    });
+    return filas;
+  }
+
+  const dgNum = (v, d) => v.toLocaleString('es-CO',
+    { minimumFractionDigits: d, maximumFractionDigits: d });
+
+  function abrirDesglose() {
+    const filas = dgFilas();
+    const cap = document.createElement('div');
+    cap.className = 'bd-capa';
+
+    let cuerpo = '', campoActual = '', facActual = '';
+    let sumF = null, sumC = null;
+    const totalFac = () => sumF
+      ? `<tr class="dg-fac"><td class="izq" colspan="2">TOTAL ${facActual}</td>`
+        + `<td>${dgNum(sumF.tasa, 0)}</td><td>${dgNum(sumF.gAnio, 0)}</td>`
+        + `<td>${dgNum(sumF.tonToc, 3)}</td><td></td><td>${dgNum(sumF.co2, 2)}</td></tr>` : '';
+    const totalCampo = () => sumC
+      ? `<tr class="dg-campo"><td class="izq" colspan="2">${campoActual}</td>`
+        + `<td>${dgNum(sumC.tasa, 0)}</td><td>${dgNum(sumC.gAnio, 0)}</td>`
+        + `<td>${dgNum(sumC.tonToc, 3)}</td><td></td><td>${dgNum(sumC.co2, 2)}</td></tr>` : '';
+
+    filas.forEach(f => {
+      if (f.campo !== campoActual) {
+        cuerpo += totalFac() + totalCampo();
+        campoActual = f.campo; facActual = f.fac;
+        sumC = { tasa: 0, gAnio: 0, tonToc: 0, co2: 0 };
+        sumF = { tasa: 0, gAnio: 0, tonToc: 0, co2: 0 };
+      } else if (f.fac !== facActual) {
+        cuerpo += totalFac();
+        facActual = f.fac;
+        sumF = { tasa: 0, gAnio: 0, tonToc: 0, co2: 0 };
+      }
+      ['tasa', 'gAnio', 'tonToc', 'co2'].forEach(c => { sumF[c] += f[c]; sumC[c] += f[c]; });
+      cuerpo += `<tr><td class="izq">${f.equipo}</td><td class="izq">${f.fac} · ${f.area}</td>`
+        + `<td>${dgNum(f.tasa, 0)}</td><td>${dgNum(f.gAnio, 0)}</td>`
+        + `<td>${dgNum(f.tonToc, 3)}</td><td>${dgNum(f.k, 7)}</td>`
+        + `<td>${dgNum(f.co2, 2)}</td></tr>`;
+    });
+    cuerpo += totalFac() + totalCampo();
+
+    cap.innerHTML = `
+      <div class="bd-caja ancha" role="dialog" aria-label="Desglose de cálculo">
+        <div class="bd-top">
+          <div>
+            <div class="bd-kick">DESGLOSE DE CÁLCULO</div>
+            <h3 class="bd-h">De dónde sale cada tonelada</h3>
+          </div>
+          <button class="bd-x" aria-label="Cerrar">×</button>
+        </div>
+        <p class="bd-p">Un renglón por punto activo, con la cuenta abierta paso a paso.
+        Los totales de la última columna son los mismos que muestra el tablero.</p>
+        <div class="dg-scroll">
+          <table class="dg-tabla">
+            <thead><tr>
+              <th class="izq">EQUIPO</th><th class="izq">FACILIDAD · ÁREA</th>
+              <th>TASA g/Hr</th><th>× 8.760 h = g/año</th><th>÷ 1e6 = ton TOC/año</th>
+              <th>K del área</th><th>× K = ton CO₂eq/año</th>
+            </tr></thead>
+            <tbody>${cuerpo}</tbody>
+          </table>
+        </div>
+        <p class="dg-pie">
+          <b>K</b> es el factor de la cromatografía del área: ton CO₂eq por cada g/Hr.
+          Sale de <code>(%mCH₄/%mTOC × 28 + %mCO₂/%mTOC) × 8.760 ÷ 1.000.000</code>, con
+          potencial de calentamiento 28 para el metano (AR5). Las dos últimas columnas son
+          dos caminos a lo mismo: ton TOC × (K × 1e6 ÷ 8.760), o directamente tasa × K.<br>
+          Sólo entran los puntos <b>activos</b>; los ya reparados están en la pestaña Cierres.
+          Rubiales y Caño Sur son campos distintos y sus totales no se suman.
+        </p>
+        <div class="dg-acciones">
+          <button class="bd-b bd-pri" id="dgCsv">Descargar para Excel</button>
+          <button class="bd-b" id="dgCerrar">Cerrar</button>
+        </div>
+      </div>`;
+    document.body.appendChild(cap);
+
+    const cerrar = () => cap.remove();
+    cap.querySelector('.bd-x').onclick = cerrar;
+    cap.querySelector('#dgCerrar').onclick = cerrar;
+    cap.onclick = e => { if (e.target === cap) cerrar(); };
+    cap.querySelector('#dgCsv').onclick = () => descargarDesglose(filas);
+  }
+
+  /* Separado por punto y coma y con coma decimal: así lo abre bien el Excel
+     en español sin tener que importar nada a mano. */
+  function descargarDesglose(filas) {
+    const c = v => String(v).replace(/"/g, '""');
+    const num = (v, d) => dgNum(v, d);
+    const lineas = [
+      ['CAMPO', 'FACILIDAD', 'EQUIPO', 'AREA', 'TASA g/Hr', 'HORAS AL ANO',
+       'GRAMOS AL ANO', 'TON TOC AL ANO', 'K ton CO2eq por g/Hr', 'TON CO2eq AL ANO'],
+    ];
+    filas.forEach(f => lineas.push([f.campo, f.fac, f.equipo, f.area, num(f.tasa, 0),
+      HORAS_ANIO, num(f.gAnio, 0), num(f.tonToc, 4), num(f.k, 7), num(f.co2, 2)]));
+
+    // totales por campo, al final y separados
+    const campos = [...new Set(filas.map(f => f.campo))];
+    lineas.push([]);
+    campos.forEach(camp => {
+      const t = filas.filter(f => f.campo === camp).reduce((a, f) => ({
+        tasa: a.tasa + f.tasa, co2: a.co2 + f.co2, toc: a.toc + f.tonToc }),
+        { tasa: 0, co2: 0, toc: 0 });
+      lineas.push(['TOTAL ' + camp, '', '', '', num(t.tasa, 0), HORAS_ANIO, '',
+                   num(t.toc, 4), '', num(t.co2, 2)]);
+    });
+
+    const texto = '﻿' + lineas.map(l => l.map(v => `"${c(v)}"`).join(';')).join('\r\n');
+    const url = URL.createObjectURL(new Blob([texto], { type: 'text/csv;charset=utf-8' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'desglose-calculo-emisiones.csv';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+  }
+
+  const dg = document.getElementById('navDesglose');
+  if (dg) dg.addEventListener('click', e => {
+    e.preventDefault();
+    const m = document.querySelector('.nav-menu');
+    if (m) m.classList.remove('open');
+    abrirDesglose();
+  });
+  window.desglose = abrirDesglose;
 
   const sim = document.getElementById('navSimulador');
   if (sim) sim.addEventListener('click', e => {
