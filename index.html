@@ -2369,6 +2369,68 @@ THREE.OrbitControls = OrbitControls;
   .sim-ok.mal .pico{background:rgba(255,71,87,.16);color:var(--hot)}
   @media (max-width:560px){ .sim-rejilla{grid-template-columns:1fr} }
 
+  /* ---------- MEMORIA DE CÁLCULO ----------
+     La sección para cuando alguien pregunta "¿y esto de dónde sale?": la
+     cromatografía de cada área con su origen en el GOP-F-006 y, punto por
+     punto, la cuenta completa hasta la tonelada. No está entre las pestañas
+     porque no es para mirar a diario, sino para abrirla y sustentar. */
+  .mem-capa{position:fixed;inset:0;z-index:130;background:var(--bg);overflow-y:auto;
+    -webkit-overflow-scrolling:touch}
+  .mem-top{position:sticky;top:0;z-index:4;background:var(--bg);
+    border-bottom:1px solid var(--border);padding:16px 22px;
+    display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+  .mem-kick{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.12em;
+    color:var(--text-faint)}
+  .mem-h{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;margin:4px 0 0}
+  .mem-x{background:transparent;border:1px solid var(--border);color:var(--text-dim);
+    border-radius:99px;padding:8px 15px;font-family:'JetBrains Mono',monospace;
+    font-size:11px;cursor:pointer;flex:none}
+  .mem-x:hover{border-color:var(--hot);color:var(--hot)}
+  .mem-cuerpo{padding:22px;max-width:1180px;margin:0 auto}
+  .mem-p{color:var(--text-dim);font-size:13.5px;line-height:1.75;max-width:720px;margin:0 0 20px}
+  .mem-sec{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;
+    color:var(--text-faint);margin:30px 0 11px;padding-top:16px;border-top:1px solid var(--border)}
+  .mem-sec:first-of-type{border-top:0;padding-top:0;margin-top:0}
+  .mem-barra{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px}
+  .mem-barra button{background:transparent;color:var(--text-dim);border:1px solid var(--border);
+    border-radius:8px;padding:7px 13px;font-family:'JetBrains Mono',monospace;font-size:11px;
+    cursor:pointer;transition:all .15s ease}
+  .mem-barra button:hover{color:var(--text)}
+  .mem-barra button.activo{background:rgba(0,184,40,.16);color:#00b828;
+    border-color:rgba(0,184,40,.45);font-weight:700}
+  .mem-tabla-caja{overflow-x:auto;border:1px solid var(--border);border-radius:11px}
+  table.mem-t{border-collapse:collapse;width:100%;min-width:720px;font-size:12.5px}
+  table.mem-t th{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.07em;
+    color:var(--text-faint);text-align:right;padding:10px 12px;border-bottom:1px solid var(--border);
+    white-space:nowrap;background:rgba(255,255,255,.02)}
+  table.mem-t th:first-child,table.mem-t td:first-child{text-align:left}
+  table.mem-t th.izq,table.mem-t td.izq{text-align:left}
+  table.mem-t td{padding:9px 12px;text-align:right;border-bottom:1px solid rgba(255,255,255,.05);
+    color:var(--text-dim);font-family:'JetBrains Mono',monospace;white-space:nowrap}
+  table.mem-t td.eq{color:var(--text);font-family:'Space Grotesk',sans-serif;font-weight:600}
+  table.mem-t tr.mem-area td{background:rgba(255,255,255,.035);color:var(--text);font-weight:700;
+    font-size:11px;letter-spacing:.05em}
+  table.mem-t tr.mem-sub td{background:rgba(45,212,238,.07);color:var(--text);font-weight:700}
+  table.mem-t tr.mem-tot td{background:rgba(0,184,40,.12);color:#00b828;font-weight:700;
+    font-size:13.5px;border-bottom:0}
+  table.mem-t td small{color:var(--text-faint);font-size:10.5px}
+  .mem-nota{font-size:12px;color:var(--text-faint);line-height:1.7;margin:10px 0 0}
+  .mem-ok{display:flex;align-items:center;gap:9px;margin:12px 0 0;font-size:12.5px;color:var(--text-dim)}
+  .mem-ok .pico{flex:none;width:21px;height:21px;border-radius:50%;display:flex;align-items:center;
+    justify-content:center;font-size:12px;font-weight:700;background:rgba(0,184,40,.16);color:#00b828}
+  .mem-ok.mal .pico{background:rgba(255,71,87,.16);color:var(--hot)}
+  .mem-ok.mal{color:var(--hot)}
+  .mem-aviso{border:1px solid rgba(255,176,32,.4);background:rgba(255,176,32,.07);
+    border-radius:10px;padding:12px 15px;font-size:12.5px;color:var(--text-dim);
+    line-height:1.7;margin:14px 0 0}
+  .mem-aviso b{color:#ffb020}
+  .mem-acciones{display:flex;gap:9px;flex-wrap:wrap;margin:22px 0 10px}
+  @media (max-width:620px){
+    .mem-cuerpo{padding:16px 13px}
+    .mem-top{padding:13px 14px}
+    .mem-h{font-size:17px}
+  }
+
   /* ---------- ORDEN DE TRABAJO ----------
      Una hoja por tanque, para que la cuadrilla se la lleve a campo: qué hay
      que intervenir, con su foto, y espacio en blanco para anotar lo hecho. */
@@ -2885,6 +2947,7 @@ THREE.OrbitControls = OrbitControls;
                 <a href="#" class="nav-link" id="navInforme">Informe para imprimir o enviar en PDF</a>
         <a href="#" class="nav-link" id="navOrden">Orden de trabajo · por tanque</a>
         <a href="#" class="nav-link" id="navSimulador">Simulador · cuánto deja de emitirse</a>
+        <a href="#" class="nav-link" id="navMemoria">Memoria de cálculo · de dónde sale cada número</a>
         <a href="#" class="nav-link" id="navDesglose">Desglose de cálculo · punto por punto</a>
       </div>
 
@@ -7174,6 +7237,286 @@ ${cssInforme()}
     abrirSimulador();
   });
   window.simulador = abrirSimulador;
+
+  /* ============================================================
+     MEMORIA DE CÁLCULO
+     Todo lo que hay detrás de las toneladas, escrito: la cromatografía de
+     cada área con la fila del GOP-F-006 de donde sale, y después, punto por
+     punto, tasa × factor = toneladas. Se puede ver cada facilidad por
+     separado y Rubiales consolidado.
+
+     Caño Sur va en su propio alcance y nunca se suma con Rubiales: son
+     campos distintos, con cromatografía distinta.
+     ============================================================ */
+  const MEM_HORAS = 8760;
+  const MEM_ORIGEN = {
+    'CPF-1|PROCESOS':       'TK-901-C · PROCESOS · fila 15',
+    'CPF-1|SKIM TANK':      'TK-906-B · SKIM TANK · fila 17',
+    'CPF-2|ALMACENAMIENTO': '300 TK-0103 · fila 19',
+    'CPF-2|FWKOS':          '300-TK-0301 · FWKOS · fila 21',
+    'CAÑO SUR|FWKOS':       'ETK-1101-A/B · FWKO · filas 7 y 8',
+    'CAÑO SUR|SKIM TANK':   'sin análisis propio: se aplica CPF-1 · SKIM TANK',
+  };
+
+  const memN = (v, d) => v.toLocaleString('es-CO', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const memG = v => Math.round(v).toLocaleString('es-CO');
+  const memEsc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  let memAlcance = 'RUBIALES';
+
+  function memPartes(clave) {
+    const cs = (typeof DATACS !== 'undefined') ? DATACS : [];
+    if (clave === 'CPF-1')    return { campo: 'Campo Rubiales', partes: [['CPF-1', DATA1]] };
+    if (clave === 'CPF-2')    return { campo: 'Campo Rubiales', partes: [['CPF-2', DATA2]] };
+    if (clave === 'RUBIALES') return { campo: 'Campo Rubiales', partes: [['CPF-1', DATA1], ['CPF-2', DATA2]] };
+    return { campo: 'Campo Caño Sur', partes: [['CAÑO SUR', cs]] };
+  }
+
+  /* La tabla de cromatografía: el factor de cada área y de dónde sale.
+     Se muestra sólo la de los campos que el alcance elegido usa. */
+  function memTablaCrom(campos) {
+    const filas = Object.keys(K_AREA)
+      .filter(k => campos.some(c => k.indexOf(c + '|') === 0))
+      .map(k => {
+        const [fac, area] = k.split('|');
+        const K = K_AREA[k];
+        const F = K * 1e6 / MEM_HORAS;
+        return `<tr><td class="izq eq">${memEsc(fac)}</td><td class="izq">${memEsc(area)}</td>`
+             + `<td>${memN(F, 4)}</td><td>${memN(K, 7)}</td>`
+             + `<td class="izq"><small>${memEsc(MEM_ORIGEN[k] || '—')}</small></td></tr>`;
+      }).join('');
+    return `<div class="mem-tabla-caja"><table class="mem-t">
+      <thead><tr><th>Facilidad</th><th class="izq">Área</th>
+        <th>F · ton CO₂eq por ton de TOC</th><th>K · ton CO₂eq por g/Hr</th>
+        <th class="izq">Origen · hoja «Calculos CO2 2026» del GOP-F-006</th></tr></thead>
+      <tbody>${filas}</tbody></table></div>`;
+  }
+
+  /* El detalle punto por punto, agrupado por facilidad y área, con los
+     subtotales que permiten cuadrar contra cualquier tarjeta del tablero. */
+  function memTablaDetalle(clave) {
+    const { partes } = memPartes(clave);
+    let html = '', totG = 0, totToc = 0, totCo2 = 0, n = 0;
+
+    partes.forEach(([fac, lista]) => {
+      const areas = [...new Set(lista.map(d => d.area))].sort();
+      let facG = 0, facToc = 0, facCo2 = 0;
+
+      areas.forEach(area => {
+        const pts = lista.filter(d => d.area === area).sort((a, b) => b.tasa - a.tasa);
+        const K = kDe(fac, area);
+        html += `<tr class="mem-area"><td class="izq" colspan="2">${memEsc(fac)} · ${memEsc(area)}</td>`
+              + `<td colspan="4">K = ${memN(K, 7)}</td></tr>`;
+        let aG = 0, aToc = 0, aCo2 = 0;
+        pts.forEach(d => {
+          const toc = d.tasa * MEM_HORAS / 1e6;
+          const co2 = d.tasa * K;
+          aG += d.tasa; aToc += toc; aCo2 += co2; n++;
+          html += `<tr><td class="izq eq">${memEsc(d.equipo)}${d.nuevo ? ' <small>nueva</small>' : ''}</td>`
+                + `<td class="izq"><small>${memEsc(d.punto)} · ${memEsc(d.elemento)}</small></td>`
+                + `<td>${memG(d.tasa)}</td><td>${memN(toc, 4)}</td>`
+                + `<td><small>× ${memN(K, 7)}</small></td><td>${memN(co2, 3)}</td></tr>`;
+        });
+        html += `<tr class="mem-sub"><td class="izq" colspan="2">Subtotal ${memEsc(area)} · ${pts.length} punto${pts.length === 1 ? '' : 's'}</td>`
+              + `<td>${memG(aG)}</td><td>${memN(aToc, 4)}</td><td></td><td>${memN(aCo2, 3)}</td></tr>`;
+        facG += aG; facToc += aToc; facCo2 += aCo2;
+      });
+
+      if (partes.length > 1) {
+        html += `<tr class="mem-sub"><td class="izq" colspan="2">TOTAL ${memEsc(fac)}</td>`
+              + `<td>${memG(facG)}</td><td>${memN(facToc, 4)}</td><td></td><td>${memN(facCo2, 3)}</td></tr>`;
+      }
+      totG += facG; totToc += facToc; totCo2 += facCo2;
+    });
+
+    const etiqueta = clave === 'RUBIALES' ? 'TOTAL CAMPO RUBIALES · CPF-1 + CPF-2'
+                   : clave === 'CANOSUR' ? 'TOTAL CAÑO SUR' : 'TOTAL ' + clave;
+    html += `<tr class="mem-tot"><td class="izq" colspan="2">${etiqueta} · ${n} punto${n === 1 ? '' : 's'}</td>`
+          + `<td>${memG(totG)} g/Hr</td><td>${memN(totToc, 3)} ton TOC</td><td></td>`
+          + `<td>${memN(totCo2, 2)} ton CO₂eq</td></tr>`;
+
+    return {
+      html: `<div class="mem-tabla-caja"><table class="mem-t">
+        <thead><tr><th>Equipo</th><th class="izq">Punto · elemento</th><th>Tasa g/Hr</th>
+          <th>ton TOC/año<br><small>tasa × 8.760 ÷ 1e6</small></th><th>factor</th>
+          <th>ton CO₂eq/año<br><small>tasa × K</small></th></tr></thead>
+        <tbody>${html}</tbody></table></div>`,
+      totG, totToc, totCo2, n,
+    };
+  }
+
+  /* La comprobación: el total de la memoria tiene que dar lo mismo que la
+     función con la que el tablero pinta sus tarjetas. */
+  function memComprobacion(clave, totCo2) {
+    const cs = (typeof DATACS !== 'undefined') ? DATACS : [];
+    const delTablero =
+      clave === 'CPF-1'    ? co2eqDe(DATA1, 'CPF-1')
+    : clave === 'CPF-2'    ? co2eqDe(DATA2, 'CPF-2')
+    : clave === 'RUBIALES' ? co2eqDe(DATA1, 'CPF-1') + co2eqDe(DATA2, 'CPF-2')
+    :                        co2eqDe(cs, 'CAÑO SUR');
+    const cuadra = Math.abs(delTablero - totCo2) < 1e-9;
+    return `<div class="mem-ok${cuadra ? '' : ' mal'}"><span class="pico">${cuadra ? '✓' : '!'}</span>`
+      + `<span>${cuadra
+          ? `Suma de la tabla: <b>${memN(totCo2, 2)}</b> ton CO₂eq/año. El tablero calcula`
+            + ` <b>${memN(delTablero, 2)}</b> por su cuenta, con la misma fórmula: coinciden.`
+          : `La suma de la tabla (${memN(totCo2, 2)}) no coincide con la del tablero`
+            + ` (${memN(delTablero, 2)}). No uses estos números hasta revisarlo.`}</span></div>`;
+  }
+
+  function memPintar() {
+    const caja = document.getElementById('memCuerpo');
+    if (!caja) return;
+    const campos = memAlcance === 'CANOSUR' ? ['CAÑO SUR'] : ['CPF-1', 'CPF-2'];
+    const det = memTablaDetalle(memAlcance);
+    const { campo } = memPartes(memAlcance);
+
+    caja.innerHTML = `
+      <p class="mem-p">Cada tonelada que muestra el tablero sale de dos cosas: la tasa que midió la
+      cámara y la cromatografía del área donde está el punto. Aquí están las dos, con la cuenta
+      intermedia a la vista, para que cualquiera la rehaga con una calculadora.</p>
+
+      <div class="mem-sec">1 · CROMATOGRAFÍA POR ÁREA · ${memEsc(campo).toUpperCase()}</div>
+      ${memTablaCrom(campos)}
+      <p class="mem-nota">El factor <b>F</b> es cuántas toneladas de CO₂eq equivale una tonelada de TOC
+      con ese gas: F = %másico CH₄ / %másico TOC × 28 + %másico CO₂ / %másico TOC, con GWP 28 (AR5)
+      para el metano. <b>K</b> es ese mismo factor ya multiplicado por las 8.760 horas del año y
+      dividido por un millón, para poder ir de g/Hr a toneladas al año en un solo paso:
+      K = F × 8.760 ÷ 1.000.000.</p>
+
+      <div class="mem-sec">2 · EMISIONES ACTIVAS · ${memEsc(campo).toUpperCase()}</div>
+      <div class="mem-barra" id="memBarra">
+        <button data-alc="CPF-1">CPF-1</button>
+        <button data-alc="CPF-2">CPF-2</button>
+        <button data-alc="RUBIALES">Rubiales · CPF-1 + CPF-2</button>
+        <button data-alc="CANOSUR">Caño Sur</button>
+      </div>
+      ${det.html}
+      ${memComprobacion(memAlcance, det.totCo2)}
+      ${memAlcance === 'RUBIALES'
+        ? `<div class="mem-aviso"><b>Sólo Campo Rubiales.</b> CPF-1 y CPF-2 son dos facilidades del
+           mismo campo, por eso se suman. Caño Sur es otro campo, con su propia cromatografía, y
+           se mira aparte: sus toneladas no se agregan a estas.</div>`
+        : memAlcance === 'CANOSUR'
+          ? `<div class="mem-aviso"><b>Campo Caño Sur.</b> Estas toneladas no se suman con las de
+             Rubiales: son campos distintos y se reportan por separado.</div>`
+          : ''}
+
+      <div class="mem-acciones">
+        <button class="bd-b bd-pri" id="memExcel">Descargar en Excel</button>
+      </div>
+      <p class="mem-nota">El Excel lleva una hoja con la cromatografía y una hoja por alcance
+      —CPF-1, CPF-2, Rubiales y Caño Sur— con las mismas columnas y fórmulas vivas en la columna
+      de toneladas, para que se pueda auditar celda por celda.</p>`;
+
+    const barra = document.getElementById('memBarra');
+    if (barra) {
+      barra.querySelectorAll('button').forEach(b => {
+        b.classList.toggle('activo', b.dataset.alc === memAlcance);
+        b.onclick = () => { memAlcance = b.dataset.alc; memPintar(); };
+      });
+    }
+    const btn = document.getElementById('memExcel');
+    if (btn) btn.onclick = () => memDescargarExcel(btn);
+  }
+
+  function abrirMemoria() {
+    if (document.querySelector('.mem-capa')) return;
+    const cap = document.createElement('div');
+    cap.className = 'mem-capa';
+    cap.innerHTML = `
+      <div class="mem-top">
+        <div>
+          <div class="mem-kick">MEMORIA DE CÁLCULO</div>
+          <h3 class="mem-h">De dónde sale cada número</h3>
+        </div>
+        <button class="mem-x" id="memX">Cerrar</button>
+      </div>
+      <div class="mem-cuerpo" id="memCuerpo"></div>`;
+    document.body.appendChild(cap);
+    document.body.style.overflow = 'hidden';
+    const cerrar = () => {
+      cap.remove();
+      document.body.style.overflow = '';
+      if (location.hash === '#memoria') history.replaceState(null, '', location.pathname);
+      document.removeEventListener('keydown', tecla);
+    };
+    const tecla = e => { if (e.key === 'Escape') cerrar(); };
+    document.addEventListener('keydown', tecla);
+    cap.querySelector('#memX').onclick = cerrar;
+    memPintar();
+  }
+
+  /* El Excel se arma aquí mismo, con los datos que el tablero tenga en ese
+     momento. La columna de toneladas va como fórmula, no como número suelto:
+     quien lo audite puede pisar la tasa y ver cómo cambia todo. */
+  async function memDescargarExcel(boton) {
+    const previo = boton.textContent;
+    boton.textContent = 'Generando…';
+    boton.disabled = true;
+    try {
+      const raiz = location.pathname.replace(/[^/]*$/, '').replace(/editor\/$/, '');
+      await cargarScript(raiz + 'lib/xlsx.mini.min.js');
+      const libro = XLSX.utils.book_new();
+
+      const crom = [['Facilidad', 'Área', 'F · ton CO2eq por ton TOC', 'K · ton CO2eq por g/Hr',
+                     'Origen · GOP-F-006, hoja "Calculos CO2 2026"']];
+      Object.keys(K_AREA).forEach(k => {
+        const [fac, area] = k.split('|');
+        crom.push([fac, area, K_AREA[k] * 1e6 / MEM_HORAS, K_AREA[k], MEM_ORIGEN[k] || '']);
+      });
+      crom.push([]);
+      crom.push(['F = %mCH4/%mTOC × 28 (GWP del metano, AR5) + %mCO2/%mTOC']);
+      crom.push(['K = F × 8760 ÷ 1000000']);
+      XLSX.utils.book_append_sheet(libro, XLSX.utils.aoa_to_sheet(crom), 'Cromatografía');
+
+      [['CPF-1', 'CPF-1'], ['CPF-2', 'CPF-2'], ['RUBIALES', 'Rubiales CPF-1+CPF-2'],
+       ['CANOSUR', 'Caño Sur']].forEach(([clave, hoja]) => {
+        const { partes } = memPartes(clave);
+        const filas = [['Facilidad', 'Área', 'Equipo', 'Punto', 'Elemento', 'Tasa g/Hr',
+                        'Horas al año', 'K ton CO2eq por g/Hr', 'ton TOC/año', 'ton CO2eq/año']];
+        partes.forEach(([fac, lista]) => {
+          [...lista].sort((a, b) => (a.area + a.equipo < b.area + b.equipo ? -1 : 1)).forEach(d => {
+            filas.push([fac, d.area, d.equipo, d.punto, d.elemento, d.tasa,
+                        MEM_HORAS, kDe(fac, d.area), null, null]);
+          });
+        });
+        const hojaX = XLSX.utils.aoa_to_sheet(filas);
+        // las dos últimas columnas, como fórmula viva
+        for (let i = 2; i <= filas.length; i++) {
+          hojaX['I' + i] = { t: 'n', f: `F${i}*G${i}/1000000` };
+          hojaX['J' + i] = { t: 'n', f: `F${i}*H${i}` };
+        }
+        const fin = filas.length + 1;
+        hojaX['E' + fin] = { t: 's', v: 'TOTAL' };
+        hojaX['F' + fin] = { t: 'n', f: `SUM(F2:F${filas.length})` };
+        hojaX['I' + fin] = { t: 'n', f: `SUM(I2:I${filas.length})` };
+        hojaX['J' + fin] = { t: 'n', f: `SUM(J2:J${filas.length})` };
+        hojaX['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: fin - 1, c: 9 } });
+        hojaX['!cols'] = [{ wch: 10 }, { wch: 16 }, { wch: 14 }, { wch: 22 }, { wch: 22 },
+                          { wch: 10 }, { wch: 12 }, { wch: 20 }, { wch: 13 }, { wch: 14 }];
+        XLSX.utils.book_append_sheet(libro, hojaX, hoja);
+      });
+
+      const hoy = new Date().toISOString().slice(0, 10);
+      XLSX.writeFile(libro, `Memoria-de-calculo-emisiones-${hoy}.xlsx`);
+      boton.textContent = 'Descargado';
+      setTimeout(() => { boton.textContent = previo; boton.disabled = false; }, 1800);
+    } catch (e) {
+      boton.textContent = 'No se pudo generar';
+      setTimeout(() => { boton.textContent = previo; boton.disabled = false; }, 2200);
+    }
+  }
+
+  const mem = document.getElementById('navMemoria');
+  if (mem) mem.addEventListener('click', e => {
+    e.preventDefault();
+    const m = document.querySelector('.nav-menu');
+    if (m) m.classList.remove('open');
+    abrirMemoria();
+  });
+  window.memoria = abrirMemoria;
+  // también se puede llegar directo con la dirección terminada en #memoria
+  if (location.hash === '#memoria') setTimeout(abrirMemoria, 900);
 
   const ot = document.getElementById('navOrden');
   if (ot) ot.addEventListener('click', e => {
