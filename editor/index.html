@@ -2431,6 +2431,31 @@ THREE.OrbitControls = OrbitControls;
     .mem-h{font-size:17px}
   }
 
+  .mem-croma{overflow-x:auto;border:1px solid var(--border);border-radius:11px;
+    background:rgba(255,255,255,.02)}
+  table.mem-x{border-collapse:collapse;font-size:11.5px;font-family:'JetBrains Mono',monospace}
+  table.mem-x td{border:1px solid rgba(255,255,255,.07);padding:5px 9px;color:var(--text-dim);
+    white-space:nowrap;text-align:right}
+  table.mem-x td.txt{text-align:left;color:var(--text)}
+  table.mem-x tr:first-child td{background:rgba(255,255,255,.05);color:var(--text);font-weight:700;
+    position:sticky;top:0;z-index:2}
+  table.mem-x tr.mem-pm td{color:var(--text-faint);font-size:10.5px;
+    border-bottom:2px solid rgba(255,255,255,.14)}
+  table.mem-x td.mem-k{color:#00b828;font-weight:700;background:rgba(0,184,40,.07)}
+  .mem-croma{max-height:420px;overflow:auto}
+  table.mem-x tr:hover td{background:rgba(45,212,238,.06)}
+  .mem-croma-cab{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:0 0 9px;
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--text-faint)}
+  .mem-croma-cab b{color:var(--text);font-weight:700}
+  .mem-vacio{border:1px dashed var(--border);border-radius:11px;padding:20px;
+    color:var(--text-faint);font-size:13px;line-height:1.75}
+  .mem-plegar{background:transparent;border:1px solid var(--border);color:var(--text-dim);
+    border-radius:8px;padding:7px 13px;font-family:'JetBrains Mono',monospace;font-size:11px;
+    cursor:pointer;margin:12px 0 0}
+  .mem-plegar:hover{color:var(--text);border-color:var(--cool)}
+  .mem-resumen td.ar{text-align:left;color:var(--text);font-weight:600;
+    font-family:'Space Grotesk',sans-serif}
+
   /* ---------- ORDEN DE TRABAJO ----------
      Una hoja por tanque, para que la cuadrilla se la lleve a campo: qué hay
      que intervenir, con su foto, y espacio en blanco para anotar lo hecho. */
@@ -8144,6 +8169,76 @@ ${cssInforme()}
             + ` (${memN(delTablero, 2)}). No uses estos números hasta revisarlo.`}</span></div>`;
   }
 
+  /* La hoja del GOP-F-006 tal como está en el Excel: cada muestra con su
+     composición molar, los pesos moleculares y toda la cadena hasta las
+     toneladas de CO2eq al año. Va incrustada, no enlazada: así se ve
+     también sin señal y nadie tiene que buscar el archivo. */
+  const CROMA = {"archivo": "GOP-F-006 · campaña julio 2026", "hoja": "Calculos CO2 2026", "encabezados": ["Etiqueta No", "Nombre facilidad", "Equipo", "Punto detectado", "Lectura Camara g/h", "% mol H2", "% mol O2", "% mol N2", "% mol CO2", "% mol C1", "% mol C2", "% mol C3", "% mol iC4", "% mol nC4", "% mol iC5", "% mol nC5", "% mol C6", "% mol C7", "% mol C8", "% mol C9", "% mol C10", "% mol C11", "% mol C12", "Peso Molecular Gas (g/mol)", "%m CH4", "%m CO2", "% Fracción Másica TOCs", "% Fracción Másica CH4 en TOCs", "m3/dia CH4", "CH4 [g/h]", "CO2 [g/h]", "Ton. CH4 dia", "Ton. CH4 Año", "Ton. CO2 Año", "GEI \nTon. CO2eq. Año"], "pesos": ["", "", "", "", "Peso Molecular Mwi", 2.016, 31.9988, 28.0134, 44.0098, 16.04276, 30.06964, 44.09652, 58.1234, 58.1234, 72.15028, 72.15028, 86.17716, 100.20404, 114.23092, 128.2578, 142.28468, 156.31156, 170.33844, "", "", "", "", "", "", "", "", "", "", "", ""], "filas": [["EFCS-CEN-006", "EP-1", "ETK-1101-A FWKO", "Manhole", 1200, 0, 2.28, 12.013, 7.387, 77.024, 0.092, 0.092, 0.025, 0.083, 0.069, 0.103, 0.147, 0.195, 0.299, 0.182, 0.007, 0, 0, 21.25, 58.149532, 15.298842, 63.618343, 91.403719, 24.682907, 1096.844624, 288.574167, 0.026324, 9.608359, 2.52791, 271.561959], ["EFCS-CEN-007", "EP-1", "ETK-1101-B FWKO", "Manhole", 8500, 0, 2.28, 12.013, 7.387, 77.024, 0.092, 0.092, 0.025, 0.083, 0.069, 0.103, 0.147, 0.195, 0.299, 0.182, 0.007, 0, 0, 21.25, 58.149532, 15.298842, 63.618343, 91.403719, 174.837259, 7769.316089, 2044.067013, 0.186464, 68.059209, 17.906027, 1923.563877], ["EFRB-CPF-1-016", "CPF-1", "TK-905", "Empaque", 160, 0, 20.283, 69.272, 1.064, 8.378, 0.053, 0.053, 0.023, 0.094, 0.107, 0.157, 0.2, 0.14, 0.103, 0.054, 0.019, 0, 0, 30.48, 4.409654, 1.5363, 7.114313, 61.982842, 0.249571, 99.172547, 34.551193, 0.00238, 0.868752, 0.302668, 24.627711], ["EFRB-CPF-1-017", "CPF-1", "TK-905", "Escotilla", 21, 0, 20.283, 69.272, 1.064, 8.378, 0.053, 0.053, 0.023, 0.094, 0.107, 0.157, 0.2, 0.14, 0.103, 0.054, 0.019, 0, 0, 30.48, 4.409654, 1.5363, 7.114313, 61.982842, 0.032756, 13.016397, 4.534844, 0.000312, 0.114024, 0.039725, 3.232387], ["EFRB-CPF-1-018", "CPF-1", "TK-906-B", "Empaque", 1100, 0, 20.283, 69.272, 1.064, 8.378, 0.053, 0.053, 0.023, 0.094, 0.107, 0.157, 0.2, 0.14, 0.103, 0.054, 0.019, 0, 0, 30.48, 4.409654, 1.5363, 7.114313, 61.982842, 1.715797, 681.81126, 237.539452, 0.016363, 5.972667, 2.080846, 169.315511], ["EFRB-CPF-1-019", "CPF-1", "TK-906-A", "Empaque", 790, 0, 20.283, 69.272, 1.064, 8.378, 0.053, 0.053, 0.023, 0.094, 0.107, 0.157, 0.2, 0.14, 0.103, 0.054, 0.019, 0, 0, 30.48, 4.409654, 1.5363, 7.114313, 61.982842, 1.232255, 489.66445, 170.596515, 0.011752, 4.289461, 1.494425, 121.599322], ["EFRB-CPF-1-020", "CPF-1", "TK-904", "Empaque", 1900, 0, 20.283, 69.272, 1.064, 8.378, 0.053, 0.053, 0.023, 0.094, 0.107, 0.157, 0.2, 0.14, 0.103, 0.054, 0.019, 0, 0, 30.48, 4.409654, 1.5363, 7.114313, 61.982842, 2.96365, 1177.673994, 410.295416, 0.028264, 10.316424, 3.594188, 292.454065], ["EFRB-CPF-1-021", "CPF-1", "TK-904", "Manhole", 730, 0, 20.283, 69.272, 1.064, 8.378, 0.053, 0.053, 0.023, 0.094, 0.107, 0.157, 0.2, 0.14, 0.103, 0.054, 0.019, 0, 0, 30.48, 4.409654, 1.5363, 7.114313, 61.982842, 1.138666, 452.474745, 157.639818, 0.010859, 3.963679, 1.380925, 112.36393], ["EFRB-CPF-1-012", "CPF-1", "TK-901-C-PROCESOS", "Empaque", 2200, 0.02, 0, 21.03, 5.88, 73.04, 0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20.20605, 57.990709, 12.806938, 58.035354, 99.923074, 45.128401, 2198.307619, 485.484462, 0.052759, 19.257175, 4.252844, 543.453737], ["EFRB-CPF-1-013", "CPF-1", "HEAD-TK-902", "Escotilla", 370, 0.44, 0, 24.07, 7.94, 67.49, 0.02, 0.04, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21.096985, 51.321355, 16.5634, 51.433469, 99.782023, 6.716897, 369.193484, 119.153118, 0.008861, 3.234135, 1.043781, 91.599559], ["EFRB-CPF-1-015", "CPF-1", "TK-906-B -SKIM TANK", "Empaque", 180, 1.88, 0, 79.54, 2.06, 15.79, 0.34, 0.15, 0, 0.12, 0.12, 0, 0, 0, 0, 0, 0, 0, 0, 26.084223, 9.711433, 3.475671, 10.956285, 88.63801, 0.618336, 159.548418, 57.10155, 0.003829, 1.397644, 0.50021, 39.634246], ["EFRB-CPF-1-014", "CPF-1", "TK-906-A SKIM TANK", "Empaque", 400, 1.88, 0, 79.54, 2.06, 15.79, 0.34, 0.15, 0, 0.12, 0.12, 0, 0, 0, 0, 0, 0, 0, 0, 26.084223, 9.711433, 3.475671, 10.956285, 88.63801, 1.37408, 354.55204, 126.892334, 0.008509, 3.105876, 1.111577, 88.076101], ["EFRB-CPF-2-011", "CPF-2", "300 TK- 0103 ALMACENAMIENTO", "Escotilla", 160, 0.445, 0, 49.365, 6.225, 43.635, 0.06, 0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 23.608925, 29.650898, 11.604129, 29.783351, 99.555278, 1.678134, 159.288445, 62.338875, 0.003823, 1.395367, 0.546089, 39.616358], ["EFRB-CPF-2-010", "CPF-2", "400-TK-0301", "Empaque", 280, 1.18, 0, 34.25, 6.19, 58.35, 0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21.712556, 43.113074, 12.546688, 43.154621, 99.903726, 4.270079, 279.730431, 81.406637, 0.006714, 2.450439, 0.713122, 69.325402], ["EFRB-CPF-2-013", "CPF-2", "300-TK-0301 FWKOS", "Escotilla", 670, 0.02, 0, 18.7, 5.47, 75.78, 0.63, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 19.992887, 60.807643, 12.040962, 61.755174, 98.465666, 14.411255, 659.719962, 130.635935, 0.015833, 5.779147, 1.144371, 162.960483], ["EFRB-CPF-2-012", "CPF-2", "HEAD-300-TK-0001", "Empaque", 820, 0.05, 0, 10.4, 9.21, 80.27, 0.07, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 19.866276, 64.821022, 20.402931, 64.926975, 99.836813, 18.801763, 818.661869, 257.680313, 0.019648, 7.171478, 2.25728, 203.058663], ["EFRB-CPF-2-014", "CPF-2", "400-TK-0401", "Empaque", 890, 1.18, 0, 34.25, 6.19, 58.35, 0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21.712556, 43.113074, 12.546688, 43.154621, 99.903726, 13.57275, 889.143157, 258.756809, 0.021339, 7.788894, 2.26671, 220.355743], ["EFRB-CPF-2-015", "CPF-2", "400-TK-0101", "Manhole", 1200, 1.18, 0, 34.25, 6.19, 58.35, 0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21.712556, 43.113074, 12.546688, 43.154621, 99.903726, 18.300337, 1198.844706, 348.885586, 0.028772, 10.50188, 3.056238, 297.108867]]};
+
+  /* El factor de cada muestra sale de su propia fila: toneladas de CO2eq al
+     año dividido por la lectura de la cámara con que se calcularon. Es
+     exactamente el K que usa el tablero. */
+  function memKdeFila(f) {
+    const lect = parseFloat(String(f[4]).replace(',', '.'));
+    const gei = parseFloat(String(f[f.length - 1]).replace(',', '.'));
+    return (lect > 0 && gei > 0) ? gei / lect : null;
+  }
+
+  function memCromaHTML() {
+    const enc = CROMA.encabezados.concat(['K = GEI ÷ lectura']);
+    const cab = '<tr>' + enc.map(e =>
+      `<td class="txt">${memEsc(String(e).replace(/\n/g, ' '))}</td>`).join('') + '</tr>';
+    const pesos = '<tr class="mem-pm">' + CROMA.pesos.map((v, i) =>
+      `<td class="${i < 4 ? 'txt' : ''}">${memEsc(i === 3 ? 'peso molecular →' : v)}</td>`).join('')
+      + '<td></td></tr>';
+    const cuerpo = CROMA.filas.map(f => {
+      const K = memKdeFila(f);
+      return '<tr>' + f.map((c, i) => {
+        const v = (c === null || c === undefined) ? '' : String(c);
+        return `<td class="${i < 4 ? 'txt' : ''}">${memEsc(v)}</td>`;
+      }).join('') + `<td class="mem-k">${K ? memN(K, 7) : ''}</td></tr>`;
+    }).join('');
+    return `<div class="mem-croma-cab">
+        <span>ORIGEN <b>${memEsc(CROMA.archivo)}</b></span>
+        <span>HOJA <b>${memEsc(CROMA.hoja)}</b></span>
+        <span>${CROMA.filas.length} muestras</span>
+      </div>
+      <div class="mem-croma"><table class="mem-x"><tbody>${cab}${pesos}${cuerpo}</tbody></table></div>
+      <p class="mem-nota">Es la hoja tal cual, columna por columna: la composición molar de cada
+      muestra, el peso molecular de cada componente, y de ahí el %másico de CH₄, de CO₂ y de TOC
+      hasta las toneladas de CO₂eq al año. La última columna no está en el Excel: es el cociente
+      entre esas toneladas y la lectura con que se calcularon, o sea el factor <b>K</b> de esa
+      muestra, que es el que aplica el tablero.</p>`;
+  }
+
+  /* El resumen por área es lo que se lee de un vistazo; el punto por punto
+     se despliega sólo si alguien quiere auditarlo. Antes salía todo junto y
+     era un muro de números. */
+  function memResumen(clave) {
+    const { partes } = memPartes(clave);
+    let filas = '', totG = 0, totCo2 = 0, totN = 0;
+    partes.forEach(([fac, lista]) => {
+      [...new Set(lista.map(d => d.area))].sort().forEach(area => {
+        const pts = lista.filter(d => d.area === area);
+        const K = kDe(fac, area);
+        const g = pts.reduce((a, d) => a + d.tasa, 0);
+        const co2 = g * K;
+        totG += g; totCo2 += co2; totN += pts.length;
+        filas += `<tr class="mem-resumen"><td class="ar">${memEsc(fac)} · ${memEsc(area)}</td>`
+               + `<td>${pts.length}</td><td>${memG(g)}</td><td><small>× ${memN(K, 7)}</small></td>`
+               + `<td>${memN(co2, 2)}</td></tr>`;
+      });
+    });
+    const etiqueta = clave === 'RUBIALES' ? 'TOTAL RUBIALES · CPF-1 + CPF-2'
+                   : clave === 'CANOSUR' ? 'TOTAL CAÑO SUR' : 'TOTAL ' + clave;
+    filas += `<tr class="mem-tot"><td class="ar">${etiqueta}</td><td>${totN}</td>`
+           + `<td>${memG(totG)} g/Hr</td><td></td><td>${memN(totCo2, 2)} ton</td></tr>`;
+    return `<div class="mem-tabla-caja"><table class="mem-t">
+      <thead><tr><th class="izq">Facilidad · área</th><th>Puntos</th><th>Tasa g/Hr</th>
+        <th>Factor K</th><th>ton CO₂eq/año</th></tr></thead>
+      <tbody>${filas}</tbody></table></div>`;
+  }
+
   function memPintar() {
     const caja = document.getElementById('memCuerpo');
     if (!caja) return;
@@ -8152,42 +8247,45 @@ ${cssInforme()}
     const { campo } = memPartes(memAlcance);
 
     caja.innerHTML = `
-      <p class="mem-p">Cada tonelada que muestra el tablero sale de dos cosas: la tasa que midió la
-      cámara y la cromatografía del área donde está el punto. Aquí están las dos, con la cuenta
-      intermedia a la vista, para que cualquiera la rehaga con una calculadora.</p>
+      <p class="mem-p">Una tonelada de CO₂eq sale de dos cosas y nada más: la tasa que midió la
+      cámara y la composición del gas de esa área. Abajo están las dos, en ese orden.</p>
 
-      <div class="mem-sec">1 · CROMATOGRAFÍA POR ÁREA · ${memEsc(campo).toUpperCase()}</div>
+      <div class="mem-sec">1 · LA CROMATOGRAFÍA DEL GOP-F-006</div>
+      ${memCromaHTML()}
+
+      <div class="mem-sec">2 · EL FACTOR QUE SALE DE ELLA</div>
       ${memTablaCrom(campos)}
-      <p class="mem-nota">El factor <b>F</b> es cuántas toneladas de CO₂eq equivale una tonelada de TOC
-      con ese gas: F = %másico CH₄ / %másico TOC × 28 + %másico CO₂ / %másico TOC, con GWP 28 (AR5)
-      para el metano. <b>K</b> es ese mismo factor ya multiplicado por las 8.760 horas del año y
-      dividido por un millón, para poder ir de g/Hr a toneladas al año en un solo paso:
-      K = F × 8.760 ÷ 1.000.000.</p>
+      <p class="mem-nota"><b>F</b> dice cuántas toneladas de CO₂eq pesa una tonelada de TOC con ese
+      gas: F = %másico CH₄ / %másico TOC × 28 + %másico CO₂ / %másico TOC, con GWP 28 (AR5).
+      <b>K</b> es ese mismo F llevado a las unidades del tablero, para pasar de g/Hr a toneladas al
+      año de un solo paso: K = F × 8.760 h ÷ 1.000.000.</p>
 
-      <div class="mem-sec">2 · EMISIONES ACTIVAS · ${memEsc(campo).toUpperCase()}</div>
+      <div class="mem-sec">3 · EMISIONES ACTIVAS · ${memEsc(campo).toUpperCase()}</div>
       <div class="mem-barra" id="memBarra">
         <button data-alc="CPF-1">CPF-1</button>
         <button data-alc="CPF-2">CPF-2</button>
         <button data-alc="RUBIALES">Rubiales · CPF-1 + CPF-2</button>
         <button data-alc="CANOSUR">Caño Sur</button>
       </div>
-      ${det.html}
+      ${memResumen(memAlcance)}
       ${memComprobacion(memAlcance, det.totCo2)}
       ${memAlcance === 'RUBIALES'
         ? `<div class="mem-aviso"><b>Sólo Campo Rubiales.</b> CPF-1 y CPF-2 son dos facilidades del
            mismo campo, por eso se suman. Caño Sur es otro campo, con su propia cromatografía, y
-           se mira aparte: sus toneladas no se agregan a estas.</div>`
+           sus toneladas no se agregan a estas.</div>`
         : memAlcance === 'CANOSUR'
           ? `<div class="mem-aviso"><b>Campo Caño Sur.</b> Estas toneladas no se suman con las de
              Rubiales: son campos distintos y se reportan por separado.</div>`
           : ''}
 
+      <button class="mem-plegar" id="memVerDetalle">Ver punto por punto</button>
+      <div id="memDetalle" style="display:none;margin-top:12px">${det.html}</div>
+
       <div class="mem-acciones">
         <button class="bd-b bd-pri" id="memExcel">Descargar en Excel</button>
       </div>
-      <p class="mem-nota">El Excel lleva una hoja con la cromatografía y una hoja por alcance
-      —CPF-1, CPF-2, Rubiales y Caño Sur— con las mismas columnas y fórmulas vivas en la columna
-      de toneladas, para que se pueda auditar celda por celda.</p>`;
+      <p class="mem-nota">El Excel lleva una hoja por alcance —CPF-1, CPF-2, Rubiales y Caño Sur—
+      con las toneladas como fórmula viva, para auditarlas celda por celda.</p>`;
 
     const barra = document.getElementById('memBarra');
     if (barra) {
@@ -8196,9 +8294,22 @@ ${cssInforme()}
         b.onclick = () => { memAlcance = b.dataset.alc; memPintar(); };
       });
     }
+    const ver = document.getElementById('memVerDetalle');
+    const det2 = document.getElementById('memDetalle');
+    if (ver && det2) ver.onclick = () => {
+      const abierto = det2.style.display !== 'none';
+      det2.style.display = abierto ? 'none' : '';
+      ver.textContent = abierto ? 'Ver punto por punto' : 'Ocultar el detalle';
+    };
     const btn = document.getElementById('memExcel');
     if (btn) btn.onclick = () => memDescargarExcel(btn);
   }
+
+
+  /* El libro abierto vive fuera de la función: al repintar la sección se
+     rehace el HTML, y si la lista de hojas no se guardara aparte quedaría
+     vacía justo después de la vista previa. */
+  let memLibro = null, memArchivo = '', memHojaActual = '';
 
   function abrirMemoria() {
     if (document.querySelector('.mem-capa')) return;

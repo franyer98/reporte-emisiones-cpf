@@ -44,9 +44,10 @@ self.addEventListener('fetch', ev => {
   if (url.origin !== self.location.origin) return;      // tipografías y demás: que pase derecho
   if (url.pathname.startsWith('/editor/')) return;      // zona protegida: nada de copias
 
-  // La página y los datos: primero la red, la copia sólo como red de seguridad.
+  // La página y todo lo que venga de /api: primero la red, la copia sólo como
+  // red de seguridad. Nunca al revés: un dato viejo servido como bueno engaña.
   const esPagina = pedido.mode === 'navigate';
-  const esDatos = url.pathname === '/api/datos';
+  const esDatos = url.pathname.startsWith('/api/');
 
   if (esPagina || esDatos) {
     ev.respondWith(
