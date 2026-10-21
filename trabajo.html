@@ -2369,6 +2369,33 @@ THREE.OrbitControls = OrbitControls;
   .sim-ok.mal .pico{background:rgba(255,71,87,.16);color:var(--hot)}
   @media (max-width:560px){ .sim-rejilla{grid-template-columns:1fr} }
 
+  /* La demostración de una línea: lo primero que se ve al abrir la memoria.
+     Todo lo demás de la página es el respaldo de esa línea, y por eso va
+     plegado: quien pregunta "¿de dónde sale?" se conforma con verla una vez. */
+  .mem-demo{border:1px solid rgba(0,184,40,.45);background:rgba(0,184,40,.07);
+    border-radius:13px;padding:18px 20px;margin:0 0 22px}
+  .mem-demo-k{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.12em;
+    color:#00b828}
+  .mem-demo-l{font-family:'JetBrains Mono',monospace;font-size:15px;color:var(--text);
+    margin:9px 0 0;line-height:1.85;overflow-x:auto;white-space:nowrap}
+  .mem-demo-l b{color:#00b828;font-weight:700}
+  .mem-demo-p{font-size:13px;color:var(--text-dim);line-height:1.75;margin:12px 0 0}
+  .mem-demo-p b{color:var(--text)}
+  .mem-paso{display:flex;gap:11px;align-items:baseline;margin:9px 0 0;font-size:13px;
+    color:var(--text-dim);line-height:1.7}
+  .mem-paso i{flex:none;width:20px;height:20px;border-radius:50%;background:rgba(0,184,40,.18);
+    color:#00b828;font-style:normal;font-family:'JetBrains Mono',monospace;font-size:11px;
+    font-weight:700;display:flex;align-items:center;justify-content:center}
+  .mem-mas{margin:26px 0 0;border-top:1px solid var(--border);padding-top:4px}
+  .mem-mas summary{cursor:pointer;list-style:none;padding:13px 2px;
+    font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;
+    color:var(--text-faint)}
+  .mem-mas summary::-webkit-details-marker{display:none}
+  .mem-mas summary::before{content:'▸ ';color:#00b828}
+  .mem-mas[open] summary::before{content:'▾ '}
+  .mem-mas summary:hover{color:var(--text)}
+  @media (max-width:620px){ .mem-demo-l{font-size:12.5px} }
+
   /* ---------- FICHA DE TRAZABILIDAD ----------
      Un punto, una hoja, la cadena completa sin cortes: la foto con la que se
      detectó, la muestra de gas que le aplica, la cuenta con sus números y la
@@ -8274,6 +8301,40 @@ ${cssInforme()}
       <tbody>${filas}</tbody></table></div>`;
   }
 
+  /* El punto más grande del alcance: es el que van a preguntar, y con él la
+     demostración vale para todos, porque todos pasan por lo mismo. */
+  function memDemo(clave) {
+    const { partes } = memPartes(clave);
+    let mejor = null;
+    partes.forEach(([fac, lista]) => lista.forEach(d => {
+      if (!mejor || d.tasa > mejor.d.tasa) mejor = { d, fac };
+    }));
+    if (!mejor) return '';
+    const K = kDe(mejor.fac, mejor.d.area);
+    const co2 = mejor.d.tasa * K;
+    const m = fichaMuestra(mejor.fac, mejor.d.area);
+    const gei = m ? parseFloat(m.fila[m.fila.length - 1]) : null;
+    const lect = m ? parseFloat(m.fila[4]) : null;
+
+    return `<div class="mem-demo">
+      <div class="mem-demo-k">COMPRUÉBALO EN UNA LÍNEA</div>
+      <div class="mem-demo-l">${memG(mejor.d.tasa)} g/Hr × ${memN(K, 7)} =
+        <b>${memN(co2, 2)} ton CO₂eq/año</b></div>
+      <p class="mem-demo-p">Eso es todo lo que hace el tablero con cada punto: <b>multiplicar la
+      lectura de la cámara por el factor del gas de esa área</b>. ${memEsc(mejor.d.equipo)},
+      ${memEsc(mejor.fac)} · ${memEsc(mejor.d.area)}.</p>
+      ${m ? `<p class="mem-demo-p" style="margin-top:14px"><b>Y el factor está en el Excel</b>, en
+        dos celdas de la hoja «${memEsc(CROMA.hoja)}»:</p>
+      <div class="mem-paso"><i>1</i><span>Busca la muestra
+        <b>${memEsc(m.fila[0])}</b> (${memEsc(m.fila[2])}).</span></div>
+      <div class="mem-paso"><i>2</i><span>Divide su columna <b>GEI ton CO₂eq/año</b> entre su
+        <b>lectura</b>: ${memN(gei, 6)} ÷ ${memG(lect)} = <b>${memN(gei / lect, 7)}</b>.</span></div>
+      <div class="mem-paso"><i>3</i><span>Ese número es el factor de arriba. Multiplícalo por
+        cualquier lectura del tablero y sale la tonelada que muestra.</span></div>`
+      : ''}
+    </div>`;
+  }
+
   function memPintar() {
     const caja = document.getElementById('memCuerpo');
     if (!caja) return;
@@ -8282,20 +8343,9 @@ ${cssInforme()}
     const { campo } = memPartes(memAlcance);
 
     caja.innerHTML = `
-      <p class="mem-p">Una tonelada de CO₂eq sale de dos cosas y nada más: la tasa que midió la
-      cámara y la composición del gas de esa área. Abajo están las dos, en ese orden.</p>
+      ${memDemo(memAlcance)}
 
-      <div class="mem-sec">1 · LA CROMATOGRAFÍA DEL GOP-F-006</div>
-      ${memCromaHTML()}
-
-      <div class="mem-sec">2 · EL FACTOR QUE SALE DE ELLA</div>
-      ${memTablaCrom(campos)}
-      <p class="mem-nota"><b>F</b> dice cuántas toneladas de CO₂eq pesa una tonelada de TOC con ese
-      gas: F = %másico CH₄ / %másico TOC × 28 + %másico CO₂ / %másico TOC, con GWP 28 (AR5).
-      <b>K</b> es ese mismo F llevado a las unidades del tablero, para pasar de g/Hr a toneladas al
-      año de un solo paso: K = F × 8.760 h ÷ 1.000.000.</p>
-
-      <div class="mem-sec">3 · EMISIONES ACTIVAS · ${memEsc(campo).toUpperCase()}</div>
+      <div class="mem-sec">EMISIONES ACTIVAS · ${memEsc(campo).toUpperCase()}</div>
       <div class="mem-barra" id="memBarra">
         <button data-alc="CPF-1">CPF-1</button>
         <button data-alc="CPF-2">CPF-2</button>
@@ -8315,6 +8365,19 @@ ${cssInforme()}
 
       <button class="mem-plegar" id="memVerDetalle">Ver punto por punto</button>
       <div id="memDetalle" style="display:none;margin-top:12px">${det.html}</div>
+
+      <details class="mem-mas">
+        <summary>EL FACTOR DE CADA ÁREA Y DE DÓNDE SALE</summary>
+        ${memTablaCrom(campos)}
+        <p class="mem-nota"><b>F</b> dice cuántas toneladas de CO₂eq pesa una tonelada de TOC con
+        ese gas: F = %másico CH₄ / %másico TOC × 28 + %másico CO₂ / %másico TOC, con GWP 28 (AR5).
+        <b>K</b> es ese mismo F llevado a las unidades del tablero: K = F × 8.760 ÷ 1.000.000.</p>
+      </details>
+
+      <details class="mem-mas">
+        <summary>LA HOJA DEL GOP-F-006, COMPLETA</summary>
+        ${memCromaHTML()}
+      </details>
 
       <div class="mem-acciones">
         <button class="bd-b bd-pri" id="memGop">Exportar en formato GOP-F-006</button>
