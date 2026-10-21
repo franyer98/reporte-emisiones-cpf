@@ -2369,6 +2369,39 @@ THREE.OrbitControls = OrbitControls;
   .sim-ok.mal .pico{background:rgba(255,71,87,.16);color:var(--hot)}
   @media (max-width:560px){ .sim-rejilla{grid-template-columns:1fr} }
 
+  /* ---------- FICHA DE TRAZABILIDAD ----------
+     Un punto, una hoja, la cadena completa sin cortes: la foto con la que se
+     detectó, la muestra de gas que le aplica, la cuenta con sus números y la
+     verificación. Quien audite un caso entero deja de auditar los demás. */
+  .fz-eq{font-family:'Space Grotesk',sans-serif;font-size:21pt;font-weight:700;margin:2px 0 1px}
+  .fz-meta{font-family:'JetBrains Mono',monospace;font-size:8.5pt;letter-spacing:.05em}
+  .fz-paso{margin-top:12px;break-inside:avoid}
+  .fz-t{font-family:'JetBrains Mono',monospace;font-size:7.5pt;letter-spacing:.11em;
+    border-bottom:1px solid #000;padding-bottom:3px;margin-bottom:7px}
+  .fz-cols{display:grid;grid-template-columns:230px 1fr;gap:12px;align-items:start}
+  .fz-foto{border:1px solid #000;width:230px;height:173px;overflow:hidden;background:#000}
+  .fz-foto img{width:100%;height:100%;object-fit:cover;display:block}
+  .fz-sin{width:230px;height:173px;border:1px dashed #666;display:flex;align-items:center;
+    justify-content:center;font-size:8pt;color:#666}
+  .fz-campos{display:grid;grid-template-columns:1fr 1fr;gap:5px 14px;font-size:8.5pt}
+  .fz-campos div{border-bottom:1px solid #ddd;padding:2px 0}
+  .fz-campos b{font-weight:700}
+  .fz-campos span{color:#555}
+  .fz-lect{font-family:'Space Grotesk',sans-serif;font-size:15pt;font-weight:700;margin:6px 0 0}
+  .fz-tabla{width:100%;border-collapse:collapse;font-size:8pt;margin-top:2px}
+  .fz-tabla th,.fz-tabla td{border:1px solid #000;padding:3px 6px;text-align:right}
+  .fz-tabla th{background:#eee;font-family:'JetBrains Mono',monospace;font-size:7pt;
+    letter-spacing:.04em}
+  .fz-tabla th:first-child,.fz-tabla td:first-child{text-align:left}
+  .fz-cuenta{font-family:'JetBrains Mono',monospace;font-size:9pt;line-height:1.95;
+    border-left:3px solid #000;padding:6px 0 6px 11px;margin-top:4px}
+  .fz-cuenta b{font-weight:700}
+  .fz-res{display:flex;gap:9px;margin-top:9px}
+  .fz-r{flex:1;border:1px solid #000;border-radius:3px;padding:6px 9px;text-align:center}
+  .fz-r b{display:block;font-family:'Space Grotesk',sans-serif;font-size:14pt;font-weight:700}
+  .fz-r span{font-family:'JetBrains Mono',monospace;font-size:6.5pt;letter-spacing:.06em}
+  .fz-nota{font-size:8pt;color:#333;margin:7px 0 0;line-height:1.55}
+
   /* ---------- MEMORIA DE CÁLCULO ----------
      La sección para cuando alguien pregunta "¿y esto de dónde sale?": la
      cromatografía de cada área con su origen en el GOP-F-006 y, punto por
@@ -2971,6 +3004,7 @@ THREE.OrbitControls = OrbitControls;
         <a href="editor/" class="nav-editar"><span>Editar datos</span><small>Pide tu correo y un código</small></a>
                 <a href="#" class="nav-link" id="navInforme">Informe para imprimir o enviar en PDF</a>
         <a href="#" class="nav-link" id="navOrden">Orden de trabajo · por tanque</a>
+        <a href="#" class="nav-link" id="navFicha">Ficha de trazabilidad · un punto de punta a punta</a>
         <a href="#" class="nav-link" id="navSimulador">Simulador · cuánto deja de emitirse</a>
         <a href="#" class="nav-link" id="navMemoria">Memoria de cálculo · de dónde sale cada número</a>
         <a href="#" class="nav-link" id="navDesglose">Desglose de cálculo · punto por punto</a>
@@ -6395,6 +6429,7 @@ try { initCharts(); } catch (e) {}
      ============================================================ -->
 <div id="informe" class="hoja" aria-hidden="true"></div>
 <div id="orden" class="hoja" aria-hidden="true"></div>
+<div id="ficha" class="hoja" aria-hidden="true"></div>
 
 <script>
 (function () {
@@ -7628,6 +7663,184 @@ ${cssInforme()}
   window.memoria = abrirMemoria;
   // también se puede llegar directo con la dirección terminada en #memoria
   if (location.hash === '#memoria') setTimeout(abrirMemoria, 900);
+
+  /* ============================================================
+     FICHA DE TRAZABILIDAD
+     Un punto cerrado, de la detección a la verificación, en una hoja. Lleva
+     la fila de la cromatografía que le aplica —buscada por su factor, no
+     escrita a mano— y la cuenta con sus números, para que se pueda rehacer
+     con una calculadora.
+     ============================================================ */
+  function fichaNodo() { return document.getElementById('ficha'); }
+
+  // la muestra del GOP-F-006 cuyo factor es el que se le aplica a este punto
+  function fichaMuestra(fac, area) {
+    const K = kDe(fac, area);
+    const f = (CROMA.filas || []).find(fila => {
+      const k = memKdeFila(fila);
+      return k && Math.abs(k - K) < 5e-7;
+    });
+    return f ? { fila: f, K } : null;
+  }
+
+  function construirFicha(d, fac) {
+    const n0 = v => Math.round(v).toLocaleString('es-CO');
+    const n = (v, dec) => v.toLocaleString('es-CO', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+    const K = kDe(fac, d.area);
+    const F = K * 1e6 / 8760;
+    const toc = d.tasa * 8760 / 1e6;
+    const co2 = d.tasa * K;
+    const tras = d.tasaCierre || 0;
+    const m = fichaMuestra(fac, d.area);
+
+    const muestra = m
+      ? `<table class="fz-tabla">
+           <thead><tr><th>Etiqueta de la muestra</th><th>Equipo muestreado</th>
+             <th>%m CH4</th><th>%m CO2</th><th>%m TOC</th>
+             <th>F · ton CO2eq/ton TOC</th><th>K · ton CO2eq por g/Hr</th></tr></thead>
+           <tbody><tr>
+             <td>${m.fila[0]}</td><td>${m.fila[2]}</td>
+             <td>${n(parseFloat(m.fila[24]) || 0, 5)}</td>
+             <td>${n(parseFloat(m.fila[25]) || 0, 5)}</td>
+             <td>${n(parseFloat(m.fila[26]) || 0, 5)}</td>
+             <td>${n(F, 4)}</td><td>${n(K, 7)}</td>
+           </tr></tbody></table>
+         <p class="fz-nota">Tomada de la hoja «${CROMA.hoja}» del ${CROMA.archivo}. El factor K de
+         esta ficha es el de esa fila: toneladas de CO2eq al año divididas por la lectura con que
+         se calcularon.</p>`
+      : `<p class="fz-nota">No se halló en la hoja cargada una muestra con el factor
+         ${n(K, 7)}. El cálculo usa ese factor, el mismo del tablero.</p>`;
+
+    fichaNodo().innerHTML = `
+      <header class="inf-top">
+        <div>
+          <div class="inf-kick">FICHA DE TRAZABILIDAD · EMISIONES FUGITIVAS</div>
+          <div class="fz-eq">${d.equipo}</div>
+          <div class="fz-meta">${fac} · ${d.area}${d.fid ? ' · ' + d.fid : ''}</div>
+        </div>
+        <div class="inf-fecha">Emitida el ${hoy()}</div>
+      </header>
+
+      <div class="fz-paso">
+        <div class="fz-t">1 · HALLAZGO · LO QUE VIO LA CÁMARA</div>
+        <div class="fz-cols">
+          ${d.img ? `<div class="fz-foto"><img src="${d.img}" alt="Hallazgo en ${d.equipo}"></div>`
+                  : '<div class="fz-sin">sin foto</div>'}
+          <div>
+            <div class="fz-campos">
+              <div><span>Punto</span> <b>${d.punto || '—'}</b></div>
+              <div><span>Elemento</span> <b>${d.elemento || '—'}</b></div>
+              <div><span>Diámetro</span> <b>${d.diametro ? d.diametro + '"' : '—'}</b></div>
+              <div><span>Detectado</span> <b>${d.fechaDeteccion ? fechaLarga(d.fechaDeteccion) : '—'}</b></div>
+            </div>
+            <div class="fz-lect">${n0(d.tasa)} g/Hr</div>
+            <p class="fz-nota">${d.hallazgo || ''}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="fz-paso">
+        <div class="fz-t">2 · EL GAS · CROMATOGRAFÍA QUE LE APLICA</div>
+        ${muestra}
+      </div>
+
+      <div class="fz-paso">
+        <div class="fz-t">3 · LA CUENTA</div>
+        <div class="fz-cuenta">
+          <b>${n0(d.tasa)} g/Hr</b> × <b>8.760 h</b> ÷ <b>1.000.000</b> = <b>${n(toc, 4)} ton de TOC al año</b><br>
+          <b>${n(toc, 4)} ton de TOC</b> × <b>${n(F, 4)}</b> = <b>${n(co2, 3)} ton CO2eq al año</b><br>
+          atajo del tablero: <b>${n0(d.tasa)}</b> × <b>${n(K, 7)}</b> = <b>${n(co2, 3)} ton CO2eq/año</b>
+        </div>
+        <p class="fz-nota">El factor 28 del metano (GWP a 100 años, AR5) ya está dentro de F, junto
+        con el reparto entre CH4, CO2 y el resto de hidrocarburos que da la cromatografía.</p>
+      </div>
+
+      <div class="fz-paso">
+        <div class="fz-t">4 · CIERRE · VERIFICACIÓN EN CAMPO</div>
+        <div class="fz-cols">
+          ${d.imgCierre ? `<div class="fz-foto"><img src="${d.imgCierre}" alt="Verificación de ${d.equipo}"></div>`
+                        : '<div class="fz-sin">sin foto de verificación</div>'}
+          <div>
+            <div class="fz-campos">
+              <div><span>Reparado el</span> <b>${d.fechaCierre ? fechaLarga(d.fechaCierre) : '—'}</b></div>
+              <div><span>Lectura tras reparar</span> <b>${n0(tras)} g/Hr</b></div>
+            </div>
+            <p class="fz-nota">${d.cierre || 'Intervención ejecutada y verificada con la misma cámara OGI/FLIR.'}</p>
+            <div class="fz-res">
+              <div class="fz-r"><b>${n0(d.tasa - tras)}</b><span>g/Hr ELIMINADOS</span></div>
+              <div class="fz-r"><b>${n(co2 - tras * K, 2)}</b><span>ton CO2eq/AÑO QUE YA NO SE EMITEN</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ot-firmas">
+        <div class="inf-firma">
+          <div class="inf-f-rol">EJECUTÓ</div>
+          <div class="inf-f-linea"><div class="inf-f-nom">&nbsp;</div><div class="inf-f-fecha">Fecha:</div></div>
+        </div>
+        <div class="inf-firma">
+          <div class="inf-f-rol">VERIFICÓ</div>
+          <div class="inf-f-linea"><div class="inf-f-nom">&nbsp;</div><div class="inf-f-fecha">Fecha:</div></div>
+        </div>
+      </div>
+
+      <p class="inf-pie">Mecánicos Asociados S.A.S. · Metodología GOP-F-006 · Las fotografías son
+      las tomas originales de la cámara OGI/FLIR, con la lectura estampada por el equipo.</p>`;
+    return true;
+  }
+
+  function abrirFicha(d, fac) {
+    if (!construirFicha(d, fac)) return;
+    abrirVisor(fichaNodo(), `Ficha de trazabilidad · ${d.equipo}`, false,
+               `Ficha-${d.equipo.replace(/[^\w.-]+/g, '-')}-${hoyISO()}.pdf`);
+  }
+
+  /* Sólo los puntos ya cerrados: la ficha cuenta una historia completa, y sin
+     verificación la historia está a medias. */
+  function abrirSelectorFicha() {
+    const cerrados = [...CERRADAS1.map(d => ({ d, fac: 'CPF-1' })),
+                      ...CERRADAS2.map(d => ({ d, fac: 'CPF-2' }))]
+      .sort((a, b) => b.d.tasa - a.d.tasa);
+
+    const cap = document.createElement('div');
+    cap.className = 'bd-capa';
+    cap.innerHTML = `
+      <div class="bd-caja ed-caja" role="dialog" aria-label="Ficha de trazabilidad">
+        <div class="bd-top">
+          <div>
+            <div class="bd-kick">FICHA DE TRAZABILIDAD</div>
+            <h3 class="bd-h">¿De cuál punto?</h3>
+          </div>
+          <button class="bd-x" aria-label="Cerrar">×</button>
+        </div>
+        <p class="bd-p">Una hoja con la cadena completa de un punto: la foto con la que se detectó,
+        la muestra de gas que le aplica, la cuenta con sus números y la verificación en campo.</p>
+        ${cerrados.length ? `<div class="sel-lista">${cerrados.map((x, i) => `
+          <button class="sel-fila" data-i="${i}">
+            <span class="sf-txt"><b>${x.d.equipo}</b><small>${x.fac} · ${x.d.area} · ${x.d.punto}
+              ${x.d.imgCierre ? '· verificada' : ''}</small></span>
+            <span class="sf-tasa">${Math.round(x.d.tasa).toLocaleString('es-CO')} <small>g/Hr</small></span>
+          </button>`).join('')}</div>`
+          : '<div class="ci-vacio">Todavía no hay puntos cerrados.</div>'}
+      </div>`;
+    document.body.appendChild(cap);
+    const cerrar = () => cap.remove();
+    cap.querySelector('.bd-x').onclick = cerrar;
+    cap.onclick = e => { if (e.target === cap) cerrar(); };
+    cap.querySelectorAll('.sel-fila').forEach(b => {
+      b.onclick = () => { const x = cerrados[+b.dataset.i]; cerrar(); abrirFicha(x.d, x.fac); };
+    });
+  }
+
+  const nf = document.getElementById('navFicha');
+  if (nf) nf.addEventListener('click', e => {
+    e.preventDefault();
+    const m = document.querySelector('.nav-menu');
+    if (m) m.classList.remove('open');
+    abrirSelectorFicha();
+  });
+  window.fichaTrazabilidad = abrirFicha;
 
   const ot = document.getElementById('navOrden');
   if (ot) ot.addEventListener('click', e => {
