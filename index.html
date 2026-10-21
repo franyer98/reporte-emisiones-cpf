@@ -7536,10 +7536,14 @@ ${cssInforme()}
       <div id="memDetalle" style="display:none;margin-top:12px">${det.html}</div>
 
       <div class="mem-acciones">
-        <button class="bd-b bd-pri" id="memExcel">Descargar en Excel</button>
+        <button class="bd-b bd-pri" id="memGop">Exportar en formato GOP-F-006</button>
+        <button class="bd-b" id="memExcel">Descargar en Excel</button>
       </div>
-      <p class="mem-nota">El Excel lleva una hoja por alcance —CPF-1, CPF-2, Rubiales y Caño Sur—
-      con las toneladas como fórmula viva, para auditarlas celda por celda.</p>`;
+      <p class="mem-nota"><b>Formato GOP-F-006:</b> la hoja «Calculos CO2» de la campaña, con las
+      columnas del procedimiento, la fila de pesos moleculares y las mismas fórmulas del libro
+      original —no números pegados—. Se abre en Excel y se puede pegar junto a las demás campañas.
+      <br><b>Descargar en Excel:</b> una hoja por alcance —CPF-1, CPF-2, Rubiales y Caño Sur— con
+      las toneladas como fórmula viva, para auditarlas celda por celda.</p>`;
 
     const barra = document.getElementById('memBarra');
     if (barra) {
@@ -7557,6 +7561,8 @@ ${cssInforme()}
     };
     const btn = document.getElementById('memExcel');
     if (btn) btn.onclick = () => memDescargarExcel(btn);
+    const gop = document.getElementById('memGop');
+    if (gop) gop.onclick = () => exportarGOP(gop);
   }
 
 
@@ -7564,6 +7570,136 @@ ${cssInforme()}
      rehace el HTML, y si la lista de hojas no se guardara aparte quedaría
      vacía justo después de la vista previa. */
   let memLibro = null, memArchivo = '', memHojaActual = '';
+
+
+  /* ============================================================
+     EXPORTAR EN FORMATO GOP-F-006
+     En vez de comparar el tablero contra la hoja del procedimiento, el
+     tablero escribe la hoja: mismas columnas, misma fila de pesos
+     moleculares y —esto es lo que convence— las mismas fórmulas, copiadas
+     del libro original. Quien la recibe no revisa números ajenos: abre las
+     celdas y encuentra las suyas.
+
+     Las fórmulas son las del libro de la campaña de julio 2026:
+       Y  Peso molecular del gas = SUMPRODUCT(G:X, pesos)/100
+       Z  %m CH4                 = K*PM(CH4)/Y
+       AA %m CO2                 = J*PM(CO2)/Y
+       AB %m TOC                 = SUMPRODUCT(K:X, pesos)/Y
+       AC %m CH4 en TOC          = Z*100/AB
+       AE CH4 g/h                = F*AC/100
+       AF CO2 g/h                = F/AB*100*AA/100
+       AJ GEI ton CO2eq/año      = Ton CO2 año + Ton CH4 año × 28
+     ============================================================ */
+  const GOP_ENC = ['Etiqueta No', 'Nombre facilidad', 'Equipo', 'Punto detectado', 'Tipo',
+    'Lectura Camara g/h', '% mol H2', '% mol O2', '% mol N2', '% mol CO2', '% mol C1', '% mol C2',
+    '% mol C3', '% mol iC4', '% mol nC4', '% mol iC5', '% mol nC5', '% mol C6', '% mol C7',
+    '% mol C8', '% mol C9', '% mol C10', '% mol C11', '% mol C12', 'Peso Molecular Gas (g/mol)',
+    '%m CH4', '%m CO2', '% Fracción Másica TOCs', '% Fracción Másica CH4 en TOCs', 'm3/dia CH4',
+    'CH4 [g/h]', 'CO2 [g/h]', 'Ton. CH4 dia', 'Ton. CH4 Año', 'Ton. CO2 Año',
+    'GEI / Ton. CO2eq. Año', 'm3 CH4/Año', 'Kpc CH4/Año'];
+
+  function gopFormulas(r) {
+    return {
+      Y:  `SUMPRODUCT(G${r}:X${r},$G$6:$X$6)/100`,
+      Z:  `K${r}*$K$6/Y${r}`,
+      AA: `J${r}*$J$6/Y${r}`,
+      AB: `SUMPRODUCT(K${r}:X${r},$K$6:$X$6)/Y${r}`,
+      AC: `Z${r}*100/AB${r}`,
+      AD: `(F${r}*(AB${r}/100*AC${r}/100)/1000)*(8.314472*288.15)/(101.325*$K$6)*24`,
+      AE: `F${r}*AC${r}/100`,
+      AF: `F${r}/AB${r}*100*AA${r}/100`,
+      AG: `AE${r}*24/1000/1000`,
+      AH: `AG${r}*365`,
+      AI: `AF${r}*24*365/1000/1000`,
+      AJ: `IF(AH${r}="","",AI${r}+(AH${r}*28))`,
+      AK: `AD${r}*365`,
+      AL: `AK${r}/0.0283168`,
+    };
+  }
+
+  /* Los puntos de la campaña, en el orden del formato: cada facilidad con
+     los suyos. Caño Sur va con el nombre que usa el libro, EP-1. */
+  function gopPuntos() {
+    const cs = (typeof DATACS !== 'undefined') ? DATACS : [];
+    const grupos = [['EP-1', 'CAÑO SUR', cs],
+                    ['CPF-1', 'CPF-1', DATA1], ['CPF-2', 'CPF-2', DATA2]];
+    const filas = [];
+    grupos.forEach(([nombre, fac, lista]) => {
+      [...lista].sort((a, b) => (a.area + a.equipo < b.area + b.equipo ? -1 : 1)).forEach(d => {
+        filas.push({ nombre, fac, d, muestra: fichaMuestra(fac, d.area) });
+      });
+    });
+    return filas;
+  }
+
+  async function exportarGOP(boton) {
+    const previo = boton.textContent;
+    boton.textContent = 'Generando…';
+    boton.disabled = true;
+    try {
+      const raiz = location.pathname.replace(/[^/]*$/, '').replace(/editor\/$/, '');
+      await cargarScript(raiz + 'lib/xlsx.mini.min.js');
+
+      const puntos = gopPuntos();
+      const hoja = {};
+      const pon = (celda, v) => { hoja[celda] = v; };
+      const col = i => XLSX.utils.encode_col(i);
+
+      // encabezado del formato
+      pon('D1', { t: 's', v: 'Formato para Identificación y Gestión de Emisiones Fugitivas' });
+      pon('D2', { t: 's', v: 'Gestión y Optimización de la Producción' });
+      pon('D3', { t: 's', v: 'GOP-F-006' });
+      pon('A2', { t: 's', v: 'Generado desde el tablero de emisiones · ' + hoy() });
+      GOP_ENC.forEach((e, i) => pon(col(i) + '4', { t: 's', v: e }));
+
+      // fila 6: los pesos moleculares, que es a lo que apuntan las fórmulas
+      pon('F6', { t: 's', v: 'Peso Molecular Mwi' });
+      for (let i = 6; i <= 23; i++) {
+        const peso = CROMA.pesos[i - 1];      // en CROMA no está la columna "Tipo"
+        if (typeof peso === 'number') pon(col(i) + '6', { t: 'n', v: peso });
+      }
+
+      let r = 7, sinMuestra = 0;
+      puntos.forEach(({ nombre, fac, d, muestra }) => {
+        pon('A' + r, { t: 's', v: d.fid || '' });
+        pon('B' + r, { t: 's', v: nombre });
+        pon('C' + r, { t: 's', v: d.equipo });
+        pon('D' + r, { t: 's', v: d.punto || '' });
+        pon('E' + r, { t: 's', v: 'Fuga' });
+        pon('F' + r, { t: 'n', v: d.tasa });
+        if (muestra) {
+          // la composición molar de la muestra que le aplica: columnas G..X
+          for (let i = 6; i <= 23; i++) {
+            const v = muestra.fila[i - 1];
+            pon(col(i) + r, { t: 'n', v: typeof v === 'number' ? v : 0 });
+          }
+          const f = gopFormulas(r);
+          Object.keys(f).forEach(c => pon(c + r, { t: 'n', f: f[c] }));
+        } else {
+          sinMuestra++;
+          pon('Y' + r, { t: 's', v: 'sin cromatografía para esta área' });
+        }
+        r++;
+      });
+
+      pon('A' + r, { t: 's', v: 'SUBTOTAL' });
+      pon('F' + r, { t: 'n', f: `SUM(F7:F${r - 1})` });
+      pon('AJ' + r, { t: 'n', f: `SUM(AJ7:AJ${r - 1})` });
+
+      hoja['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: r - 1, c: 37 } });
+      hoja['!cols'] = GOP_ENC.map((e, i) => ({ wch: i < 5 ? 22 : (i === 5 ? 14 : 12) }));
+
+      const libro = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(libro, hoja, 'Calculos CO2 ' + new Date().getFullYear());
+      XLSX.writeFile(libro, `GOP-F-006-desde-el-tablero-${hoyISO()}.xlsx`);
+
+      boton.textContent = sinMuestra ? `Descargado · ${sinMuestra} sin muestra` : 'Descargado';
+      setTimeout(() => { boton.textContent = previo; boton.disabled = false; }, 2600);
+    } catch (e) {
+      boton.textContent = 'No se pudo generar';
+      setTimeout(() => { boton.textContent = previo; boton.disabled = false; }, 2400);
+    }
+  }
 
   function abrirMemoria() {
     if (document.querySelector('.mem-capa')) return;
