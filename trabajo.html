@@ -3545,15 +3545,19 @@ const EQUIPO_PALETTE_JS = ["#ff4757", "#ffb238", "#ffd60a", "#2dd4ee", "#3fa9f5"
 // Factor ton CO2eq/año por cada g/Hr, derivado de la cromatografía de cada área
 // (hoja "Calculos CO2 2026" del GOP-F-006). K = (%mCH4/%mTOC*28 + %mCO2/%mTOC) * 8760 / 1e6
 const K_AREA = {
-  'CPF-1|PROCESOS':       0.2470240,   // TK-901-C-PROCESOS · fila 15
-  'CPF-1|SKIM TANK':      0.2201900,   // TK-906-B -SKIM TANK · fila 17
-  'CPF-2|ALMACENAMIENTO': 0.2476020,   // 300 TK-0103 · fila 19
-  'CPF-2|FWKOS':          0.2432250,   // 300-TK-0301 FWKOS · fila 21
+  // Cada factor es el de su muestra en la hoja "Calculos CO2 2026" del
+  // GOP-F-006, sin redondear: GEI (ton CO2eq/año) dividido por la lectura con
+  // que se calculó. Así la cuenta del tablero y la del libro dan lo mismo
+  // hasta el último decimal, y la comprobación sale en cero.
+  'CPF-1|PROCESOS':       0.24702442578189215,   // TK-901-C-PROCESOS · fila 15 · 543,4537367 ÷ 2.200
+  'CPF-1|SKIM TANK':      0.22019025281015556,   // TK-906-B -SKIM TANK · fila 17 · 39,6342455 ÷ 180
+  'CPF-2|ALMACENAMIENTO': 0.24760223983966106,   // 300 TK-0103 · fila 19 · 39,6163584 ÷ 160
+  'CPF-2|FWKOS':          0.24322460163622162,   // 300-TK-0301 FWKOS · fila 21 · 162,9604831 ÷ 670
   // Caño Sur sí tiene cromatografía propia para sus FWKO: ETK-1101-A y -B,
-  // filas 7 y 8 de la hoja "Calculos CO2 2026". Para el SKIM TANK no hay
-  // análisis del campo, así que ahí se aplica el del SKIM TANK de CPF-1.
-  'CAÑO SUR|FWKOS':       0.2263016,   // ETK-1101-A/B FWKO · filas 7 y 8
-  'CAÑO SUR|SKIM TANK':   0.2201900,   // sin análisis propio: CPF-1 · SKIM TANK
+  // filas 7 y 8 de la misma hoja. Para el SKIM TANK no hay análisis del
+  // campo, así que ahí se aplica el del SKIM TANK de CPF-1.
+  'CAÑO SUR|FWKOS':       0.22630163262421651,   // ETK-1101-A/B FWKO · filas 7 y 8
+  'CAÑO SUR|SKIM TANK':   0.22019025281015556,   // sin análisis propio: CPF-1 · SKIM TANK
 };
 const K_FALLBACK = { 1: 0.24760223983966112, 2: 0.24698816042558724 };
 function kDe(fac, area) {
