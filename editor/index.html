@@ -2485,6 +2485,11 @@ THREE.OrbitControls = OrbitControls;
   table.mem-x tr.mem-pm td{color:var(--text-faint);font-size:10.5px;
     border-bottom:2px solid rgba(255,255,255,.14)}
   table.mem-x td.mem-k{color:#00b828;font-weight:700;background:rgba(0,184,40,.07)}
+  /* El rótulo va fuera de la tabla: dentro se pierde al correrla a lo ancho. */
+  .mem-grupo{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;
+    color:var(--cool);font-weight:700;margin:16px 0 7px;display:flex;align-items:baseline;gap:9px}
+  .mem-grupo small{color:var(--text-faint);font-weight:400;letter-spacing:.04em}
+  .mem-grupo:first-of-type{margin-top:10px}
   .mem-croma{max-height:420px;overflow:auto}
   table.mem-x tr:hover td{background:rgba(45,212,238,.06)}
   .mem-croma-cab{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:0 0 9px;
@@ -8082,24 +8087,47 @@ ${cssInforme()}
     const pesos = '<tr class="mem-pm">' + CROMA.pesos.map((v, i) =>
       `<td class="${i < 4 ? 'txt' : ''}">${memEsc(i === 3 ? 'peso molecular →' : v)}</td>`).join('')
       + '<td></td></tr>';
-    const cuerpo = CROMA.filas.map(f => {
+    const pinta = f => {
       const K = memKdeFila(f);
       return '<tr>' + f.map((c, i) => {
         const v = (c === null || c === undefined) ? '' : String(c);
         return `<td class="${i < 4 ? 'txt' : ''}">${memEsc(v)}</td>`;
       }).join('') + `<td class="mem-k">${K ? memN(K, 7) : ''}</td></tr>`;
-    }).join('');
+    };
+
+    /* Una tabla por facilidad, con su propio encabezado. En la hoja vienen
+       las dieciocho seguidas y cuesta ver de quién es cada muestra; así cada
+       bloque se mira solo, y el rótulo no se pierde al correr la tabla. */
+    const GRUPOS = [['CPF-1', 'CPF-1'], ['CPF-2', 'CPF-2'], ['EP-1', 'CAÑO SUR · EP-1']];
+    const usadas = [];
+    let bloques = '';
+    GRUPOS.forEach(([clave, titulo]) => {
+      const suyas = CROMA.filas.filter(f => String(f[1]).trim() === clave);
+      if (!suyas.length) return;
+      suyas.forEach(f => usadas.push(f));
+      bloques += `<div class="mem-grupo">${memEsc(titulo)}`
+        + ` <small>${suyas.length} muestra${suyas.length === 1 ? '' : 's'}</small></div>`
+        + `<div class="mem-croma"><table class="mem-x"><tbody>${cab}${pesos}`
+        + suyas.map(pinta).join('') + '</tbody></table></div>';
+    });
+    const sueltas = CROMA.filas.filter(f => usadas.indexOf(f) === -1);
+    if (sueltas.length) {
+      bloques += `<div class="mem-grupo">OTRAS <small>${sueltas.length}</small></div>`
+        + `<div class="mem-croma"><table class="mem-x"><tbody>${cab}${pesos}`
+        + sueltas.map(pinta).join('') + '</tbody></table></div>';
+    }
+
     return `<div class="mem-croma-cab">
         <span>ORIGEN <b>${memEsc(CROMA.archivo)}</b></span>
         <span>HOJA <b>${memEsc(CROMA.hoja)}</b></span>
         <span>${CROMA.filas.length} muestras</span>
       </div>
-      <div class="mem-croma"><table class="mem-x"><tbody>${cab}${pesos}${cuerpo}</tbody></table></div>
-      <p class="mem-nota">Es la hoja tal cual, columna por columna: la composición molar de cada
-      muestra, el peso molecular de cada componente, y de ahí el %másico de CH₄, de CO₂ y de TOC
-      hasta las toneladas de CO₂eq al año. La última columna no está en el Excel: es el cociente
-      entre esas toneladas y la lectura con que se calcularon, o sea el factor <b>K</b> de esa
-      muestra, que es el que aplica el tablero.</p>`;
+      ${bloques}
+      <p class="mem-nota">Es la hoja tal cual, columna por columna, separada por facilidad: la
+      composición molar de cada muestra, el peso molecular de cada componente, y de ahí el %másico
+      de CH₄, de CO₂ y de TOC hasta las toneladas de CO₂eq al año. La última columna no está en el
+      Excel: es el cociente entre esas toneladas y la lectura con que se calcularon, o sea el
+      factor <b>K</b> de esa muestra, que es el que aplica el tablero.</p>`;
   }
 
   /* El resumen por área es lo que se lee de un vistazo; el punto por punto
