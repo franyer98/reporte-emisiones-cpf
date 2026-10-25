@@ -2421,6 +2421,7 @@ THREE.OrbitControls = OrbitControls;
   table.xl-t tr.xl-tit td{background:#1e2630;color:#fff;font-weight:700;text-align:left;
     letter-spacing:.3px}
   table.xl-t tr.xl-sub td{background:#dfeee6;font-weight:700;border-top:2px solid #107c41}
+  table.xl-t tr.xl-sub-cerr td{background:#eef0f2;color:#5a646e;border-top:1px solid #9aa4ad}
   table.xl-t tr.xl-cerr td{color:#8a949d;text-decoration:line-through;background:#f7f8f9}
   table.xl-t tr.xl-cerr td.xl-der{background:#f1f5f2}
   table.xl-t td.sel{outline:2px solid #107c41;outline-offset:-2px;background:#d7ebdf!important}
@@ -8228,39 +8229,110 @@ ${cssInforme()}
 
      Los campos no se mezclan: Rubiales (CPF-1 + CPF-2) lleva su subtotal y
      Caño Sur el suyo. No hay una fila que los sume. */
-  const XL_VIVO_COLS = ['Etiqueta No', 'Nombre facilidad', 'Equipo', 'Área', 'Punto detectado',
-    'Elemento', 'Lectura g/Hr', 'Factor K', 'ton CO2eq/año', 'Estado', 'Fecha de cierre',
-    'ton CO2eq/año evitadas'];
+  /* La cromatografía que aplica cada área, sacada de la misma hoja: los
+     % mol de su muestra y la fila del libro de la que salen. Con esto la
+     pestaña del tablero puede rehacer la cadena entera del GOP-F-006,
+     columna por columna, en vez de aplicar un factor ya resuelto. */
+  const XL_ENC = ["Etiqueta No", "Nombre facilidad", "Equipo", "Punto detectado", "Tipo", "Lectura Camara g/h", "% mol H2", "% mol O2", "% mol N2", "% mol CO2", "% mol C1", "% mol C2", "% mol C3", "% mol iC4", "% mol nC4", "% mol iC5", "% mol nC5", "% mol C6", "% mol C7", "% mol C8", "% mol C9", "% mol C10", "% mol C11", "% mol C12", "Peso Molecular Gas (g/mol)", "%m CH4", "%m CO2", "% Fracción Másica TOCs", "% Fracción Másica CH4 en TOCs", "m3/dia CH4", "CH4 [g/h]", "CO2 [g/h]", "Ton. CH4 dia", "Ton. CH4 Año", "Ton. CO2 Año", "GEI  Ton. CO2eq. Año", "m3 CH4/Año", "Kpc CH4/Año"];
+  const XL_PM = [2.016, 31.9988, 28.0134, 44.0098, 16.04276, 30.06964, 44.09652, 58.1234, 58.1234, 72.15028, 72.15028, 86.17716, 100.20404, 114.23092, 128.2578, 142.28468, 156.31156, 170.33844];
+  const XL_MOL = {"CPF-1|PROCESOS": [0.02, 0, 21.03, 5.88, 73.04, 0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "CPF-1|SKIM TANK": [1.88, 0, 79.54, 2.06, 15.79, 0.34, 0.15, 0, 0.12, 0.12, 0, 0, 0, 0, 0, 0, 0, 0], "CPF-2|ALMACENAMIENTO": [0.445, 0, 49.365, 6.225, 43.635, 0.06, 0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "CPF-2|FWKOS": [0.02, 0, 18.7, 5.47, 75.78, 0.63, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "CAÑO SUR|FWKOS": [0, 2.28, 12.013, 7.387, 77.024, 0.092, 0.092, 0.025, 0.083, 0.069, 0.103, 0.147, 0.195, 0.299, 0.182, 0.007, 0, 0], "CAÑO SUR|SKIM TANK": [1.88, 0, 79.54, 2.06, 15.79, 0.34, 0.15, 0, 0.12, 0.12, 0, 0, 0, 0, 0, 0, 0, 0]};
+  const XL_REF = {"CPF-1|PROCESOS": {"fila": 15, "equipo": "TK-901-C-PROCESOS"}, "CPF-1|SKIM TANK": {"fila": 17, "equipo": "TK-906-B -SKIM TANK"}, "CPF-2|ALMACENAMIENTO": {"fila": 19, "equipo": "300 TK- 0103 ALMACENAMIENTO"}, "CPF-2|FWKOS": {"fila": 21, "equipo": "300-TK-0301 FWKOS"}, "CAÑO SUR|FWKOS": {"fila": 7, "equipo": "ETK-1101-A FWKO"}, "CAÑO SUR|SKIM TANK": {"fila": 17, "equipo": "TK-906-B -SKIM TANK (CPF-1, sin análisis de Caño Sur)"}};
+  const XL_PMROW = 2;   // la fila de pesos moleculares dentro de esta hoja
 
-  const xlNum = (v, d) => v.toLocaleString('es-CO',
-    { minimumFractionDigits: d, maximumFractionDigits: d });
+  /* Las fórmulas del libro, tal cual, con la fila de esta hoja. Son las
+     mismas de la hoja «Calculos CO2 2026»: si se copian a Excel dan lo
+     mismo. $G$2:$X$2 es la fila de pesos moleculares de aquí arriba. */
+  const XL_CADENA = {
+    25: 'SUMPRODUCT(G{r}:X{r};$G$2:$X$2)/100',
+    26: 'K{r}*$K$2/Y{r}',
+    27: 'J{r}*$J$2/Y{r}',
+    28: 'SUMPRODUCT(K{r}:X{r};$K$2:$X$2)/Y{r}',
+    29: 'Z{r}*100/AB{r}',
+    30: '(F{r}*(AB{r}/100*AC{r}/100)/1000)*(8,314472*288,15)/(101,325*$K$2)*24',
+    31: 'F{r}*AC{r}/100',
+    32: 'F{r}/AB{r}*100*AA{r}/100',
+    33: 'AE{r}*24/1000/1000',
+    34: 'AG{r}*365',
+    35: 'AF{r}*24*365/1000/1000',
+    36: 'IF(AH{r}="";"";AI{r}+(AH{r}*28))',
+    37: 'AD{r}*365',
+    38: 'AK{r}/0,0283168',
+  };
 
+  // la misma cadena, resuelta en JavaScript, para poder mostrar el número
+  function xlCadenaVal(mol, lect) {
+    const sp = (a, b, d) => a.reduce((s, v, i) => s + v * b[i], 0) / d;
+    const Y = sp(mol, XL_PM, 100);
+    const Z = mol[4] * XL_PM[4] / Y;
+    const AA = mol[3] * XL_PM[3] / Y;
+    const AB = sp(mol.slice(4), XL_PM.slice(4), Y);
+    const AC = Z * 100 / AB;
+    const AD = (lect * (AB / 100 * AC / 100) / 1000) * (8.314472 * 288.15) / (101.325 * XL_PM[4]) * 24;
+    const AE = lect * AC / 100;
+    const AF = lect / AB * 100 * AA / 100;
+    const AG = AE * 24 / 1000 / 1000;
+    const AH = AG * 365;
+    const AI = AF * 24 * 365 / 1000 / 1000;
+    const AJ = AI + AH * 28;
+    const AK = AD * 365;
+    return [Y, Z, AA, AB, AC, AD, AE, AF, AG, AH, AI, AJ, AK, AK / 0.0283168];
+  }
+
+  const xlNum = (v, d) => (typeof v === 'number' && isFinite(v))
+    ? v.toLocaleString('es-CO', { minimumFractionDigits: d, maximumFractionDigits: d }) : '';
+
+  /* ---------- LA HOJA QUE SE MUEVE SOLA ----------
+     Las dos pestañas anteriores son el archivo: no cambian. Esta se arma en
+     el momento con lo que el tablero tiene ahora, pero con las mismas
+     columnas del GOP-F-006 —de la A a la AL— y sus mismas fórmulas: la
+     cromatografía del área va en G:X y de ahí sale todo lo demás hasta AJ.
+
+     Cuando un hallazgo se da de baja, su fila no desaparece —eso sería
+     borrar la evidencia—: queda tachada y marcada CERRADA en AM. AJ sigue
+     calculándose igual que en el libro; lo que cambia es el SUBTOTAL, que
+     es un SUMIF sobre AM y por eso deja de contarla. Lo evitado sale del
+     mismo SUMIF, pidiendo las CERRADA.
+
+     Los campos no se mezclan: Rubiales (CPF-1 + CPF-2) lleva su subtotal y
+     Caño Sur el suyo. No hay una fila que los sume. */
   function xlVivo() {
     const filas = [], formulas = {};
     let r = 1;
+
+    filas.push({ r, celdas: XL_ENC.concat(['Estado', 'Fecha de cierre']), clase: 'xl-enc', fac: '' }); r++;
+
+    // la fila de pesos moleculares, la que miran las fórmulas de arriba
+    const pm = new Array(40).fill('');
+    pm[5] = 'Peso Molecular Mwi';
+    XL_PM.forEach((v, i) => { pm[6 + i] = xlNum(v, 5); });
+    filas.push({ r, celdas: pm, clase: 'xl-pm', fac: '' }); r++;
+
     const enc = (txt, clase) => { filas.push({ r, celdas: [txt], clase, fac: '' }); r++; };
 
-    filas.push({ r, celdas: XL_VIVO_COLS.slice(), clase: 'xl-enc', fac: '' }); r++;
-
-    // una fila por hallazgo, con su estado y sus dos fórmulas
     const fila = (d, fac, chip, cerrada) => {
-      const k = kDe(fac, d.area);
-      const gei = d.tasa * k;
-      filas.push({
-        r, fac: chip, clase: cerrada ? 'xl-cerr' : '',
-        celdas: [
-          d.fid || '', fac, d.equipo, d.area, d.punto, d.elemento,
-          xlNum(d.tasa, 0), xlNum(k, 7),
-          cerrada ? '0,000' : xlNum(gei, 3),
-          cerrada ? 'CERRADA' : 'ACTIVA',
-          cerrada ? (d.fechaCierre || '') : '',
-          cerrada ? xlNum(gei, 3) : '0,000',
-        ],
+      const clave = fac + '|' + d.area;
+      const mol = XL_MOL[clave] || XL_MOL['CPF-2|ALMACENAMIENTO'];
+      const der = xlCadenaVal(mol, d.tasa);
+      const c = [
+        // el equipo lleva el área pegada, como en el libro: «TK-901B PROCESOS»
+        d.fid || '', fac, d.equipo + ' ' + d.area, d.punto, d.elemento, xlNum(d.tasa, 0),
+        ...mol.map(v => xlNum(v, 4)),
+        ...der.map((v, i) => xlNum(v, i >= 11 ? 3 : 6)),
+        cerrada ? 'CERRADA' : 'ACTIVA',
+        cerrada ? (d.fechaCierre || '') : '',
+      ];
+      filas.push({ r, celdas: c, clase: cerrada ? 'xl-cerr' : '', fac: chip });
+      Object.keys(XL_CADENA).forEach(k => {
+        formulas[r + ':' + k] = XL_CADENA[k].replace(/\{r\}/g, r);
       });
-      formulas[r + ':8'] = 'K del área «' + d.area + '» · ' + fac
-        + ' · hoja «Calculos CO2 2026» · ' + xlNum(k, 10) + ' ton CO2eq/año por cada g/Hr';
-      formulas[r + ':9'] = 'IF(J' + r + '="CERRADA";0;G' + r + '*H' + r + ')';
-      formulas[r + ':12'] = 'IF(J' + r + '="CERRADA";G' + r + '*H' + r + ';0)';
+      const ref = XL_REF[clave];
+      if (ref) {
+        // de dónde salió la cromatografía que se copió en G:X de esta fila
+        for (let i = 7; i <= 24; i++) {
+          formulas[r + ':' + i] = 'Cromatografía de «' + d.area + '» · ' + fac
+            + ' · muestra ' + ref.equipo + ', fila ' + ref.fila + ' de la pestaña Cromatografía';
+        }
+      }
       r++;
     };
 
@@ -8274,22 +8346,28 @@ ${cssInforme()}
       const fin = r - 1;
       if (fin < ini) { enc('(sin hallazgos)', ''); return; }
 
-      const act = grupos.flatMap(g => g.activas.map(d => ({ d, fac: g.fac })));
-      const cer = grupos.flatMap(g => g.cerradas.map(d => ({ d, fac: g.fac })));
-      const sumG = act.reduce((a, x) => a + x.d.tasa, 0);
-      const sumT = act.reduce((a, x) => a + x.d.tasa * kDe(x.fac, x.d.area), 0);
-      const sumE = cer.reduce((a, x) => a + x.d.tasa * kDe(x.fac, x.d.area), 0);
+      const suma = (lista, fac) => lista.reduce((a, d) => {
+        const mol = XL_MOL[fac + '|' + d.area] || XL_MOL['CPF-2|ALMACENAMIENTO'];
+        return a + xlCadenaVal(mol, d.tasa)[11];
+      }, 0);
 
-      filas.push({
-        r, fac: '', clase: 'xl-sub',
-        celdas: ['SUBTOTAL ACTIVO · ' + titulo, '', '', '', '', '',
-          xlNum(sumG, 0), '', xlNum(sumT, 3),
-          act.length + ' activas · ' + cer.length + ' cerradas', '', xlNum(sumE, 3)],
-      });
-      formulas[r + ':7'] = 'SUMIF(J' + ini + ':J' + fin + ';"ACTIVA";G' + ini + ':G' + fin + ')';
-      formulas[r + ':9'] = 'SUM(I' + ini + ':I' + fin + ')';
-      formulas[r + ':12'] = 'SUM(L' + ini + ':L' + fin + ')';
-      r++;
+      const sub = (etiqueta, estado, clase) => {
+        const act = grupos.flatMap(g => (estado === 'ACTIVA' ? g.activas : g.cerradas)
+          .map(d => ({ d, fac: g.fac })));
+        const g = act.reduce((a, x) => a + x.d.tasa, 0);
+        const t = grupos.reduce((a, gr) =>
+          a + suma(estado === 'ACTIVA' ? gr.activas : gr.cerradas, gr.fac), 0);
+        const c = new Array(40).fill('');
+        c[0] = etiqueta; c[5] = xlNum(g, 0); c[35] = xlNum(t, 3);
+        c[38] = act.length + (act.length === 1 ? ' punto' : ' puntos');
+        filas.push({ r, celdas: c, clase, fac: '' });
+        formulas[r + ':6'] = 'SUMIF($AM$' + ini + ':$AM$' + fin + ';"' + estado + '";F' + ini + ':F' + fin + ')';
+        formulas[r + ':36'] = 'SUMIF($AM$' + ini + ':$AM$' + fin + ';"' + estado + '";AJ' + ini + ':AJ' + fin + ')';
+        r++;
+      };
+
+      sub('SUBTOTAL ACTIVO · ' + titulo, 'ACTIVA', 'xl-sub');
+      sub('EVITADO POR CIERRES · ' + titulo, 'CERRADA', 'xl-sub xl-sub-cerr');
       enc('', '');
     };
 
@@ -8301,12 +8379,8 @@ ${cssInforme()}
       { fac: 'CAÑO SUR', chip: 'EP-1', activas: DATACS, cerradas: [] },
     ]);
 
-    return { filas, formulas, cols: XL_VIVO_COLS.length };
+    return { filas, formulas, cols: 40 };
   }
-
-  /* Las fórmulas de la vista que se está mirando: las del libro en las dos
-     primeras pestañas, las que se acaban de armar en la del tablero. */
-  let xlFx = {};
 
   function xlHojaHTML() {
     const v = XL_VISTAS.find(x => x.id === xlVista) || XL_VISTAS[0];
@@ -8424,10 +8498,13 @@ ${cssInforme()}
       archivo. Al tocar una celda con fórmula —las verdes— arriba aparece la fórmula del libro.
       Abajo, las tres pestañas. <b>Cromatografía</b> son las muestras de gas (filas 4 a 25) y
       <b>Campaña julio 2026</b> son los hallazgos con su GEI (filas 60 a 84): esas dos son el
-      archivo y no cambian. <b>Hoy en el tablero</b> se arma en el momento con lo que el tablero
-      tiene ahora: al dar de baja un hallazgo, su fila queda <b>tachada y marcada CERRADA</b>,
-      deja de sumar —el subtotal es un <code>SUMIF</code> sobre la columna Estado— y lo que dejó
-      de emitir pasa a la última columna. Rubiales y Caño Sur llevan subtotal aparte.</p>`;
+      archivo y no cambian. <b>Hoy en el tablero</b> se arma en el momento con lo que el
+      tablero tiene ahora, pero con <b>las mismas columnas del GOP-F-006, de la A a la AL</b>, y
+      sus mismas fórmulas: la cromatografía del área va en G:X y de ahí sale todo hasta
+      <b>AJ</b>, el GEI. Al dar de baja un hallazgo su fila queda <b>tachada y marcada CERRADA</b>
+      en AM: AJ se sigue calculando igual que en el libro, pero el <b>SUBTOTAL ACTIVO</b> es un
+      <code>SUMIF</code> sobre AM y deja de contarla, y lo que dejó de emitir aparece en
+      <b>EVITADO POR CIERRES</b>. Rubiales y Caño Sur llevan subtotal aparte.</p>`;
   }
 
   /* El resumen por área es lo que se lee de un vistazo; el punto por punto
