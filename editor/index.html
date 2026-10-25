@@ -1592,6 +1592,15 @@ THREE.OrbitControls = OrbitControls;
   .hero-formula b{color:var(--text);font-weight:700}
   .hero-formula em{font-style:normal;color:#00b828;font-weight:700}
   .hero-formula .hf-t{display:block;font-size:9.5px;letter-spacing:.11em;margin-bottom:3px}
+  /* los dos tramos de la cuenta, separados: primero el gas, después el CO2eq */
+  .hero-formula .hf-p{display:block;margin:9px 0 1px;font-size:9.5px;letter-spacing:.09em;
+    color:var(--text-faint);font-weight:700}
+  .hero-formula .hf-p:first-of-type{margin-top:2px}
+  .hero-formula .hf-p i{font-style:normal;font-weight:400;letter-spacing:0;text-transform:none;
+    opacity:.78}
+  .hero-formula i{font-style:normal;opacity:.78}
+  .hero-formula .hf-n{display:block;margin-top:9px;padding-top:8px;line-height:1.75;
+    border-top:1px solid var(--border);font-family:inherit}
   @media (max-width:600px){ .hero-formula{font-size:11px;line-height:1.95} }
   .facility-row {
     display: grid; grid-template-columns: 0.9fr 1fr 1fr; gap: 14px;
@@ -3883,13 +3892,29 @@ function updateKPIs() {
       const g = tt * h;
       const n = (v, d) => v.toLocaleString('es-CO', { maximumFractionDigits: d });
       cajaF.style.display = '';
+      /* Antes este bloque sólo llevaba la cuenta de la masa y terminaba
+         avisando «esto no es CO₂eq», que es justo lo que uno quiere saber.
+         Quedaba explicando un número que no era el de arriba. Ahora van los
+         dos tramos seguidos y el último cae en la cifra verde del titular. */
+      const tonToc = g / 1e6;                       // masa del periodo
+      const F = tt > 0 ? co2 * 1e6 / (tt * 8760) : 0;   // ton CO2eq por ton de TOC
+      const co2P = co2 * h / 8760;                  // el mismo periodo, en CO2eq
+      cajaF.style.display = '';
       cajaF.innerHTML =
-        `<span class="hf-t">CÓMO SALE ESTE NÚMERO</span>`
+        `<span class="hf-t">CÓMO SALE ESTE NÚMERO · DOS PASOS</span>`
+        + `<span class="hf-p">1 · EL GAS QUE SE FUGA <i>— masa real, la que marcaría una báscula</i></span>`
         + `<b>${n(tt, 0)} g/Hr</b> × <b>${n(h, 0)} h</b> (${PERIODOS[P].etiqueta})`
-        + ` = <b>${n(g, 0)} g</b><br>`
-        + `<b>${n(g, 0)} g</b> ÷ 1.000 = <b>${n(g / 1000, 1)} kg</b><br>`
-        + `<b>${n(g, 0)} g</b> ÷ 1.000.000 = <em>${n(g / 1e6, 3)} ton</em><br>`
-        + `masa de TOC (la mezcla de hidrocarburo), no de CO₂eq.`;
+        + ` = <b>${n(g, 0)} g</b> = <b>${n(g / 1000, 1)} kg</b> = <b>${n(tonToc, 3)} ton de TOC</b><br>`
+        + `<span class="hf-p">2 · LO QUE SE REPORTA <i>— el mismo gas, medido por su efecto climático</i></span>`
+        + `<b>${n(tonToc, 3)} ton de TOC</b> × <b>${n(F, 1)}</b>`
+        + ` <i>(de la cromatografía, con GWP 28)</i> = <b>${n(co2P, 1)} ton CO₂eq</b> ${PERIODOS[P].etiqueta}<br>`
+        // con el periodo anual la línea de arriba ya es la del titular: repetirla sobra
+        + (P === 'anio'
+            ? `<em>esa es la cifra verde de arriba.</em><br>`
+            : `al año: <em>${n(co2, 0)} ton CO₂eq</em> — la cifra verde de arriba.<br>`)
+        + `<span class="hf-n">Las dos son correctas y no son la misma: una tonelada de este gas`
+        + ` pesa una tonelada, pero calienta como ${n(F, 1)} toneladas de CO₂, porque casi todo`
+        + ` es metano. Al reporte ambiental van las toneladas de CO₂eq.</span>`;
     }
   }
 
