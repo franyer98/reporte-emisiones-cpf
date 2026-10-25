@@ -1624,6 +1624,8 @@ THREE.OrbitControls = OrbitControls;
   .fcard-row { display: flex; justify-content: space-between; align-items: baseline; padding: 6px 0; }
   .fcard.total .fcard-row { border-top: 1px solid var(--border); padding-top: 12px; margin-top: 2px; }
   .fcard-row .k { font-size: 11px; color: var(--text-faint); font-family: 'JetBrains Mono', monospace; text-transform: uppercase; }
+  .fcard-row .k i { display:block; font-style:normal; text-transform:none; font-size:11px;
+    color:var(--text); font-weight:600; margin-top:2px; }
   .fcard-row .v { font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 14px; }
   .fcard-row .v small { color: var(--text-dim); font-weight: 400; font-size: 11px; }
   @media (max-width: 760px) { .facility-row { grid-template-columns: 1fr; } }
@@ -3323,7 +3325,7 @@ THREE.OrbitControls = OrbitControls;
         <div class="fcard-label">CPF-1</div>
         <div class="fcard-main"><span id="kpiF1Puntos">14</span> <small>puntos</small></div>
         <div class="fcard-sub" id="kpiF1Sub">45.959 g/Hr medidos</div>
-        <div class="fcard-crit-label">EQUIPO CRÍTICO POR ÁREA</div>
+        <div class="fcard-crit-label">POR ÁREA · TOTAL Y EQUIPO QUE MÁS APORTA</div>
         <div id="kpiF1Crit"><div class="fcard-row"><span class="k">FWKOS</span><span class="v">TK-901B <small>17.700 g/Hr · 100%</small></span></div>
         <div class="fcard-row"><span class="k">PROCESOS</span><span class="v">TK-901C <small>10.000 g/Hr · 36%</small></span></div>
         <div class="fcard-row"><span class="k">SKIM TANK</span><span class="v">TK-904 <small>240 g/Hr · 38%</small></span></div></div>
@@ -3332,7 +3334,7 @@ THREE.OrbitControls = OrbitControls;
         <div class="fcard-label">CPF-2</div>
         <div class="fcard-main"><span id="kpiF2Puntos">11</span> <small>puntos</small></div>
         <div class="fcard-sub" id="kpiF2Sub">12.100 g/Hr medidos</div>
-        <div class="fcard-crit-label">EQUIPO CRÍTICO POR ÁREA</div>
+        <div class="fcard-crit-label">POR ÁREA · TOTAL Y EQUIPO QUE MÁS APORTA</div>
         <div id="kpiF2Crit"><div class="fcard-row"><span class="k">ALMACENAMIENTO</span><span class="v">300-TK-0103 <small>6.470 g/Hr · 100%</small></span></div>
         <div class="fcard-row"><span class="k">FWKOS</span><span class="v">300-TK-0201 <small>3.750 g/Hr · 67%</small></span></div></div>
       </div>
@@ -3759,7 +3761,11 @@ function aggregate(data) {
   const critByArea = Object.keys(areaEq).sort().map(area => {
     const entries = Object.entries(areaEq[area]).sort((a, b) => b[1] - a[1]);
     const areaTotal = entries.reduce((s, e) => s + e[1], 0);
-    return { area, equipo: entries[0][0], tasa: entries[0][1], pct: Math.round(entries[0][1] / Math.max(1, areaTotal) * 100) };
+    // areaTotal y nPuntos para que las áreas se puedan sumar a ojo y den el
+    // total de la facilidad: sin eso, el bloque parecía la lista de puntos
+    return { area, equipo: entries[0][0], tasa: entries[0][1], areaTotal,
+             nPuntos: data.filter(x => x.area === area).length,
+             pct: Math.round(entries[0][1] / Math.max(1, areaTotal) * 100) };
   });
   return {
     labels: sorted.map(r => r.equipo), values: sorted.map(r => r.tasa),
@@ -3787,13 +3793,17 @@ applyAggregates();
 
 const n2 = (v, d) => v.toFixed(d);
 
+/* Cada renglón es un área: a la izquierda su total —y estos sí suman el
+   total de la facilidad—, a la derecha el equipo que más aporta dentro de
+   ella, con su parte. El equipo de la derecha NO es un punto suelto: puede
+   agrupar varios del mismo tanque, y nunca es la lista completa del área. */
 function critRowsHTML(crit) {
   const P = PERIODO_GLOBAL;
-  return crit.map(c => {
-    const val = (P === 'hora') ? c.tasa.toLocaleString('es-CO') + ' g/Hr' : masaAcumulada(c.tasa, P);
-    return `<div class="fcard-row"><span class="k">${c.area}</span>`
-      + `<span class="v">${c.equipo} <small>${val} · ${c.pct}%</small></span></div>`;
-  }).join('');
+  const fmt = v => (P === 'hora') ? v.toLocaleString('es-CO') + ' g/Hr' : masaAcumulada(v, P);
+  return crit.map(c =>
+    `<div class="fcard-row"><span class="k">${c.area}`
+    + `<i>${fmt(c.areaTotal)} · ${c.nPuntos} ${c.nPuntos === 1 ? 'punto' : 'puntos'}</i></span>`
+    + `<span class="v">${c.equipo} <small>${fmt(c.tasa)} · ${c.pct}%</small></span></div>`).join('');
 }
 
 let PERIODO_GLOBAL = 'hora';
@@ -3859,7 +3869,7 @@ function updateKPIs() {
     t.style.display = '';
     t.querySelector('.fcard-label').textContent = 'CPF-' + (i + 1);
     const lbl = t.querySelector('.fcard-crit-label');
-    if (lbl) lbl.textContent = 'EQUIPO CRÍTICO POR ÁREA';
+    if (lbl) lbl.textContent = 'POR ÁREA · TOTAL Y EQUIPO QUE MÁS APORTA';
     const main = t.querySelector('.fcard-main');
     if (main && !main.querySelector('#kpiF' + (i + 1) + 'Puntos'))
       main.innerHTML = `<span id="kpiF${i + 1}Puntos"></span> <small>puntos</small>`;
