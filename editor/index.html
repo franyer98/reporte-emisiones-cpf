@@ -1559,9 +1559,31 @@ THREE.OrbitControls = OrbitControls;
   @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .5; transform: scale(1.3); } }
   .hero-num {
     font-family: 'Space Grotesk', sans-serif; font-weight: 700;
-    font-size: clamp(44px, 8vw, 92px); line-height: .96; letter-spacing: -0.03em;
+    font-size: clamp(34px, 5vw, 58px); line-height: .98; letter-spacing: -0.03em;
     color: var(--mid);
   }
+  /* ---------- LAS DOS CIFRAS DEL ENCABEZADO ----------
+     Una es lectura de la cámara y la otra es cuenta: tienen que leerse como
+     dos cosas, no como dos etiquetas seguidas. Cada una en su panel, con
+     rótulo arriba y la aclaración abajo. */
+  .hero-dos { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 22px;
+    max-width: 880px; align-items: stretch; }
+  .hd { border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px 15px;
+    background: rgba(255,255,255,0.016); display: flex; flex-direction: column; }
+  .hd-mide { border-left: 3px solid rgba(45,212,238,.75); }
+  .hd-rep  { border-left: 3px solid rgba(0,184,40,.75); }
+  .hd-k { display: flex; align-items: center; gap: 6px; font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; font-weight: 700; letter-spacing: .1em; margin-bottom: 8px; }
+  .hd-mide .hd-k { color: var(--cool); }
+  .hd-rep  .hd-k { color: #00b828; }
+  .hd-s { font-size: 13px; color: var(--text-dim); margin-top: 8px; line-height: 1.55; }
+  .hd-s b { color: var(--text); font-weight: 600; }
+  .hd-f { margin-top: auto; padding-top: 11px; font-size: 11.5px; line-height: 1.6;
+    color: var(--text-faint); border-top: 1px solid var(--border); }
+  .hero-num.co2 { color: #00b828; }
+  .hero-num.co2 small { font-size: .32em; font-weight: 600; letter-spacing: 0;
+    color: var(--text-dim); display: block; margin-top: 4px; }
+  @media (max-width: 760px) { .hero-dos { grid-template-columns: 1fr; gap: 12px; } }
   .hero-tags { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
   .hero-tag {
     display: inline-flex; align-items: center; gap: 6px;
@@ -2234,7 +2256,7 @@ THREE.OrbitControls = OrbitControls;
   /* ---------- CAÑO SUR ---------- */
   /* en Caño Sur todavía no hay cromatografía, así que el CO2eq del encabezado
      no aplica: se oculta en vez de mostrar un número de otra facilidad */
-  html.sin-co2 .hero-co2 { display: none; }
+  html.sin-co2 #heroCo2 { display: none; }
 
 
   .cs-aviso{display:flex;gap:11px;align-items:flex-start;margin:0 0 22px;padding:13px 16px;
@@ -3281,7 +3303,6 @@ THREE.OrbitControls = OrbitControls;
 <header class="hero" id="resumen">
   <div class="wrap">
     <div class="eyebrow"><span class="dot"></span>INSPECCIÓN TERMOGRÁFICA (FLIR) · EMISIONES FUGITIVAS</div>
-    <div class="hero-num" id="kpiTotal">58.059 g/Hr</div>
     <div class="period-global" id="periodGlobal">
       <span class="pg-label">VER DATOS COMO</span>
       <button data-period="hora" class="active">Tasa medida</button>
@@ -3299,16 +3320,31 @@ THREE.OrbitControls = OrbitControls;
       <button data-unidad="kg">Kilogramos</button>
       <button data-unidad="g">Gramos</button>
     </div>
-    <div class="hero-tags">
-      <span class="hero-tag direct">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
-        MEDICIÓN DIRECTA · CÁMARA FLIR/OGI
-      </span>
-      <div class="hero-co2">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><path d="M8 12h8M12 8v8"/></svg>
-        <span class="hero-co2-value" id="kpiCo2">14,447</span> ton CO2eq/año <span class="hero-tag-mini">ESTIMADO</span>
-        <span class="hero-co2-info" title="Estimado a partir de la composición de gas promedio por facilidad (cromatografía Plantilla GEI-GOR) y GWP del CH4 = 28 (IPCC AR5). No es una medición directa de CO2 por punto.">ⓘ</span>
-      </div>
+    <!-- Las dos cifras iban pegadas en dos píldoras, una al lado de la otra,
+         y no se entendía cuál era medida y cuál calculada. Van separadas, cada
+         una con su rótulo, su número grande y la línea de qué es. -->
+    <div class="hero-dos">
+      <section class="hd hd-mide">
+        <div class="hd-k">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
+          LO QUE MIDE LA CÁMARA
+        </div>
+        <div class="hero-num" id="kpiTotal">58.059 g/Hr</div>
+        <div class="hd-s" id="kpiMedSub">—</div>
+        <div class="hd-f">Medición directa con la cámara FLIR/OGI, punto por punto.</div>
+      </section>
+      <section class="hd hd-rep" id="heroCo2">
+        <div class="hd-k">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><path d="M8 12h8M12 8v8"/></svg>
+          LO QUE SE REPORTA <span class="hero-tag-mini">CALCULADO</span>
+        </div>
+        <div class="hero-num co2"><span id="kpiCo2">14,447</span> <small>ton CO₂eq/año</small></div>
+        <div class="hd-s" id="kpiRepSub">el mismo gas, medido por su efecto climático</div>
+        <div class="hd-f">No se mide: sale de la cromatografía de cada área y del
+          GWP del CH₄ = 28 (IPCC AR5).
+          <span class="hero-co2-info" title="Las toneladas de CO2eq no se miden con la cámara. Se calculan con la composición de gas de cada área (hoja Calculos CO2 2026 del GOP-F-006) y el potencial de calentamiento del metano, GWP = 28 según el IPCC AR5.">ⓘ</span>
+        </div>
+      </section>
     </div>
     <!-- La cuenta escrita con los números que están en pantalla: es la forma
          de que nadie tenga que creer en el tablero, sino comprobarlo. -->
@@ -3824,8 +3860,12 @@ function heroCanoSur() {
   document.documentElement.classList.remove('sin-co2');
   set('kpiTotal', val(a.total));
   set('kpiCo2', co2eqDe(DATACS, 'CAÑO SUR').toLocaleString('es-CO', { maximumFractionDigits: 0 }));
-  set('kpiSub', `de gas fugitivo detectado en <b>Caño Sur</b>, facilidad CENTAUROS`
-    + ` (${a.nPuntos} puntos), con la cromatografía por área.`);
+  set('kpiMedSub', `<b>${a.nPuntos} puntos</b> abiertos en <b>Caño Sur</b>, facilidad CENTAUROS`);
+  set('kpiRepSub', `lo que representa en efecto climático ese gas (<b>${val(a.total)}</b>)`);
+  set('kpiSub', esTasa
+    ? `Es la lectura de la cámara en los puntos abiertos de Caño Sur.`
+    : `Proyección${et} de esa misma lectura: <b>${a.total.toLocaleString('es-CO')} g/Hr</b>`
+      + ` sostenidos durante ${PERIODOS[P].horas.toLocaleString('es-CO')} horas.`);
   set('kpiTotPuntos', a.nPuntos);
   set('kpiTotSub', esTasa ? `${a.total.toLocaleString('es-CO')} g/Hr · ${a.nPuntos} puntos medidos`
                           : `${masaAcumulada(a.total, P)}${et}`);
@@ -3885,11 +3925,16 @@ function updateKPIs() {
 
   set('kpiTotal', esTasa ? tt.toLocaleString('es-CO') + ' g/Hr' : masaAcumulada(tt, P));
   set('kpiCo2', co2.toLocaleString('es-CO', { maximumFractionDigits: 0 }));
+  // el reparto por facilidad va bajo la cifra medida, que es de donde sale
+  const vp = v => esTasa ? v.toLocaleString('es-CO') + ' g/Hr' : masaAcumulada(v, P);
+  set('kpiMedSub', `<b>${AGG1.nPuntos + AGG2.nPuntos} puntos</b> abiertos en Rubiales · `
+    + `CPF-1 <b>${vp(t1)}</b> (${AGG1.nPuntos}) + CPF-2 <b>${vp(t2)}</b> (${AGG2.nPuntos})`);
+  // «esos ton» no concuerda: se nombra el gas y la cifra va entre paréntesis
+  set('kpiRepSub', `lo que representa en efecto climático ese gas (<b>${vp(tt)}</b>)`);
   set('kpiSub', esTasa
-    ? `de gas fugitivo detectado entre dos facilidades — <b>CPF-1</b> (${AGG1.nPuntos} puntos, ${t1.toLocaleString('es-CO')} g/Hr)`
-      + ` y <b>CPF-2</b> (${AGG2.nPuntos} puntos, ${t2.toLocaleString('es-CO')} g/Hr) — la misma lectura que registra la ficha GOP-F-006.`
-    : `de gas fugitivo proyectado${et} entre dos facilidades — <b>CPF-1</b> (${AGG1.nPuntos} puntos, ${masaAcumulada(t1, P)})`
-      + ` y <b>CPF-2</b> (${AGG2.nPuntos} puntos, ${masaAcumulada(t2, P)}) — a partir de una tasa medida de <b>${tt.toLocaleString('es-CO')} g/Hr</b>.`);
+    ? `Es la lectura de la cámara en los puntos abiertos, la misma que registra la ficha GOP-F-006.`
+    : `Proyección${et} de esa misma lectura: <b>${tt.toLocaleString('es-CO')} g/Hr</b> sostenidos`
+      + ` durante ${PERIODOS[P].horas.toLocaleString('es-CO')} horas.`);
   /* La cadena completa, con los números de la pantalla y en las tres unidades.
      El jefe no tiene por qué fiarse del tablero: aquí puede rehacer la cuenta
      con una calculadora. */
