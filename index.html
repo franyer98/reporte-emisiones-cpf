@@ -2398,6 +2398,10 @@ THREE.OrbitControls = OrbitControls;
   .ld-bar button:hover{color:var(--text)}
   .ld-bar button.activo{background:rgba(0,184,40,.16);color:#00b828;
     border-color:rgba(0,184,40,.45);font-weight:700}
+  .ld-excel{display:inline-block;background:rgba(45,212,238,.14);color:var(--cool);
+    border:1px solid rgba(45,212,238,.45);border-radius:8px;padding:7px 13px;
+    font-family:'JetBrains Mono',monospace;font-size:11px;text-decoration:none;font-weight:700}
+  .ld-excel:hover{background:rgba(45,212,238,.24)}
   .ld-x{border-color:var(--border)!important}
   .ld-x:hover{border-color:var(--hot)!important;color:var(--hot)!important}
   .ld-cuerpo{flex:1;overflow:auto;padding:0 0 30px}
@@ -7513,6 +7517,9 @@ ${cssInforme()}
       <details class="mem-mas">
         <summary>LA HOJA DEL GOP-F-006, COMPLETA</summary>
         ${memCromaHTML()}
+        ${location.pathname.indexOf('/editor/') === -1 ? '' :
+          `<p class="mem-nota"><a class="ld-excel" href="${GOP_LIBRO}" download>Abrir el Excel
+          original</a> &nbsp; El libro completo que mandó el laboratorio, sin tocar.</p>`}
       </details>
 
       <div class="mem-acciones">
@@ -7691,6 +7698,17 @@ ${cssInforme()}
   const LD_HORAS = 8760;
   let ldAlcance = 'RUBIALES';
 
+  /* El libro original, tal como lo mandó el laboratorio. Vive bajo /editor
+     porque trae la línea base de todo el campo —más de dos mil hallazgos— y
+     el tablero público está abierto a cualquiera con el enlace. Quien entra
+     al editor ya pasó por el código del correo. */
+  const GOP_LIBRO = 'gop/GOP-F-006-campana-julio-2026.xlsx';
+
+  function ldEnlaceExcel() {
+    if (location.pathname.indexOf('/editor/') === -1) return '';
+    return `<a class="ld-excel" href="${GOP_LIBRO}" download>Abrir el Excel original</a>`;
+  }
+
   function ldFilas(clave) {
     const { partes } = memPartes(clave);
     const filas = [];
@@ -7798,6 +7816,7 @@ ${cssInforme()}
           <div class="ld-h">El GOP-F-006 y el tablero, misma fila</div>
         </div>
         <div class="ld-bar" id="ldBar">
+          ${ldEnlaceExcel()}
           <button data-alc="CPF-1">CPF-1</button>
           <button data-alc="CPF-2">CPF-2</button>
           <button data-alc="RUBIALES">Rubiales</button>
