@@ -2379,6 +2379,65 @@ THREE.OrbitControls = OrbitControls;
   .mem-mas summary:hover{color:var(--text)}
   @media (max-width:620px){ .mem-demo-l{font-size:12.5px} }
 
+  /* ---------- LADO A LADO ----------
+     La hoja del procedimiento a la izquierda y el tablero a la derecha, en la
+     misma fila y en la misma pantalla. No es una tabla nueva: es la cuenta de
+     la GOP-F-006, columna por columna, aplicada a los puntos que hoy están
+     activos, y al lado lo que el tablero muestra de esos mismos puntos. */
+  .ld-capa{position:fixed;inset:0;z-index:135;background:var(--bg);display:flex;
+    flex-direction:column}
+  .ld-top{flex:none;border-bottom:1px solid var(--border);padding:13px 20px;
+    display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+  .ld-kick{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.12em;
+    color:var(--text-faint)}
+  .ld-h{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;margin:3px 0 0}
+  .ld-bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .ld-bar button{background:transparent;color:var(--text-dim);border:1px solid var(--border);
+    border-radius:8px;padding:7px 13px;font-family:'JetBrains Mono',monospace;font-size:11px;
+    cursor:pointer}
+  .ld-bar button:hover{color:var(--text)}
+  .ld-bar button.activo{background:rgba(0,184,40,.16);color:#00b828;
+    border-color:rgba(0,184,40,.45);font-weight:700}
+  .ld-x{border-color:var(--border)!important}
+  .ld-x:hover{border-color:var(--hot)!important;color:var(--hot)!important}
+  .ld-cuerpo{flex:1;overflow:auto;padding:0 0 30px}
+  table.ld-t{border-collapse:separate;border-spacing:0;width:100%;font-size:12px;
+    font-family:'JetBrains Mono',monospace}
+  table.ld-t th,table.ld-t td{padding:7px 9px;text-align:right;white-space:nowrap;
+    border-bottom:1px solid rgba(255,255,255,.06)}
+  table.ld-t th{position:sticky;background:var(--surface);z-index:3;font-size:9px;
+    letter-spacing:.06em;color:var(--text-faint);font-weight:400}
+  table.ld-t thead tr:first-child th{top:0;font-family:'Space Grotesk',sans-serif;font-size:11px;
+    letter-spacing:.14em;font-weight:700;padding:9px;border-bottom:1px solid var(--border)}
+  table.ld-t thead tr:nth-child(2) th{top:35px;border-bottom:1px solid var(--border)}
+  table.ld-t th.lado-a{background:rgba(45,212,238,.14);color:var(--cool)}
+  table.ld-t th.lado-b{background:rgba(0,184,40,.14);color:#00b828}
+  table.ld-t td.izq,table.ld-t th.izq{text-align:left}
+  table.ld-t td{color:var(--text-dim)}
+  table.ld-t td.eq{color:var(--text);font-family:'Space Grotesk',sans-serif;font-weight:600}
+  /* la línea que parte la pantalla en dos: su formato | el tablero */
+  table.ld-t .corte{border-left:2px solid var(--cool)}
+  table.ld-t td.gei{color:var(--cool);font-weight:700;background:rgba(45,212,238,.07)}
+  table.ld-t td.tab{color:#00b828;font-weight:700;background:rgba(0,184,40,.07)}
+  table.ld-t td.dif{font-weight:700}
+  table.ld-t td.dif.cero{color:#00b828}
+  table.ld-t td.dif.no{color:var(--hot);background:rgba(255,71,87,.12)}
+  table.ld-t tr:hover td{background:rgba(255,255,255,.05)}
+  table.ld-t tr:hover td.gei{background:rgba(45,212,238,.14)}
+  table.ld-t tr:hover td.tab{background:rgba(0,184,40,.14)}
+  table.ld-t tr.ld-fac td{background:rgba(255,255,255,.05);color:var(--text);font-weight:700;
+    font-size:10px;letter-spacing:.1em}
+  table.ld-t tr.ld-tot td{background:rgba(0,184,40,.14);color:#00b828;font-weight:700;
+    font-size:13px;border-top:1px solid var(--border)}
+  .ld-pie{padding:16px 20px;color:var(--text-faint);font-size:12px;line-height:1.75;
+    max-width:900px}
+  .ld-pie b{color:var(--text)}
+  @media (max-width:760px){
+    table.ld-t{font-size:10.5px}
+    table.ld-t th,table.ld-t td{padding:6px 6px}
+    .ld-h{font-size:15px}
+  }
+
   /* ---------- FICHA DE TRAZABILIDAD ----------
      Un punto, una hoja, la cadena completa sin cortes: la foto con la que se
      detectó, la muestra de gas que le aplica, la cuenta con sus números y la
@@ -3020,6 +3079,7 @@ THREE.OrbitControls = OrbitControls;
                 <a href="#" class="nav-link" id="navInforme">Informe para imprimir o enviar en PDF</a>
         <a href="#" class="nav-link" id="navOrden">Orden de trabajo · por tanque</a>
         <a href="#" class="nav-link" id="navFicha">Ficha de trazabilidad · un punto de punta a punta</a>
+        <a href="#" class="nav-link" id="navLado">Comparar con el GOP-F-006 · lado a lado</a>
         <a href="#" class="nav-link" id="navSimulador">Simulador · cuánto deja de emitirse</a>
         <a href="#" class="nav-link" id="navMemoria">Memoria de cálculo · de dónde sale cada número</a>
       </div>
@@ -7620,6 +7680,160 @@ ${cssInforme()}
       setTimeout(() => { boton.textContent = previo; boton.disabled = false; }, 2400);
     }
   }
+
+  /* ============================================================
+     LADO A LADO
+     A la izquierda, la cuenta de la GOP-F-006 columna por columna —la misma
+     cadena del libro, con la composición de la muestra que le aplica a cada
+     punto—. A la derecha, lo que el tablero muestra de ese mismo punto. En
+     medio, una línea. Y al final, la diferencia, que es el argumento: cero.
+     ============================================================ */
+  const LD_HORAS = 8760;
+  let ldAlcance = 'RUBIALES';
+
+  function ldFilas(clave) {
+    const { partes } = memPartes(clave);
+    const filas = [];
+    partes.forEach(([fac, lista]) => {
+      [...lista].sort((a, b) => b.tasa - a.tasa).forEach(d => {
+        const m = fichaMuestra(fac, d.area);
+        const K = kDe(fac, d.area);
+        if (!m) { filas.push({ fac, d, K, sin: true }); return; }
+        const f = m.fila;
+        const mCH4 = parseFloat(f[24]), mCO2 = parseFloat(f[25]);
+        const mTOC = parseFloat(f[26]), enTOC = parseFloat(f[27]);
+        // exactamente las fórmulas del libro
+        const ch4gh = d.tasa * enTOC / 100;
+        const co2gh = d.tasa / mTOC * 100 * mCO2 / 100;
+        const tonCH4 = ch4gh * 24 / 1e6 * 365;
+        const tonCO2 = co2gh * 24 * 365 / 1e6;
+        const gei = tonCO2 + tonCH4 * 28;
+        filas.push({ fac, d, K, m, mCH4, mCO2, mTOC, enTOC, ch4gh, co2gh, tonCH4, tonCO2, gei,
+                     tablero: d.tasa * K });
+      });
+    });
+    return filas;
+  }
+
+  function ldPintar() {
+    const caja = document.getElementById('ldCuerpo');
+    if (!caja) return;
+    const filas = ldFilas(ldAlcance);
+    const n = (v, d) => v.toLocaleString('es-CO', { minimumFractionDigits: d, maximumFractionDigits: d });
+    const g0 = v => Math.round(v).toLocaleString('es-CO');
+
+    let cuerpo = '', fac = '', tg = 0, tgei = 0, ttab = 0;
+    filas.forEach(r => {
+      if (r.fac !== fac) {
+        fac = r.fac;
+        cuerpo += `<tr class="ld-fac"><td class="izq" colspan="8">${memEsc(fac)}</td>`
+                + `<td class="corte" colspan="4"></td></tr>`;
+      }
+      if (r.sin) {
+        cuerpo += `<tr><td class="izq eq">${memEsc(r.d.equipo)}</td>`
+                + `<td class="izq">sin muestra</td><td>${g0(r.d.tasa)}</td>`
+                + `<td colspan="5"></td><td class="corte">${g0(r.d.tasa)}</td>`
+                + `<td>${n(r.K, 7)}</td><td class="tab">${n(r.d.tasa * r.K, 2)}</td><td></td></tr>`;
+        return;
+      }
+      const dif = (Math.round((r.gei - r.tablero) * 100) / 100) || 0;
+      tg += r.d.tasa; tgei += r.gei; ttab += r.tablero;
+      cuerpo += `<tr>
+        <td class="izq eq">${memEsc(r.d.equipo)}</td>
+        <td class="izq">${memEsc(r.m.fila[0])}</td>
+        <td>${g0(r.d.tasa)}</td>
+        <td>${n(r.mCH4, 3)}</td>
+        <td>${n(r.mCO2, 3)}</td>
+        <td>${n(r.mTOC, 3)}</td>
+        <td>${n(r.tonCH4, 3)}</td>
+        <td>${n(r.tonCO2, 3)}</td>
+        <td class="gei">${n(r.gei, 2)}</td>
+        <td class="corte">${g0(r.d.tasa)}</td>
+        <td>${n(r.K, 7)}</td>
+        <td class="tab">${n(r.tablero, 2)}</td>
+        <td class="dif ${dif === 0 ? 'cero' : 'no'}">${n(dif, 2)}</td>
+      </tr>`;
+    });
+    const difTot = (Math.round((tgei - ttab) * 100) / 100) || 0;
+    cuerpo += `<tr class="ld-tot">
+      <td class="izq" colspan="2">TOTAL · ${filas.length} puntos</td>
+      <td>${g0(tg)}</td><td colspan="5"></td>
+      <td>${n(tgei, 2)}</td>
+      <td class="corte">${g0(tg)}</td><td></td>
+      <td>${n(ttab, 2)}</td>
+      <td class="dif ${difTot === 0 ? 'cero' : 'no'}">${n(difTot, 2)}</td></tr>`;
+
+    caja.innerHTML = `
+      <table class="ld-t">
+        <thead>
+          <tr>
+            <th class="lado-a izq" colspan="9">SU FORMATO · GOP-F-006</th>
+            <th class="lado-b corte izq" colspan="4">EL TABLERO</th>
+          </tr>
+          <tr>
+            <th class="izq">Equipo</th><th class="izq">Muestra</th><th>Lectura g/h</th>
+            <th>%m CH4</th><th>%m CO2</th><th>%m TOC</th>
+            <th>Ton CH4/año</th><th>Ton CO2/año</th><th>GEI ton CO2eq/año</th>
+            <th class="corte">Tasa g/Hr</th><th>Factor K</th><th>ton CO₂eq/año</th><th>Diferencia</th>
+          </tr>
+        </thead>
+        <tbody>${cuerpo}</tbody>
+      </table>
+      <p class="ld-pie">La mitad izquierda es la cadena del procedimiento, paso a paso, con la
+      composición de la muestra que le corresponde a cada punto: <b>Ton CH4/año = lectura ×
+      %m CH4 en TOC ÷ 100 × 24 × 365 ÷ 1.000.000</b>, <b>Ton CO2/año = lectura × %m CO2 ÷ %m TOC
+      × 24 × 365 ÷ 1.000.000</b>, y <b>GEI = Ton CO2 + Ton CH4 × 28</b>. La mitad derecha es lo
+      que muestra el tablero, que multiplica la misma lectura por el factor K de esa muestra.
+      Son dos caminos distintos a la misma cifra: por eso la última columna es cero.</p>`;
+  }
+
+  function abrirLadoALado() {
+    if (document.querySelector('.ld-capa')) return;
+    const cap = document.createElement('div');
+    cap.className = 'ld-capa';
+    cap.innerHTML = `
+      <div class="ld-top">
+        <div>
+          <div class="ld-kick">LADO A LADO</div>
+          <div class="ld-h">El GOP-F-006 y el tablero, misma fila</div>
+        </div>
+        <div class="ld-bar" id="ldBar">
+          <button data-alc="CPF-1">CPF-1</button>
+          <button data-alc="CPF-2">CPF-2</button>
+          <button data-alc="RUBIALES">Rubiales</button>
+          <button data-alc="CANOSUR">Caño Sur</button>
+          <button class="ld-x" id="ldX">Cerrar</button>
+        </div>
+      </div>
+      <div class="ld-cuerpo" id="ldCuerpo"></div>`;
+    document.body.appendChild(cap);
+    document.body.style.overflow = 'hidden';
+    const cerrar = () => {
+      cap.remove();
+      document.body.style.overflow = '';
+      document.removeEventListener('keydown', tecla);
+    };
+    const tecla = e => { if (e.key === 'Escape') cerrar(); };
+    document.addEventListener('keydown', tecla);
+    cap.querySelector('#ldX').onclick = cerrar;
+    const bar = cap.querySelector('#ldBar');
+    const marcar = () => bar.querySelectorAll('[data-alc]').forEach(b =>
+      b.classList.toggle('activo', b.dataset.alc === ldAlcance));
+    bar.querySelectorAll('[data-alc]').forEach(b => {
+      b.onclick = () => { ldAlcance = b.dataset.alc; marcar(); ldPintar(); };
+    });
+    marcar();
+    ldPintar();
+  }
+
+  const nl = document.getElementById('navLado');
+  if (nl) nl.addEventListener('click', e => {
+    e.preventDefault();
+    const m = document.querySelector('.nav-menu');
+    if (m) m.classList.remove('open');
+    abrirLadoALado();
+  });
+  window.ladoALado = abrirLadoALado;
 
   function abrirMemoria() {
     if (document.querySelector('.mem-capa')) return;
