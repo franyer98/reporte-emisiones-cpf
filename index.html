@@ -2416,6 +2416,13 @@ THREE.OrbitControls = OrbitControls;
     min-width:90px;font-size:10px;text-align:center}
   table.xl-t tr.xl-pm td{background:#fbfbfc;color:#5a646e;font-style:italic}
   table.xl-t td.xl-der{background:#eef7f1}
+  /* la hoja del tablero: el título de cada campo, el subtotal y las filas
+     dadas de baja, que siguen a la vista pero ya no suman */
+  table.xl-t tr.xl-tit td{background:#1e2630;color:#fff;font-weight:700;text-align:left;
+    letter-spacing:.3px}
+  table.xl-t tr.xl-sub td{background:#dfeee6;font-weight:700;border-top:2px solid #107c41}
+  table.xl-t tr.xl-cerr td{color:#8a949d;text-decoration:line-through;background:#f7f8f9}
+  table.xl-t tr.xl-cerr td.xl-der{background:#f1f5f2}
   table.xl-t td.sel{outline:2px solid #107c41;outline-offset:-2px;background:#d7ebdf!important}
   .xl-chips{display:flex;gap:6px;flex-wrap:wrap;padding:8px 9px;background:#f3f4f6;
     border-top:1px solid #c9ced3}
@@ -7426,31 +7433,133 @@ ${cssInforme()}
   const XL_VISTAS = [
     { id: 'muestras', nombre: 'Cromatografía', desde: 4, hasta: 25 },
     { id: 'julio', nombre: 'Campaña julio 2026', desde: 60, hasta: 84 },
+    { id: 'tablero', nombre: 'Hoy en el tablero', vivo: true },
   ];
   let xlVista = 'muestras';
 
+  /* ---------- LA HOJA QUE SE MUEVE SOLA ----------
+     Las dos pestañas anteriores son el archivo: no cambian. Esta se arma en
+     el momento con lo que el tablero tiene ahora. Cuando un hallazgo se da
+     de baja, su fila no desaparece —eso sería borrar la evidencia—: queda
+     tachada, marcada CERRADA, deja de sumar al subtotal y lo que dejó de
+     emitir pasa a la columna de evitadas. El SUBTOTAL usa SUMIF sobre la
+     columna Estado, así que el descuento se ve en la fórmula, no de palabra.
+
+     Los campos no se mezclan: Rubiales (CPF-1 + CPF-2) lleva su subtotal y
+     Caño Sur el suyo. No hay una fila que los sume. */
+  const XL_VIVO_COLS = ['Etiqueta No', 'Nombre facilidad', 'Equipo', 'Área', 'Punto detectado',
+    'Elemento', 'Lectura g/Hr', 'Factor K', 'ton CO2eq/año', 'Estado', 'Fecha de cierre',
+    'ton CO2eq/año evitadas'];
+
+  const xlNum = (v, d) => v.toLocaleString('es-CO',
+    { minimumFractionDigits: d, maximumFractionDigits: d });
+
+  function xlVivo() {
+    const filas = [], formulas = {};
+    let r = 1;
+    const enc = (txt, clase) => { filas.push({ r, celdas: [txt], clase, fac: '' }); r++; };
+
+    filas.push({ r, celdas: XL_VIVO_COLS.slice(), clase: 'xl-enc', fac: '' }); r++;
+
+    // una fila por hallazgo, con su estado y sus dos fórmulas
+    const fila = (d, fac, chip, cerrada) => {
+      const k = kDe(fac, d.area);
+      const gei = d.tasa * k;
+      filas.push({
+        r, fac: chip, clase: cerrada ? 'xl-cerr' : '',
+        celdas: [
+          d.fid || '', fac, d.equipo, d.area, d.punto, d.elemento,
+          xlNum(d.tasa, 0), xlNum(k, 7),
+          cerrada ? '0,000' : xlNum(gei, 3),
+          cerrada ? 'CERRADA' : 'ACTIVA',
+          cerrada ? (d.fechaCierre || '') : '',
+          cerrada ? xlNum(gei, 3) : '0,000',
+        ],
+      });
+      formulas[r + ':8'] = 'K del área «' + d.area + '» · ' + fac
+        + ' · hoja «Calculos CO2 2026» · ' + xlNum(k, 10) + ' ton CO2eq/año por cada g/Hr';
+      formulas[r + ':9'] = 'IF(J' + r + '="CERRADA";0;G' + r + '*H' + r + ')';
+      formulas[r + ':12'] = 'IF(J' + r + '="CERRADA";G' + r + '*H' + r + ';0)';
+      r++;
+    };
+
+    const bloque = (titulo, grupos) => {
+      enc(titulo, 'xl-tit');
+      const ini = r;
+      grupos.forEach(({ fac, chip, activas, cerradas }) => {
+        [...activas].sort((a, b) => b.tasa - a.tasa).forEach(d => fila(d, fac, chip, false));
+        [...cerradas].sort((a, b) => b.tasa - a.tasa).forEach(d => fila(d, fac, chip, true));
+      });
+      const fin = r - 1;
+      if (fin < ini) { enc('(sin hallazgos)', ''); return; }
+
+      const act = grupos.flatMap(g => g.activas.map(d => ({ d, fac: g.fac })));
+      const cer = grupos.flatMap(g => g.cerradas.map(d => ({ d, fac: g.fac })));
+      const sumG = act.reduce((a, x) => a + x.d.tasa, 0);
+      const sumT = act.reduce((a, x) => a + x.d.tasa * kDe(x.fac, x.d.area), 0);
+      const sumE = cer.reduce((a, x) => a + x.d.tasa * kDe(x.fac, x.d.area), 0);
+
+      filas.push({
+        r, fac: '', clase: 'xl-sub',
+        celdas: ['SUBTOTAL ACTIVO · ' + titulo, '', '', '', '', '',
+          xlNum(sumG, 0), '', xlNum(sumT, 3),
+          act.length + ' activas · ' + cer.length + ' cerradas', '', xlNum(sumE, 3)],
+      });
+      formulas[r + ':7'] = 'SUMIF(J' + ini + ':J' + fin + ';"ACTIVA";G' + ini + ':G' + fin + ')';
+      formulas[r + ':9'] = 'SUM(I' + ini + ':I' + fin + ')';
+      formulas[r + ':12'] = 'SUM(L' + ini + ':L' + fin + ')';
+      r++;
+      enc('', '');
+    };
+
+    bloque('CAMPO RUBIALES (CPF-1 + CPF-2)', [
+      { fac: 'CPF-1', chip: 'CPF-1', activas: DATA1, cerradas: CERRADAS1 },
+      { fac: 'CPF-2', chip: 'CPF-2', activas: DATA2, cerradas: CERRADAS2 },
+    ]);
+    bloque('CAÑO SUR · CENTAUROS', [
+      { fac: 'CAÑO SUR', chip: 'EP-1', activas: DATACS, cerradas: [] },
+    ]);
+
+    return { filas, formulas, cols: XL_VIVO_COLS.length };
+  }
+
+  /* Las fórmulas de la vista que se está mirando: las del libro en las dos
+     primeras pestañas, las que se acaban de armar en la del tablero. */
+  let xlFx = {};
+
   function xlHojaHTML() {
-    const N = 38;
     const v = XL_VISTAS.find(x => x.id === xlVista) || XL_VISTAS[0];
-    const dentro = HOJA.filas.filter(([r]) => r >= v.desde && r <= v.hasta);
+    let N, dentro;
+
+    if (v.vivo) {
+      const viva = xlVivo();
+      xlFx = viva.formulas;
+      N = viva.cols;
+      dentro = viva.filas.map(f => [f.r, f.celdas, f.clase, f.fac]);
+    } else {
+      xlFx = HOJA.formulas;
+      N = 38;
+      dentro = HOJA.filas.filter(([r]) => r >= v.desde && r <= v.hasta)
+        .map(([r, celdas]) => [r, celdas,
+          (r === 4 || r === 61) ? 'xl-enc' : (r === 6 ? 'xl-pm' : ''),
+          String(celdas[1] || '').trim()]);
+    }
 
     let cab = '<tr><th class="xl-n"></th>';
     for (let i = 0; i < N; i++) cab += `<th>${xlLetra(i)}</th>`;
     cab += '</tr>';
 
-    const cuerpo = dentro.map(([r, celdas]) => {
-      const fac = String(celdas[1] || '').trim();
-      // la fila de encabezados y la de pesos se ven distintas, como en el libro
-      const clase = (r === 4 || r === 61) ? 'xl-enc' : (r === 6 ? 'xl-pm' : '');
-      return `<tr class="${clase}" data-r="${r}" data-fac="${memEsc(fac)}">`
+    const cuerpo = dentro.map(([r, celdas, clase, fac]) =>
+      `<tr class="${clase}" data-r="${r}" data-fac="${memEsc(fac)}">`
         + `<td class="xl-n">${r}</td>`
-        + celdas.map((c, i) => {
+        + (clase === 'xl-tit'
+            ? `<td class="txt" data-c="0" colspan="${N}">${memEsc(celdas[0] || '')}</td>`
+            : celdas.map((c, i) => {
             const t = (c === null || c === undefined) ? '' : String(c);
-            const num = t !== '' && !isNaN(t.replace(',', '.'));
-            const der = HOJA.formulas[r + ':' + (i + 1)] ? 'xl-der' : '';
+            const num = t !== '' && !isNaN(t.replace(/\./g, '').replace(',', '.'));
+            const der = xlFx[r + ':' + (i + 1)] ? 'xl-der' : '';
             return `<td class="${num ? '' : 'txt'} ${der}" data-c="${i}">${memEsc(t)}</td>`;
-          }).join('') + '</tr>';
-    }).join('');
+          }).join('')) + '</tr>').join('');
 
     const pest = XL_VISTAS.map(x =>
       `<span class="${x.id === xlVista ? 'activa' : ''}" data-v="${x.id}">${x.nombre}</span>`).join('');
@@ -7485,9 +7594,10 @@ ${cssInforme()}
       td.classList.add('sel');
       const col = +td.dataset.c, fil = td.parentElement.dataset.r;
       ref.textContent = xlLetra(col) + fil;
-      // si la celda tiene fórmula en el libro, se muestra la fórmula
-      const f = HOJA.formulas[fil + ':' + (col + 1)];
-      val.textContent = f ? '=' + f : (td.textContent || '(vacía)');
+      // si la celda tiene fórmula, se muestra la fórmula y no el resultado
+      const f = xlFx[fil + ':' + (col + 1)];
+      // en la hoja del tablero, la columna H lleva una explicación, no una fórmula
+      val.textContent = f ? (/^[A-Z]+\(/.test(f) ? '=' + f : f) : (td.textContent || '(vacía)');
     });
 
     const chips = caja.querySelector('#xlChips');
@@ -7515,18 +7625,28 @@ ${cssInforme()}
   }
 
   function memCromaHTML() {
-    return `<div class="mem-croma-cab">
-        <span>ORIGEN <b>${memEsc(CROMA.archivo)}</b></span>
-        <span>HOJA <b>${memEsc(CROMA.hoja)}</b></span>
-        <span>${CROMA.filas.length} muestras</span>
-      </div>
+    // la cabecera cambia con la pestaña: las dos primeras vienen del archivo,
+    // la tercera del propio tablero, y conviene que se note cuál se está viendo
+    const vAct = XL_VISTAS.find(x => x.id === xlVista) || XL_VISTAS[0];
+    const act = [...DATA1, ...DATA2].length, cer = [...CERRADAS1, ...CERRADAS2].length;
+    const cab = vAct.vivo
+      ? `<span>ORIGEN <b>este tablero</b></span>
+         <span>AL <b>${fechaLarga(hoyISO())}</b></span>
+         <span>${act} activas · ${cer} cerradas · Caño Sur ${DATACS.length}</span>`
+      : `<span>ORIGEN <b>${memEsc(CROMA.archivo)}</b></span>
+         <span>HOJA <b>${memEsc(CROMA.hoja)}</b></span>
+         <span>${CROMA.filas.length} muestras</span>`;
+    return `<div class="mem-croma-cab">${cab}</div>
       ${xlHojaHTML()}
       <p class="mem-nota">Es la hoja del procedimiento dentro del tablero, con sus letras de
       columna y sus números de fila: la celda <b>AJ62</b> de aquí es la misma <b>AJ62</b> del
       archivo. Al tocar una celda con fórmula —las verdes— arriba aparece la fórmula del libro.
-      Abajo, las dos pestañas: <b>Cromatografía</b> son las muestras de gas (filas 4 a 25) y
-      <b>Campaña julio 2026</b> son los hallazgos con su GEI (filas 60 a 84), que es la parte
-      que va más abajo en el archivo.</p>`;
+      Abajo, las tres pestañas. <b>Cromatografía</b> son las muestras de gas (filas 4 a 25) y
+      <b>Campaña julio 2026</b> son los hallazgos con su GEI (filas 60 a 84): esas dos son el
+      archivo y no cambian. <b>Hoy en el tablero</b> se arma en el momento con lo que el tablero
+      tiene ahora: al dar de baja un hallazgo, su fila queda <b>tachada y marcada CERRADA</b>,
+      deja de sumar —el subtotal es un <code>SUMIF</code> sobre la columna Estado— y lo que dejó
+      de emitir pasa a la última columna. Rubiales y Caño Sur llevan subtotal aparte.</p>`;
   }
 
   /* El resumen por área es lo que se lee de un vistazo; el punto por punto
