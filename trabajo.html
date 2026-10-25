@@ -3664,6 +3664,15 @@ const K_AREA = {
   'CAÑO SUR|FWKOS':       0.22630163262421651,   // ETK-1101-A/B FWKO · filas 7 y 8
   'CAÑO SUR|SKIM TANK':   0.22019025281015556,   // sin análisis propio: CPF-1 · SKIM TANK
 };
+/* ---------- LAS 18 MUESTRAS DEL LIBRO ----------
+   K_AREA de arriba son las seis que el tablero aplica, una por área. El
+   libro trae dieciocho: hay equipos con análisis propio que hoy no tienen
+   hallazgo abierto. El simulador las ofrece todas para poder reproducir
+   cualquier fila del Excel tal cual. K sale de la propia hoja: AJ ÷ F de
+   esa fila, sin redondear, así que al poner la lectura de la fila el
+   simulador devuelve exactamente su GEI. */
+const MUESTRAS_GOP = [{"fila": 7, "fac": "EP-1", "equipo": "ETK-1101-A FWKO", "lectura": 1200, "gei": 271.561959, "k": 0.2263016325}, {"fila": 8, "fac": "EP-1", "equipo": "ETK-1101-B FWKO", "lectura": 8500, "gei": 1923.563877, "k": 0.2263016325882353}, {"fila": 9, "fac": "CPF-1", "equipo": "TK-905", "lectura": 160, "gei": 24.627711, "k": 0.15392319375000002}, {"fila": 10, "fac": "CPF-1", "equipo": "TK-905", "lectura": 21, "gei": 3.232387, "k": 0.1539231904761905}, {"fila": 11, "fac": "CPF-1", "equipo": "TK-906-B", "lectura": 1100, "gei": 169.315511, "k": 0.15392319181818181}, {"fila": 12, "fac": "CPF-1", "equipo": "TK-906-A", "lectura": 790, "gei": 121.599322, "k": 0.1539231924050633}, {"fila": 13, "fac": "CPF-1", "equipo": "TK-904", "lectura": 1900, "gei": 292.454065, "k": 0.15392319210526317}, {"fila": 14, "fac": "CPF-1", "equipo": "TK-904", "lectura": 730, "gei": 112.36393, "k": 0.15392319178082192}, {"fila": 15, "fac": "CPF-1", "equipo": "TK-901-C-PROCESOS", "lectura": 2200, "gei": 543.453737, "k": 0.24702442590909093}, {"fila": 16, "fac": "CPF-1", "equipo": "HEAD-TK-902", "lectura": 370, "gei": 91.599559, "k": 0.2475663756756757}, {"fila": 17, "fac": "CPF-1", "equipo": "TK-906-B -SKIM TANK", "lectura": 180, "gei": 39.634246, "k": 0.22019025555555555}, {"fila": 18, "fac": "CPF-1", "equipo": "TK-906-A SKIM TANK", "lectura": 400, "gei": 88.076101, "k": 0.2201902525}, {"fila": 19, "fac": "CPF-2", "equipo": "300 TK- 0103 ALMACENAMIENTO", "lectura": 160, "gei": 39.616358, "k": 0.2476022375}, {"fila": 20, "fac": "CPF-2", "equipo": "400-TK-0301", "lectura": 280, "gei": 69.325402, "k": 0.24759072142857141}, {"fila": 21, "fac": "CPF-2", "equipo": "300-TK-0301 FWKOS", "lectura": 670, "gei": 162.960483, "k": 0.24322460149253733}, {"fila": 22, "fac": "CPF-2", "equipo": "HEAD-300-TK-0001", "lectura": 820, "gei": 203.058663, "k": 0.24763251585365853}, {"fila": 23, "fac": "CPF-2", "equipo": "400-TK-0401", "lectura": 890, "gei": 220.355743, "k": 0.2475907224719101}, {"fila": 24, "fac": "CPF-2", "equipo": "400-TK-0101", "lectura": 1200, "gei": 297.108867, "k": 0.24759072249999997}];
+
 const K_FALLBACK = { 1: 0.24760223983966112, 2: 0.24698816042558724 };
 function kDe(fac, area) {
   return K_AREA[fac + '|' + area] ?? K_FALLBACK[fac === 'CPF-1' ? 1 : 2];
@@ -7927,11 +7936,23 @@ ${cssInforme()}
      ============================================================ */
   const HORAS_ANIO = 8760;
 
+  /* Dos grupos en el selector. Arriba, los seis factores que el tablero
+     aplica por área: son los que hay que usar para reportar. Abajo, las
+     dieciocho muestras del libro, cada una con su fila, para poder
+     reproducir cualquier renglón del Excel sin tener que buscar un área
+     parecida. */
   function simOpciones() {
-    return Object.keys(K_AREA).map(clave => {
+    const areas = Object.keys(K_AREA).map(clave => {
       const [fac, area] = clave.split('|');
-      return { clave, fac, area, k: K_AREA[clave] };
+      return { tipo: 'area', clave, fac, area, k: K_AREA[clave],
+               etiqueta: fac + ' · ' + area };
     });
+    const muestras = MUESTRAS_GOP.map(m => ({
+      tipo: 'muestra', fila: m.fila, fac: m.fac, equipo: m.equipo,
+      lectura: m.lectura, gei: m.gei, k: m.k,
+      etiqueta: 'fila ' + m.fila + ' · ' + m.fac + ' · ' + m.equipo,
+    }));
+    return areas.concat(muestras);
   }
 
   function simDecimales(v, d) {
@@ -7959,7 +7980,14 @@ ${cssInforme()}
           </label>
           <label>Cromatografía
             <select id="simCrom">
-              ${ops.map((o, i) => `<option value="${i}">${o.fac} · ${o.area}</option>`).join('')}
+              <optgroup label="Factores que aplica el tablero">
+                ${ops.map((o, i) => o.tipo === 'area'
+                    ? `<option value="${i}">${o.etiqueta}</option>` : '').join('')}
+              </optgroup>
+              <optgroup label="Muestras del libro · hoja Calculos CO2 2026">
+                ${ops.map((o, i) => o.tipo === 'muestra'
+                    ? `<option value="${i}">${o.etiqueta}</option>` : '').join('')}
+              </optgroup>
             </select>
           </label>
           <label>Horas al año
@@ -8003,7 +8031,7 @@ ${cssInforme()}
       const co2 = tonToc * F;
 
       cap.querySelector('#simV').textContent = simDecimales(co2, 2) + ' ton';
-      cap.querySelector('#simS').textContent = 'CO₂eq al año · ' + o.fac + ' · ' + o.area;
+      cap.querySelector('#simS').textContent = 'CO₂eq al año · ' + o.etiqueta;
 
       cap.querySelector('#simCadena').innerHTML = [
         ['1', 'Tasa medida con la cámara', simDecimales(tasa, 0) + ' g/Hr'],
@@ -8016,7 +8044,7 @@ ${cssInforme()}
 
       // La comprobación: el tablero multiplica la tasa por K. Con las horas
       // del método (8.760) las dos cuentas tienen que dar lo mismo.
-      const kTablero = kDe(o.fac, o.area);
+      const kTablero = o.tipo === 'area' ? kDe(o.fac, o.area) : o.k;
       const delTablero = tasa * kTablero;
       const mismasHoras = Math.abs(horas - HORAS_ANIO) < 1e-9;
       const cuadra = mismasHoras && Math.abs(co2 - delTablero) < 1e-9;
@@ -8025,9 +8053,17 @@ ${cssInforme()}
       ok.innerHTML = mismasHoras
         ? `<span class="pico">${cuadra ? '✓' : '!'}</span><span>`
           + (cuadra
-              ? `Coincide con el tablero: ${simDecimales(tasa, 0)} g/Hr × ${simDecimales(kTablero, 7)}`
-                + ` = <b>${simDecimales(delTablero, 2)} ton CO₂eq/año</b>. Es la misma cuenta,`
-                + ` condensada en el factor K del área.`
+              ? (o.tipo === 'area'
+                  ? `Coincide con el tablero: ${simDecimales(tasa, 0)} g/Hr × ${simDecimales(kTablero, 7)}`
+                    + ` = <b>${simDecimales(delTablero, 2)} ton CO₂eq/año</b>. Es la misma cuenta,`
+                    + ` condensada en el factor K del área.`
+                  : (Math.abs(tasa - o.lectura) < 1e-9
+                      ? `Es la fila ${o.fila} del libro tal cual: su lectura F${o.fila} son`
+                        + ` ${simDecimales(o.lectura, 0)} g/Hr y su GEI AJ${o.fila} son`
+                        + ` <b>${simDecimales(o.gei, 6)} ton CO₂eq/año</b>. Sale el mismo número.`
+                      : `Es la cromatografía de la fila ${o.fila} (${o.equipo}) aplicada a otra`
+                        + ` lectura. En el libro esa fila va con ${simDecimales(o.lectura, 0)} g/Hr`
+                        + ` y da ${simDecimales(o.gei, 3)} ton CO₂eq/año.`))
               : `No coincide con el tablero (${simDecimales(delTablero, 2)} ton). Revisa el factor`
                 + ` del área antes de usar este número.`)
           + '</span>'
@@ -8035,9 +8071,17 @@ ${cssInforme()}
           + ` ${simDecimales(HORAS_ANIO, 0)} del método, el resultado ya no es comparable con el`
           + ` del tablero: sirve para un supuesto, no para reportar.</span>`;
 
-      cap.querySelector('#simNota').innerHTML = o.clave === 'CAÑO SUR|SKIM TANK'
-        ? 'El SKIM TANK de Caño Sur no tiene análisis propio: se aplica el del SKIM TANK de CPF-1.'
-        : `Factor del área · K = ${simDecimales(o.k, 7)} ton CO₂eq por cada g/Hr.`;
+      const nota = cap.querySelector('#simNota');
+      if (o.tipo === 'muestra') {
+        // de dónde sale el factor: la división que se puede hacer en el Excel
+        nota.innerHTML = `Muestra del libro · fila <b>${o.fila}</b> · ${o.equipo} (${o.fac}).`
+          + ` K = AJ${o.fila} ÷ F${o.fila} = ${simDecimales(o.gei, 6)} ÷ ${simDecimales(o.lectura, 0)}`
+          + ` = <b>${simDecimales(o.k, 7)}</b> ton CO₂eq por cada g/Hr.`;
+      } else {
+        nota.innerHTML = o.clave === 'CAÑO SUR|SKIM TANK'
+          ? 'El SKIM TANK de Caño Sur no tiene análisis propio: se aplica el del SKIM TANK de CPF-1.'
+          : `Factor del área · K = ${simDecimales(o.k, 7)} ton CO₂eq por cada g/Hr.`;
+      }
     }
 
     [tasaEl, cromEl, horasEl].forEach(el => {
