@@ -7517,9 +7517,9 @@ ${cssInforme()}
       <details class="mem-mas">
         <summary>LA HOJA DEL GOP-F-006, COMPLETA</summary>
         ${memCromaHTML()}
-        ${location.pathname.indexOf('/editor/') === -1 ? '' :
-          `<p class="mem-nota"><a class="ld-excel" href="${GOP_LIBRO}" download>Abrir el Excel
-          original</a> &nbsp; El libro completo que mandó el laboratorio, sin tocar.</p>`}
+        <p class="mem-nota">${ldEnlaceExcel()} &nbsp; El libro completo que mandó el
+        laboratorio, sin tocar. Pide correo y código, porque trae la línea base de todo el
+        campo.</p>
       </details>
 
       <div class="mem-acciones">
@@ -7702,10 +7702,13 @@ ${cssInforme()}
      porque trae la línea base de todo el campo —más de dos mil hallazgos— y
      el tablero público está abierto a cualquiera con el enlace. Quien entra
      al editor ya pasó por el código del correo. */
-  const GOP_LIBRO = 'gop/GOP-F-006-campana-julio-2026.xlsx';
+  const GOP_LIBRO = '/editor/gop/GOP-F-006-campana-julio-2026.xlsx';
 
+  /* El enlace se muestra siempre, aunque el archivo viva bajo /editor: así
+     está donde uno lo busca sin pensar en qué página está parado. A quien no
+     haya pasado por el código, Cloudflare se lo pide al pulsarlo; el libro
+     sigue sin quedar expuesto. */
   function ldEnlaceExcel() {
-    if (location.pathname.indexOf('/editor/') === -1) return '';
     return `<a class="ld-excel" href="${GOP_LIBRO}" download>Abrir el Excel original</a>`;
   }
 
