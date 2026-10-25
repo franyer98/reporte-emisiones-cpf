@@ -2379,6 +2379,49 @@ THREE.OrbitControls = OrbitControls;
   .mem-mas summary:hover{color:var(--text)}
   @media (max-width:620px){ .mem-demo-l{font-size:12.5px} }
 
+  /* ---------- LA HOJA, COMO EN EXCEL ----------
+     Clara sobre el tablero oscuro, con sus letras de columna, sus números de
+     fila y su barra de fórmulas. No es una tabla parecida: son las celdas del
+     GOP-F-006 con sus referencias reales, para que al señalar AJ15 estemos
+     señalando lo mismo en los dos lados. */
+  .xl{border:1px solid #9aa4ad;border-radius:7px;overflow:hidden;background:#fff;
+    color:#1b2026;font-family:'Segoe UI',system-ui,sans-serif}
+  .xl-barra{display:flex;align-items:stretch;border-bottom:1px solid #c9ced3;background:#f3f4f6}
+  .xl-ref{flex:none;width:92px;border-right:1px solid #c9ced3;padding:6px 9px;
+    font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#1b2026;
+    display:flex;align-items:center;font-weight:700}
+  .xl-fx{flex:none;width:30px;border-right:1px solid #c9ced3;display:flex;align-items:center;
+    justify-content:center;font-style:italic;font-size:12px;color:#5a646e}
+  .xl-val{flex:1;padding:6px 10px;font-family:'JetBrains Mono',monospace;font-size:11.5px;
+    color:#0f5132;overflow:auto;white-space:nowrap;display:flex;align-items:center}
+  .xl-rejilla{overflow:auto;max-height:52vh}
+  table.xl-t{border-collapse:separate;border-spacing:0;font-size:11.5px;
+    font-family:'JetBrains Mono',monospace;white-space:nowrap}
+  table.xl-t th,table.xl-t td{border-right:1px solid #d8dde1;border-bottom:1px solid #d8dde1;
+    padding:3px 7px;text-align:right}
+  table.xl-t thead th{position:sticky;top:0;z-index:3;background:#e8eaed;color:#45505a;
+    font-weight:600;text-align:center;border-bottom:1px solid #9aa4ad}
+  table.xl-t td.xl-n,table.xl-t th.xl-n{position:sticky;left:0;z-index:2;background:#e8eaed;
+    color:#45505a;text-align:center;width:38px;min-width:38px;border-right:1px solid #9aa4ad;
+    font-weight:600}
+  table.xl-t thead th.xl-n{z-index:4}
+  table.xl-t td{background:#fff;cursor:cell}
+  table.xl-t td.txt{text-align:left}
+  table.xl-t tr.xl-enc td{background:#f3f4f6;font-weight:700;white-space:normal;
+    min-width:90px;font-size:10px;text-align:center}
+  table.xl-t tr.xl-pm td{background:#fbfbfc;color:#5a646e;font-style:italic}
+  table.xl-t td.xl-der{background:#eef7f1}
+  table.xl-t td.sel{outline:2px solid #107c41;outline-offset:-2px;background:#d7ebdf!important}
+  .xl-chips{display:flex;gap:6px;flex-wrap:wrap;padding:8px 9px;background:#f3f4f6;
+    border-top:1px solid #c9ced3}
+  .xl-chips button{background:#fff;border:1px solid #9aa4ad;border-radius:5px;padding:4px 11px;
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#1b2026;cursor:pointer}
+  .xl-chips button.activo{background:#107c41;border-color:#107c41;color:#fff;font-weight:700}
+  .xl-pestana{display:flex;gap:0;background:#f3f4f6;border-top:1px solid #c9ced3;padding:0 9px}
+  .xl-pestana span{padding:6px 14px;font-size:11px;background:#fff;border:1px solid #c9ced3;
+    border-top:2px solid #107c41;border-bottom:0;color:#107c41;font-weight:700}
+  @media (max-width:620px){ .xl-rejilla{max-height:60vh} .xl-ref{width:72px} }
+
   /* ---------- LADO A LADO ----------
      La hoja del procedimiento a la izquierda y el tablero a la derecha, en la
      misma fila y en la misma pantalla. No es una tabla nueva: es la cuenta de
@@ -2398,10 +2441,6 @@ THREE.OrbitControls = OrbitControls;
   .ld-bar button:hover{color:var(--text)}
   .ld-bar button.activo{background:rgba(0,184,40,.16);color:#00b828;
     border-color:rgba(0,184,40,.45);font-weight:700}
-  .ld-excel{display:inline-block;background:rgba(45,212,238,.14);color:var(--cool);
-    border:1px solid rgba(45,212,238,.45);border-radius:8px;padding:7px 13px;
-    font-family:'JetBrains Mono',monospace;font-size:11px;text-decoration:none;font-weight:700}
-  .ld-excel:hover{background:rgba(45,212,238,.24)}
   .ld-x{border-color:var(--border)!important}
   .ld-x:hover{border-color:var(--hot)!important;color:var(--hot)!important}
   .ld-cuerpo{flex:1;overflow:auto;padding:0 0 30px}
@@ -8144,54 +8183,127 @@ ${cssInforme()}
     return (lect > 0 && gei > 0) ? gei / lect : null;
   }
 
-  function memCromaHTML() {
-    const enc = CROMA.encabezados.concat(['K = GEI ÷ lectura']);
-    const cab = '<tr>' + enc.map(e =>
-      `<td class="txt">${memEsc(String(e).replace(/\n/g, ' '))}</td>`).join('') + '</tr>';
-    const pesos = '<tr class="mem-pm">' + CROMA.pesos.map((v, i) =>
-      `<td class="${i < 4 ? 'txt' : ''}">${memEsc(i === 3 ? 'peso molecular →' : v)}</td>`).join('')
-      + '<td></td></tr>';
-    const pinta = f => {
-      const K = memKdeFila(f);
-      return '<tr>' + f.map((c, i) => {
-        const v = (c === null || c === undefined) ? '' : String(c);
-        return `<td class="${i < 4 ? 'txt' : ''}">${memEsc(v)}</td>`;
-      }).join('') + `<td class="mem-k">${K ? memN(K, 7) : ''}</td></tr>`;
+  /* Las fórmulas del libro, para la barra de arriba: al pulsar una celda
+     derivada se ve lo que hay detrás, no el número ya hecho. */
+  const XL_FORMULAS = {
+    Y: 'SUMPRODUCT(G{r}:X{r};$G$6:$X$6)/100',
+    Z: 'K{r}*$K$6/Y{r}',
+    AA: 'J{r}*$J$6/Y{r}',
+    AB: 'SUMPRODUCT(K{r}:X{r};$K$6:$X$6)/Y{r}',
+    AC: 'Z{r}*100/AB{r}',
+    AD: '(F{r}*(AB{r}/100*AC{r}/100)/1000)*(8,314472*288,15)/(101,325*$K$6)*24',
+    AE: 'F{r}*AC{r}/100',
+    AF: 'F{r}/AB{r}*100*AA{r}/100',
+    AG: 'AE{r}*24/1000/1000',
+    AH: 'AG{r}*365',
+    AI: 'AF{r}*24*365/1000/1000',
+    AJ: 'SI(AH{r}="";"";AI{r}+(AH{r}*28))',
+    AK: 'AD{r}*365',
+    AL: 'AK{r}/0,0283168',
+  };
+
+  function xlLetra(i) {          // 0 → A, 25 → Z, 26 → AA
+    let n = i, t = '';
+    do { t = String.fromCharCode(65 + (n % 26)) + t; n = Math.floor(n / 26) - 1; } while (n >= 0);
+    return t;
+  }
+
+  /* En CROMA no está la columna "Tipo" del libro (venía con error). Se repone
+     vacía para que las letras calcen con las del archivo: si una fórmula dice
+     F15, en pantalla tiene que ser F15. */
+  function xlFila(f) {
+    return f.slice(0, 4).concat([''], f.slice(4));
+  }
+
+  function xlHojaHTML() {
+    const N = 38;
+    const enc = xlFila(CROMA.encabezados);
+    const pm = xlFila(CROMA.pesos);
+    const cel = (v, i, clase) => {
+      const t = (v === null || v === undefined) ? '' : String(v);
+      const num = t !== '' && !isNaN(t.replace(',', '.'));
+      return `<td class="${num ? '' : 'txt'} ${clase || ''}" data-c="${i}">${memEsc(t)}</td>`;
     };
 
-    /* Una tabla por facilidad, con su propio encabezado. En la hoja vienen
-       las dieciocho seguidas y cuesta ver de quién es cada muestra; así cada
-       bloque se mira solo, y el rótulo no se pierde al correr la tabla. */
-    const GRUPOS = [['CPF-1', 'CPF-1'], ['CPF-2', 'CPF-2'], ['EP-1', 'CAÑO SUR · EP-1']];
-    const usadas = [];
-    let bloques = '';
-    GRUPOS.forEach(([clave, titulo]) => {
-      const suyas = CROMA.filas.filter(f => String(f[1]).trim() === clave);
-      if (!suyas.length) return;
-      suyas.forEach(f => usadas.push(f));
-      bloques += `<div class="mem-grupo">${memEsc(titulo)}`
-        + ` <small>${suyas.length} muestra${suyas.length === 1 ? '' : 's'}</small></div>`
-        + `<div class="mem-croma"><table class="mem-x"><tbody>${cab}${pesos}`
-        + suyas.map(pinta).join('') + '</tbody></table></div>';
-    });
-    const sueltas = CROMA.filas.filter(f => usadas.indexOf(f) === -1);
-    if (sueltas.length) {
-      bloques += `<div class="mem-grupo">OTRAS <small>${sueltas.length}</small></div>`
-        + `<div class="mem-croma"><table class="mem-x"><tbody>${cab}${pesos}`
-        + sueltas.map(pinta).join('') + '</tbody></table></div>';
-    }
+    let cab = '<tr><th class="xl-n"></th>';
+    for (let i = 0; i < N; i++) cab += `<th>${xlLetra(i)}</th>`;
+    cab += '</tr>';
 
+    let cuerpo = `<tr class="xl-enc" data-r="4"><td class="xl-n">4</td>`
+      + enc.map((v, i) => cel(String(v).replace(/\n/g, ' '), i)).join('') + '</tr>';
+    cuerpo += `<tr class="xl-pm" data-r="6"><td class="xl-n">6</td>`
+      + pm.map((v, i) => cel(v, i)).join('') + '</tr>';
+
+    CROMA.filas.forEach((f, k) => {
+      const r = 7 + k;                               // la fila real del libro
+      const fila = xlFila(f);
+      cuerpo += `<tr data-r="${r}" data-fac="${memEsc(String(f[1]).trim())}">`
+        + `<td class="xl-n">${r}</td>`
+        + fila.map((v, i) => cel(v, i, i >= 24 ? 'xl-der' : '')).join('') + '</tr>';
+    });
+
+    return `<div class="xl" id="xlHoja">
+        <div class="xl-barra">
+          <div class="xl-ref" id="xlRef">A1</div>
+          <div class="xl-fx">fx</div>
+          <div class="xl-val" id="xlVal">Toca una celda para ver qué tiene dentro</div>
+        </div>
+        <div class="xl-rejilla"><table class="xl-t"><thead>${cab}</thead><tbody>${cuerpo}</tbody></table></div>
+        <div class="xl-chips" id="xlChips">
+          <button data-f="">Todas</button>
+          <button data-f="CPF-1">CPF-1</button>
+          <button data-f="CPF-2">CPF-2</button>
+          <button data-f="EP-1">Caño Sur · EP-1</button>
+        </div>
+        <div class="xl-pestana"><span>Calculos CO2 2026</span></div>
+      </div>`;
+  }
+
+  /* La barra de fórmulas y el filtro. Se engancha cada vez que se repinta la
+     memoria, porque el HTML se rehace entero. */
+  function xlEnganchar() {
+    const caja = document.getElementById('xlHoja');
+    if (!caja) return;
+    const ref = caja.querySelector('#xlRef');
+    const val = caja.querySelector('#xlVal');
+
+    caja.querySelector('.xl-t').addEventListener('click', ev => {
+      const td = ev.target.closest('td');
+      if (!td || td.classList.contains('xl-n')) return;
+      caja.querySelectorAll('td.sel').forEach(o => o.classList.remove('sel'));
+      td.classList.add('sel');
+      const col = xlLetra(+td.dataset.c);
+      const fil = td.parentElement.dataset.r;
+      ref.textContent = col + fil;
+      const f = XL_FORMULAS[col];
+      // las columnas derivadas enseñan su fórmula; las demás, lo que tienen
+      val.textContent = (f && +fil >= 7) ? '=' + f.replace(/\{r\}/g, fil) : (td.textContent || '(vacía)');
+    });
+
+    const chips = caja.querySelector('#xlChips');
+    chips.addEventListener('click', ev => {
+      const b = ev.target.closest('button');
+      if (!b) return;
+      chips.querySelectorAll('button').forEach(o => o.classList.toggle('activo', o === b));
+      const f = b.dataset.f;
+      caja.querySelectorAll('tbody tr[data-fac]').forEach(tr => {
+        tr.style.display = (!f || tr.dataset.fac === f) ? '' : 'none';
+      });
+    });
+    chips.querySelector('button').classList.add('activo');
+  }
+
+  function memCromaHTML() {
     return `<div class="mem-croma-cab">
         <span>ORIGEN <b>${memEsc(CROMA.archivo)}</b></span>
         <span>HOJA <b>${memEsc(CROMA.hoja)}</b></span>
         <span>${CROMA.filas.length} muestras</span>
       </div>
-      ${bloques}
-      <p class="mem-nota">Es la hoja tal cual, columna por columna, separada por facilidad: la
-      composición molar de cada muestra, el peso molecular de cada componente, y de ahí el %másico
-      de CH₄, de CO₂ y de TOC hasta las toneladas de CO₂eq al año. La última columna no está en el
-      Excel: es el cociente entre esas toneladas y la lectura con que se calcularon, o sea el
-      factor <b>K</b> de esa muestra, que es el que aplica el tablero.</p>`;
+      ${xlHojaHTML()}
+      <p class="mem-nota">Es la hoja del procedimiento dentro del tablero, con sus letras de
+      columna y sus números de fila: la celda <b>AJ15</b> de aquí es la misma <b>AJ15</b> del
+      archivo. Al tocar cualquier celda de las columnas verdes, arriba aparece la fórmula que la
+      calcula, la del libro. Los botones de abajo filtran por facilidad.</p>`;
   }
 
   /* El resumen por área es lo que se lee de un vistazo; el punto por punto
@@ -8298,8 +8410,7 @@ ${cssInforme()}
       <details class="mem-mas">
         <summary>LA HOJA DEL GOP-F-006, COMPLETA</summary>
         ${memCromaHTML()}
-        <p class="mem-nota">${ldEnlaceExcel()} &nbsp; El libro completo que mandó el
-        laboratorio, sin tocar: las ocho hojas, con sus fórmulas.</p>
+
       </details>
 
       <div class="mem-acciones">
@@ -8330,6 +8441,7 @@ ${cssInforme()}
     if (btn) btn.onclick = () => memDescargarExcel(btn);
     const gop = document.getElementById('memGop');
     if (gop) gop.onclick = () => exportarGOP(gop);
+    xlEnganchar();
   }
 
 
@@ -8478,18 +8590,6 @@ ${cssInforme()}
   const LD_HORAS = 8760;
   let ldAlcance = 'RUBIALES';
 
-  /* El libro original, tal como lo mandó el laboratorio. Vive bajo /editor
-     porque trae la línea base de todo el campo —más de dos mil hallazgos— y
-     el tablero público está abierto a cualquiera con el enlace. Quien entra
-     al editor ya pasó por el código del correo. */
-  const GOP_LIBRO = '/gop/GOP-F-006-campana-julio-2026.xlsx';
-
-  /* El libro va en la raíz, no bajo /editor: se descarga sin pedir código,
-     igual que el resto del tablero. */
-  function ldEnlaceExcel() {
-    return `<a class="ld-excel" href="${GOP_LIBRO}" download>Abrir el Excel original</a>`;
-  }
-
   function ldFilas(clave) {
     const { partes } = memPartes(clave);
     const filas = [];
@@ -8597,7 +8697,6 @@ ${cssInforme()}
           <div class="ld-h">El GOP-F-006 y el tablero, misma fila</div>
         </div>
         <div class="ld-bar" id="ldBar">
-          ${ldEnlaceExcel()}
           <button data-alc="CPF-1">CPF-1</button>
           <button data-alc="CPF-2">CPF-2</button>
           <button data-alc="RUBIALES">Rubiales</button>
