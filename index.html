@@ -7198,7 +7198,7 @@ ${cssInforme()}
             <input type="number" id="simTasa" min="0" step="1" value="1000" inputmode="decimal">
           </label>
           <label>Cromatografía
-            <select id="simCrom">
+            <select id="simCrom" style="text-overflow:ellipsis">
               <optgroup label="Factores que aplica el tablero">
                 ${ops.map((o, i) => o.tipo === 'area'
                     ? `<option value="${i}">${o.etiqueta}</option>` : '').join('')}
@@ -7294,7 +7294,7 @@ ${cssInforme()}
       if (o.tipo === 'muestra') {
         // de dónde sale el factor: la división que se puede hacer en el Excel
         nota.innerHTML = `Muestra del libro · fila <b>${o.fila}</b> · ${o.equipo} (${o.fac}).`
-          + ` K = AJ${o.fila} ÷ F${o.fila} = ${simDecimales(o.gei, 6)} ÷ ${simDecimales(o.lectura, 0)}`
+          + ` K = AJ${o.fila} / F${o.fila} = ${simDecimales(o.gei, 6)} / ${simDecimales(o.lectura, 0)}`
           + ` = <b>${simDecimales(o.k, 7)}</b> ton CO₂eq por cada g/Hr.`;
       } else {
         nota.innerHTML = o.clave === 'CAÑO SUR|SKIM TANK'
