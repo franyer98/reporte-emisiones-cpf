@@ -3336,7 +3336,7 @@ THREE.OrbitControls = OrbitControls;
       <section class="hd hd-rep" id="heroCo2">
         <div class="hd-k">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><path d="M8 12h8M12 8v8"/></svg>
-          LO QUE SE REPORTA <span class="hero-tag-mini">CALCULADO</span>
+          EQUIVALENTE EN CO₂ <span class="hero-tag-mini">CALCULADO</span>
         </div>
         <div class="hero-num co2"><span id="kpiCo2">14,447</span> <small>ton CO₂eq/año</small></div>
         <div class="hd-s" id="kpiRepSub">el mismo gas, medido por su efecto climático</div>
@@ -3857,7 +3857,7 @@ function heroCanoSur() {
 
   document.documentElement.classList.remove('sin-co2');
   set('kpiTotal', val(a.total));
-  set('kpiCo2', co2eqDe(DATACS, 'CAÑO SUR').toLocaleString('es-CO', { maximumFractionDigits: 0 }));
+  set('kpiCo2', co2eqDe(DATACS, 'CAÑO SUR').toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
   set('kpiMedSub', `<b>${a.nPuntos} puntos</b> abiertos en <b>Caño Sur</b>, facilidad CENTAUROS`);
   set('kpiRepSub', `lo que representa en efecto climático ese gas (<b>${val(a.total)}</b>)`);
   set('kpiSub', esTasa
@@ -3922,7 +3922,7 @@ function updateKPIs() {
   const et = esTasa ? '' : ' ' + PERIODOS[P].etiqueta;
 
   set('kpiTotal', esTasa ? tt.toLocaleString('es-CO') + ' g/Hr' : masaAcumulada(tt, P));
-  set('kpiCo2', co2.toLocaleString('es-CO', { maximumFractionDigits: 0 }));
+  set('kpiCo2', co2.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
   // el reparto por facilidad va bajo la cifra medida, que es de donde sale
   const vp = v => esTasa ? v.toLocaleString('es-CO') + ' g/Hr' : masaAcumulada(v, P);
   set('kpiMedSub', `<b>${AGG1.nPuntos + AGG2.nPuntos} puntos</b> abiertos en Rubiales · `
@@ -4495,7 +4495,15 @@ function curvaConjuntos() {
   return c;
 }
 
+/* Los valores se escriben completos: en CO2eq con sus dos decimales, porque
+   son los que hay que poder cuadrar contra el libro. Sólo las marcas del eje
+   se redondean, que ahí los decimales no caben y nadie los lee. */
 function curvaFmt(v) {
+  return curvaUni === 'co2'
+    ? v.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : Math.round(v).toLocaleString('es-CO');
+}
+function curvaTick(v) {
   return curvaUni === 'co2'
     ? v.toLocaleString('es-CO', { maximumFractionDigits: 0 })
     : Math.round(v).toLocaleString('es-CO');
@@ -4742,7 +4750,7 @@ function pintarCurva() {
         y: {
           beginAtZero: false,
           grid: { color: borde },
-          ticks: { color: tenue, font: { size: 10 }, callback: v => curvaFmt(v) },
+          ticks: { color: tenue, font: { size: 10 }, callback: v => curvaTick(v) },
         },
       },
     },
@@ -4886,6 +4894,8 @@ function campanaBase() {
 function renderProgreso() {
   const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
   const n0 = v => Math.round(v).toLocaleString('es-CO');
+  // las toneladas van con sus dos decimales: son las que se cuadran con el libro
+  const n2 = v => v.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   const act1 = DATA1.filter(d => !d.nuevo), act2 = DATA2.filter(d => !d.nuevo);
   const baseG = [...act1, ...CERRADAS1, ...act2, ...CERRADAS2].reduce((a, d) => a + d.tasa, 0);
@@ -4904,10 +4914,10 @@ function renderProgreso() {
   set('pgCampana', campanaBase());
   set('pgPct', pct.toFixed(1).replace('.', ',') + '%');
   set('pgBaseG', n0(baseG) + ' g/Hr');
-  set('pgBaseSub', `${baseN} puntos · ${n0(baseCo2)} ton CO₂eq/año`);
+  set('pgBaseSub', `${baseN} puntos · ${n2(baseCo2)} ton CO₂eq/año`);
   set('pgHoyG', n0(hoyG) + ' g/Hr');
-  set('pgHoySub', `${hoyN} punto${hoyN === 1 ? '' : 's'} activo${hoyN === 1 ? '' : 's'} · ${n0(hoyCo2)} ton CO₂eq/año`);
-  set('pgCo2', n0(elimCo2));
+  set('pgHoySub', `${hoyN} punto${hoyN === 1 ? '' : 's'} activo${hoyN === 1 ? '' : 's'} · ${n2(hoyCo2)} ton CO₂eq/año`);
+  set('pgCo2', n2(elimCo2));
   set('pgElimG', n0(elimG) + ' g/Hr');
   set('pgActivaG', n0(hoyG) + ' g/Hr');
 
@@ -4948,7 +4958,7 @@ function renderCierres() {
   const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
   set('ciN', total);
   set('ciG', gTot.toLocaleString('es-CO'));
-  set('ciC', cTot.toLocaleString('es-CO', { maximumFractionDigits: 0 }));
+  set('ciC', cTot.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
 
   const vacio = document.getElementById('ciVacio');
   const cuerpo = document.getElementById('ciCuerpo');
@@ -5209,12 +5219,17 @@ let UNIDAD_MASA = 'auto';
 
 function masaAcumulada(gramosPorHora, periodo) {
   const g = gramosPorHora * PERIODOS[periodo].horas;
-  const n = (v, d) => v.toLocaleString('es-CO', { maximumFractionDigits: d });
+  // con los decimales fijos: 33,550 y 38,558 se leen como la misma precisión.
+  // Sin minimumFractionDigits, el primero salía «33,55» y parecía otra escala.
+  const n = (v, d) => v.toLocaleString('es-CO',
+    { minimumFractionDigits: d, maximumFractionDigits: d });
   if (UNIDAD_MASA === 'ton') return n(g / 1e6, 3) + ' ton';
-  if (UNIDAD_MASA === 'kg')  return n(g / 1000, 1) + ' kg';
+  if (UNIDAD_MASA === 'kg')  return n(g / 1000, 2) + ' kg';
   if (UNIDAD_MASA === 'g')   return Math.round(g).toLocaleString('es-CO') + ' g';
-  if (g >= 1e6)  return n(g / 1e6, 2) + ' ton';
-  if (g >= 1000) return n(g / 1000, 1) + ' kg';
+  // la vista automática daba menos decimales que la unidad fijada, y el mismo
+  // dato se veía distinto según el botón. Van los mismos en los dos caminos.
+  if (g >= 1e6)  return n(g / 1e6, 3) + ' ton';
+  if (g >= 1000) return n(g / 1000, 2) + ' kg';
   return Math.round(g).toLocaleString('es-CO') + ' g';
 }
 
