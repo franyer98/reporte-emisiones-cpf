@@ -2568,14 +2568,8 @@ THREE.OrbitControls = OrbitControls;
   .mem-croma-cab b{color:var(--text);font-weight:700}
   .mem-vacio{border:1px dashed var(--border);border-radius:11px;padding:20px;
     color:var(--text-faint);font-size:13px;line-height:1.75}
-  .mem-origen{display:block;margin-top:3px;font-family:'JetBrains Mono',monospace;
-    font-size:10px;letter-spacing:0;font-weight:400;color:var(--text-faint);
-    text-transform:none;line-height:1.5}
-  .mem-origen b{color:var(--text-dim);font-weight:700}
-  .mem-plegar{background:transparent;border:1px solid var(--border);color:var(--text-dim);
-    border-radius:8px;padding:7px 13px;font-family:'JetBrains Mono',monospace;font-size:11px;
-    cursor:pointer;margin:12px 0 0}
-  .mem-plegar:hover{color:var(--text);border-color:var(--cool)}
+  .mem-heredado{display:inline-block;margin-left:7px;padding:1px 7px;border-radius:4px;
+    background:rgba(45,212,238,.12);border:1px solid rgba(45,212,238,.3);color:var(--cool)}
   .mem-resumen td.ar{text-align:left;color:var(--text);font-weight:600;
     font-family:'Space Grotesk',sans-serif}
 
@@ -7379,67 +7373,17 @@ ${cssInforme()}
 
   /* El detalle punto por punto, agrupado por facilidad y área, con los
      subtotales que permiten cuadrar contra cualquier tarjeta del tablero. */
-  /* El punto por punto. Llevaba seis columnas: además de la tasa y las
-     toneladas, iba la masa de TOC intermedia y una columna repitiendo el
-     factor del área en cada fila. Las dos sobraban —el TOC no se reporta y
-     el factor ya está en la cabecera de su área—, y con tres niveles de
-     subtotal encima la tabla se leía mal. Quedan cuatro columnas: qué es,
-     dónde, cuánto mide y cuánto pesa en CO₂eq. */
-  function memTablaDetalle(clave) {
+  /* El punto por punto se retiró: el resumen por área ya dice de dónde sale
+     cada número y la hoja de abajo trae los puntos con sus fórmulas. De
+     aquella tabla sólo sobrevive la suma, porque es contra la que se
+     comprueba el total del tablero. */
+  function memTotal(clave) {
     const { partes } = memPartes(clave);
-    let html = '', totG = 0, totToc = 0, totCo2 = 0, n = 0;
-
+    let totCo2 = 0, n = 0;
     partes.forEach(([fac, lista]) => {
-      const areas = [...new Set(lista.map(d => d.area))].sort();
-      let facG = 0, facToc = 0, facCo2 = 0;
-
-      areas.forEach(area => {
-        const pts = lista.filter(d => d.area === area).sort((a, b) => b.tasa - a.tasa);
-        const K = kDe(fac, area);
-        /* El factor del área va aquí una vez, no repetido en cada fila, y con
-           la división del libro de la que sale: sin eso el número aparecía
-           de la nada y no había forma de comprobarlo. */
-        const m = fichaMuestra(fac, area);
-        const origen = m
-          ? `<div class="mem-origen">muestra <b>${memEsc(m.equipo)}</b> · fila ${m.n} del libro ·`
-            + ` AJ${m.n} / F${m.n} = ${memN(m.gei, 6)} / ${memG(m.lectura)}</div>`
-          : '';
-        html += `<tr class="mem-area"><td class="izq" colspan="2">${memEsc(fac)} · ${memEsc(area)}${origen}</td>`
-              + `<td colspan="2"><small>cada g/Hr de esta área pesa</small> ${memN(K, 7)} <small>ton CO₂eq/año</small></td></tr>`;
-        let aG = 0, aToc = 0, aCo2 = 0;
-        pts.forEach(d => {
-          const toc = d.tasa * MEM_HORAS / 1e6;
-          const co2 = d.tasa * K;
-          aG += d.tasa; aToc += toc; aCo2 += co2; n++;
-          html += `<tr><td class="izq eq">${memEsc(d.equipo)}${d.nuevo ? ' <small>nueva</small>' : ''}</td>`
-                + `<td class="izq"><small>${memEsc(d.punto)} · ${memEsc(d.elemento)}</small></td>`
-                + `<td>${memG(d.tasa)}</td><td>${memN(co2, 2)}</td></tr>`;
-        });
-        html += `<tr class="mem-sub"><td class="izq" colspan="2">Subtotal ${memEsc(area)} · ${pts.length} punto${pts.length === 1 ? '' : 's'}</td>`
-              + `<td>${memG(aG)}</td><td>${memN(aCo2, 2)}</td></tr>`;
-        facG += aG; facToc += aToc; facCo2 += aCo2;
-      });
-
-      if (partes.length > 1) {
-        html += `<tr class="mem-sub"><td class="izq" colspan="2">TOTAL ${memEsc(fac)}</td>`
-              + `<td>${memG(facG)}</td><td>${memN(facCo2, 2)}</td></tr>`;
-      }
-      totG += facG; totToc += facToc; totCo2 += facCo2;
+      lista.forEach(d => { totCo2 += d.tasa * kDe(fac, d.area); n++; });
     });
-
-    const etiqueta = clave === 'RUBIALES' ? 'TOTAL CAMPO RUBIALES · CPF-1 + CPF-2'
-                   : clave === 'CANOSUR' ? 'TOTAL CAÑO SUR' : 'TOTAL ' + clave;
-    html += `<tr class="mem-tot"><td class="izq" colspan="2">${etiqueta} · ${n} punto${n === 1 ? '' : 's'}</td>`
-          + `<td>${memG(totG)} g/Hr</td><td>${memN(totCo2, 2)} ton CO₂eq</td></tr>`;
-
-    return {
-      html: `<div class="mem-tabla-caja"><table class="mem-t">
-        <thead><tr><th>Equipo</th><th class="izq">Punto · elemento</th>
-          <th>Tasa medida<br><small>g/Hr</small></th>
-          <th>Equivalente en CO₂<br><small>tasa × factor del área</small></th></tr></thead>
-        <tbody>${html}</tbody></table></div>`,
-      totG, totToc, totCo2, n,
-    };
+    return { totCo2, n };
   }
 
   /* La comprobación: el total de la memoria tiene que dar lo mismo que la
@@ -7883,11 +7827,9 @@ ${cssInforme()}
        desplegado se cerraba solo. Se anota antes y se repone después: los
        desplegables, el detalle punto por punto y a qué altura iba. */
     const abiertos = [...caja.querySelectorAll('.mem-mas')].map(d => d.open);
-    const detVisible = (() => { const d = caja.querySelector('#memDetalle');
-      return d ? d.style.display !== 'none' : false; })();
     const capa = caja.closest('.mem-capa');
     const scroll = capa ? capa.scrollTop : 0;
-    const det = memTablaDetalle(memAlcance);
+    const det = memTotal(memAlcance);
     const { campo } = memPartes(memAlcance);
 
     caja.innerHTML = `
@@ -7903,9 +7845,6 @@ ${cssInforme()}
       ${memResumen(memAlcance)}
       ${memComprobacion(memAlcance, det.totCo2)}
 
-      <button class="mem-plegar" id="memVerDetalle" data-n="${det.n}">Ver los ${det.n}
-        punto${det.n === 1 ? '' : 's'}, uno por uno</button>
-      <div id="memDetalle" style="display:none;margin-top:12px">${det.html}</div>
 
       <details class="mem-mas">
         <summary>LA HOJA DEL GOP-F-006, COMPLETA</summary>
@@ -7922,24 +7861,9 @@ ${cssInforme()}
         b.onclick = () => { memAlcance = b.dataset.alc; memPintar(); };
       });
     }
-    const ver = document.getElementById('memVerDetalle');
-    const det2 = document.getElementById('memDetalle');
-    if (ver && det2) ver.onclick = () => {
-      const abierto = det2.style.display !== 'none';
-      det2.style.display = abierto ? 'none' : '';
-      const cuantos = ver.dataset.n;
-      ver.textContent = abierto
-        ? `Ver los ${cuantos} punto${cuantos === '1' ? '' : 's'}, uno por uno`
-        : 'Ocultar el punto por punto';
-    };
     xlEnganchar();
 
     caja.querySelectorAll('.mem-mas').forEach((d, i) => { if (abiertos[i]) d.open = true; });
-    if (detVisible) {
-      const d = caja.querySelector('#memDetalle'), v = caja.querySelector('#memVerDetalle');
-      if (d) d.style.display = '';
-      if (v) v.textContent = 'Ocultar el punto por punto';
-    }
     if (capa && scroll) capa.scrollTop = scroll;
   }
 
