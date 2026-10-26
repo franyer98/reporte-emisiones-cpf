@@ -8136,26 +8136,6 @@ ${cssInforme()}
     return { campo: 'Campo Caño Sur', partes: [['CAÑO SUR', cs]] };
   }
 
-  /* La tabla de cromatografía: el factor de cada área y de dónde sale.
-     Se muestra sólo la de los campos que el alcance elegido usa. */
-  function memTablaCrom(campos) {
-    const filas = Object.keys(K_AREA)
-      .filter(k => campos.some(c => k.indexOf(c + '|') === 0))
-      .map(k => {
-        const [fac, area] = k.split('|');
-        const K = K_AREA[k];
-        const F = K * 1e6 / MEM_HORAS;
-        return `<tr><td class="izq eq">${memEsc(fac)}</td><td class="izq">${memEsc(area)}</td>`
-             + `<td>${memN(F, 4)}</td><td>${memN(K, 7)}</td>`
-             + `<td class="izq"><small>${memEsc(MEM_ORIGEN[k] || '—')}</small></td></tr>`;
-      }).join('');
-    return `<div class="mem-tabla-caja"><table class="mem-t">
-      <thead><tr><th>Facilidad</th><th class="izq">Área</th>
-        <th>F · ton CO₂eq por ton de TOC</th><th>K · ton CO₂eq por g/Hr</th>
-        <th class="izq">Origen · hoja «Calculos CO2 2026» del GOP-F-006</th></tr></thead>
-      <tbody>${filas}</tbody></table></div>`;
-  }
-
   /* El detalle punto por punto, agrupado por facilidad y área, con los
      subtotales que permiten cuadrar contra cualquier tarjeta del tablero. */
   function memTablaDetalle(clave) {
@@ -8616,7 +8596,6 @@ ${cssInforme()}
   function memPintar() {
     const caja = document.getElementById('memCuerpo');
     if (!caja) return;
-    const campos = memAlcance === 'CANOSUR' ? ['CAÑO SUR'] : ['CPF-1', 'CPF-2'];
     const det = memTablaDetalle(memAlcance);
     const { campo } = memPartes(memAlcance);
 
@@ -8643,14 +8622,6 @@ ${cssInforme()}
 
       <button class="mem-plegar" id="memVerDetalle">Ver punto por punto</button>
       <div id="memDetalle" style="display:none;margin-top:12px">${det.html}</div>
-
-      <details class="mem-mas">
-        <summary>EL FACTOR DE CADA ÁREA Y DE DÓNDE SALE</summary>
-        ${memTablaCrom(campos)}
-        <p class="mem-nota"><b>F</b> dice cuántas toneladas de CO₂eq pesa una tonelada de TOC con
-        ese gas: F = %másico CH₄ / %másico TOC × 28 + %másico CO₂ / %másico TOC, con GWP 28 (AR5).
-        <b>K</b> es ese mismo F llevado a las unidades del tablero: K = F × 8.760 ÷ 1.000.000.</p>
-      </details>
 
       <details class="mem-mas">
         <summary>LA HOJA DEL GOP-F-006, COMPLETA</summary>
