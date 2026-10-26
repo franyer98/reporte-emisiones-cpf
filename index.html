@@ -2419,7 +2419,8 @@ THREE.OrbitControls = OrbitControls;
      señalando lo mismo en los dos lados. */
   .xl{border:1px solid #9aa4ad;border-radius:7px;overflow:hidden;background:#fff;
     color:#1b2026;font-family:'Segoe UI',system-ui,sans-serif}
-  .xl-barra{display:flex;align-items:stretch;border-bottom:1px solid #c9ced3;background:#f3f4f6}
+  .xl-barra{display:flex;align-items:stretch;border-bottom:1px solid #c9ced3;
+    border-top:1px solid #c9ced3;background:#f3f4f6}
   .xl-ref{flex:none;width:92px;border-right:1px solid #c9ced3;padding:6px 9px;
     font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#1b2026;
     display:flex;align-items:center;font-weight:700}
@@ -2468,18 +2469,19 @@ THREE.OrbitControls = OrbitControls;
     font-weight:700}
   .xl-rejilla:focus{outline:2px solid rgba(16,124,65,.5);outline-offset:-2px}
   .xl-rejilla:focus-visible{outline:2px solid #107c41;outline-offset:-2px}
-  .xl-chips{display:flex;gap:6px;flex-wrap:wrap;padding:8px 9px;background:#f3f4f6;
-    border-top:1px solid #c9ced3}
+  .xl-chips{display:flex;gap:6px;flex-wrap:wrap;padding:8px 9px;background:#f3f4f6}
   .xl-chips button{background:#fff;border:1px solid #9aa4ad;border-radius:5px;padding:4px 11px;
     font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#1b2026;cursor:pointer}
   .xl-chips button.activo{background:#107c41;border-color:#107c41;color:#fff;font-weight:700}
   .xl-nota-filtro{font-family:'JetBrains Mono',monospace;font-size:10px;line-height:1.5;
     color:#8a5a00;background:#fff4d6;border:1px solid #e8c877;border-radius:5px;
     padding:4px 9px;align-self:center}
-  .xl-pestana{display:flex;gap:0;background:#f3f4f6;border-top:1px solid #c9ced3;padding:0 9px}
-  .xl-pestana span{padding:6px 14px;font-size:11px;background:#e8eaed;border:1px solid #c9ced3;
-    border-bottom:0;color:#5a646e;cursor:pointer}
-  .xl-pestana span.activa{background:#fff;border-top:2px solid #107c41;color:#107c41;font-weight:700}
+  .xl-pestana{display:flex;gap:0;background:#e8eaed;border-bottom:1px solid #c9ced3;
+    padding:7px 9px 0}
+  .xl-pestana span{padding:7px 15px;font-size:11.5px;background:#dfe2e6;border:1px solid #c9ced3;
+    border-bottom:0;border-radius:6px 6px 0 0;color:#5a646e;cursor:pointer;margin-right:2px}
+  .xl-pestana span.activa{background:#f3f4f6;border-top:2px solid #107c41;color:#107c41;
+    font-weight:700;margin-bottom:-1px;padding-bottom:8px}
   .xl-pestana span:hover{color:#107c41}
   @media (max-width:620px){ .xl-rejilla{max-height:60vh} .xl-ref{width:72px} }
 
@@ -7672,13 +7674,12 @@ ${cssInforme()}
     const pest = XL_VISTAS.map(x =>
       `<span class="${x.id === xlVista ? 'activa' : ''}" data-v="${x.id}">${x.nombre}</span>`).join('');
 
+    /* Las pestañas y los filtros iban debajo de la rejilla, como en Excel.
+       Pero aquí la hoja vive dentro de una página larga y con la rejilla a
+       media pantalla quedaban abajo del todo, fuera de la vista: para
+       cambiar de pestaña había que bajar primero. Van arriba. */
     return `<div class="xl" id="xlHoja">
-        <div class="xl-barra">
-          <div class="xl-ref" id="xlRef">—</div>
-          <div class="xl-fx">fx</div>
-          <div class="xl-val" id="xlVal">Toca una celda para ver qué tiene dentro · luego muévete con las flechas</div>
-        </div>
-        <div class="xl-rejilla"><table class="xl-t"><thead>${cab}</thead><tbody>${cuerpo}</tbody></table></div>
+        <div class="xl-pestana" id="xlPest">${pest}</div>
         <div class="xl-chips" id="xlChips">
           ${[['', 'Todas'], ['CPF-1', 'CPF-1'], ['CPF-2', 'CPF-2'], ['EP-1', 'Caño Sur · EP-1']]
             .map(([f, t]) => `<button data-f="${f}" class="${f === xlFac ? 'activo' : ''}">${t}</button>`)
@@ -7687,7 +7688,12 @@ ${cssInforme()}
             ? `<span class="xl-nota-filtro">El SUBTOTAL de esta hoja es el del libro:
                es de la campaña completa y no cambia con el filtro.</span>` : ''}
         </div>
-        <div class="xl-pestana" id="xlPest">${pest}</div>
+        <div class="xl-barra">
+          <div class="xl-ref" id="xlRef">—</div>
+          <div class="xl-fx">fx</div>
+          <div class="xl-val" id="xlVal">Toca una celda para ver qué tiene dentro · luego muévete con las flechas</div>
+        </div>
+        <div class="xl-rejilla"><table class="xl-t"><thead>${cab}</thead><tbody>${cuerpo}</tbody></table></div>
       </div>`;
   }
 
