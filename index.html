@@ -2568,6 +2568,10 @@ THREE.OrbitControls = OrbitControls;
   .mem-croma-cab b{color:var(--text);font-weight:700}
   .mem-vacio{border:1px dashed var(--border);border-radius:11px;padding:20px;
     color:var(--text-faint);font-size:13px;line-height:1.75}
+  .mem-origen{display:block;margin-top:3px;font-family:'JetBrains Mono',monospace;
+    font-size:10px;letter-spacing:0;font-weight:400;color:var(--text-faint);
+    text-transform:none;line-height:1.5}
+  .mem-origen b{color:var(--text-dim);font-weight:700}
   .mem-plegar{background:transparent;border:1px solid var(--border);color:var(--text-dim);
     border-radius:8px;padding:7px 13px;font-family:'JetBrains Mono',monospace;font-size:11px;
     cursor:pointer;margin:12px 0 0}
@@ -7392,8 +7396,15 @@ ${cssInforme()}
       areas.forEach(area => {
         const pts = lista.filter(d => d.area === area).sort((a, b) => b.tasa - a.tasa);
         const K = kDe(fac, area);
-        // el factor del área va aquí una vez, no repetido en cada fila
-        html += `<tr class="mem-area"><td class="izq" colspan="2">${memEsc(fac)} · ${memEsc(area)}</td>`
+        /* El factor del área va aquí una vez, no repetido en cada fila, y con
+           la división del libro de la que sale: sin eso el número aparecía
+           de la nada y no había forma de comprobarlo. */
+        const m = fichaMuestra(fac, area);
+        const origen = m
+          ? `<div class="mem-origen">muestra <b>${memEsc(m.equipo)}</b> · fila ${m.n} del libro ·`
+            + ` AJ${m.n} / F${m.n} = ${memN(m.gei, 6)} / ${memG(m.lectura)}</div>`
+          : '';
+        html += `<tr class="mem-area"><td class="izq" colspan="2">${memEsc(fac)} · ${memEsc(area)}${origen}</td>`
               + `<td colspan="2"><small>cada g/Hr de esta área pesa</small> ${memN(K, 7)} <small>ton CO₂eq/año</small></td></tr>`;
         let aG = 0, aToc = 0, aCo2 = 0;
         pts.forEach(d => {
@@ -8036,11 +8047,18 @@ ${cssInforme()}
      del libro es la que manda. Se busca por el factor, no escrita a mano. */
   function fichaMuestra(fac, area) {
     const K = kDe(fac, area);
-    const f = (CROMA.filas || []).find(fila => {
+    const i = (CROMA.filas || []).findIndex(fila => {
       const k = memKdeFila(fila);
       return k && Math.abs(k - K) < 5e-7;
     });
-    return f ? { fila: f, K } : null;
+    if (i < 0) return null;
+    const f = CROMA.filas[i];
+    /* n es el número de fila que esa muestra tiene en el libro: las 18
+       empiezan en la 7 de la hoja «Calculos CO2 2026». Sirve para poder
+       señalarla con el dedo en el archivo. */
+    return { fila: f, K, n: 7 + i, equipo: String(f[2]).trim(),
+             lectura: parseFloat(String(f[4]).replace(',', '.')),
+             gei: parseFloat(String(f[f.length - 1]).replace(',', '.')) };
   }
 
   const ot = document.getElementById('navOrden');
