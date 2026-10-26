@@ -8267,7 +8267,8 @@ ${cssInforme()}
   const XL_VISTAS = [
     { id: 'muestras', nombre: 'Cromatografía', desde: 4, hasta: 25 },
     { id: 'julio', nombre: 'Campaña julio 2026', desde: 60, hasta: 84 },
-    { id: 'tablero', nombre: 'Hoy en el tablero', vivo: true },
+    { id: 'tablero', nombre: 'Hoy en el tablero', vivo: true, estado: 'ACTIVA' },
+    { id: 'cerrados', nombre: 'Ya reparados', vivo: true, estado: 'CERRADA' },
   ];
   let xlVista = 'muestras';
 
@@ -8354,7 +8355,12 @@ ${cssInforme()}
      contando filas que ya no se ven. */
   let xlFac = '';
 
-  function xlVivo(filtro) {
+  /* Lo activo y lo cerrado viven en pestañas distintas. Juntos, la hoja
+     mezclaba lo que hay que reparar con lo que ya se reparó, y el lector
+     tenía que ir separando filas tachadas con la vista. Cada pestaña lleva
+     un solo subtotal, que es el que corresponde a lo que muestra. */
+  function xlVivo(filtro, estado) {
+    const cerr = estado === 'CERRADA';
     const filas = [], formulas = {};
     let r = 1;
 
@@ -8380,7 +8386,10 @@ ${cssInforme()}
         cerrada ? 'CERRADA' : 'ACTIVA',
         cerrada ? (d.fechaCierre || '') : '',
       ];
-      filas.push({ r, celdas: c, clase: cerrada ? 'xl-cerr' : '', fac: chip });
+      /* El tachado marcaba la excepción cuando lo cerrado convivía con lo
+         activo. Ahora cada cosa tiene su pestaña, así que tachar una hoja
+         entera sólo haría el texto más difícil de leer. */
+      filas.push({ r, celdas: c, clase: '', fac: chip });
       Object.keys(XL_CADENA).forEach(k => {
         formulas[r + ':' + k] = XL_CADENA[k].replace(/\{r\}/g, r);
       });
@@ -8396,37 +8405,33 @@ ${cssInforme()}
     };
 
     const bloque = (titulo, grupos) => {
+      const lista = g => (cerr ? g.cerradas : g.activas);
+      if (!grupos.some(g => lista(g).length)) return;   // nada que enseñar aquí
+
       enc(titulo, 'xl-tit');
       const ini = r;
-      grupos.forEach(({ fac, chip, activas, cerradas }) => {
-        [...activas].sort((a, b) => b.tasa - a.tasa).forEach(d => fila(d, fac, chip, false));
-        [...cerradas].sort((a, b) => b.tasa - a.tasa).forEach(d => fila(d, fac, chip, true));
+      grupos.forEach(g => {
+        [...lista(g)].sort((a, b) => b.tasa - a.tasa).forEach(d => fila(d, g.fac, g.chip, cerr));
       });
       const fin = r - 1;
-      if (fin < ini) { enc('(sin hallazgos)', ''); return; }
 
-      const suma = (lista, fac) => lista.reduce((a, d) => {
+      const suma = (arr, fac) => arr.reduce((a, d) => {
         const mol = XL_MOL[fac + '|' + d.area] || XL_MOL['CPF-2|ALMACENAMIENTO'];
         return a + xlCadenaVal(mol, d.tasa)[11];
       }, 0);
 
-      const sub = (etiqueta, estado, clase) => {
-        const act = grupos.flatMap(g => (estado === 'ACTIVA' ? g.activas : g.cerradas)
-          .map(d => ({ d, fac: g.fac })));
-        const g = act.reduce((a, x) => a + x.d.tasa, 0);
-        const t = grupos.reduce((a, gr) =>
-          a + suma(estado === 'ACTIVA' ? gr.activas : gr.cerradas, gr.fac), 0);
-        const c = new Array(40).fill('');
-        c[0] = etiqueta; c[5] = xlNum(g, 0); c[35] = xlNum(t, 3);
-        c[38] = act.length + (act.length === 1 ? ' punto' : ' puntos');
-        filas.push({ r, celdas: c, clase, fac: '' });
-        formulas[r + ':6'] = 'SUMIF($AM$' + ini + ':$AM$' + fin + ';"' + estado + '";F' + ini + ':F' + fin + ')';
-        formulas[r + ':36'] = 'SUMIF($AM$' + ini + ':$AM$' + fin + ';"' + estado + '";AJ' + ini + ':AJ' + fin + ')';
-        r++;
-      };
-
-      sub('SUBTOTAL ACTIVO · ' + titulo, 'ACTIVA', 'xl-sub');
-      sub('EVITADO POR CIERRES · ' + titulo, 'CERRADA', 'xl-sub xl-sub-cerr');
+      const pts = grupos.flatMap(g => lista(g));
+      const gTot = pts.reduce((a, d) => a + d.tasa, 0);
+      const tTot = grupos.reduce((a, g) => a + suma(lista(g), g.fac), 0);
+      const c = new Array(40).fill('');
+      c[0] = (cerr ? 'EVITADO POR CIERRES · ' : 'SUBTOTAL ACTIVO · ') + titulo;
+      c[5] = xlNum(gTot, 0); c[35] = xlNum(tTot, 3);
+      c[38] = pts.length + (pts.length === 1 ? ' punto' : ' puntos');
+      filas.push({ r, celdas: c, clase: cerr ? 'xl-sub xl-sub-cerr' : 'xl-sub', fac: '' });
+      // el SUMIF se queda: es lo que enseña que el estado es lo que decide
+      formulas[r + ':6'] = 'SUMIF($AM$' + ini + ':$AM$' + fin + ';"' + estado + '";F' + ini + ':F' + fin + ')';
+      formulas[r + ':36'] = 'SUMIF($AM$' + ini + ':$AM$' + fin + ';"' + estado + '";AJ' + ini + ':AJ' + fin + ')';
+      r++;
       enc('', '');
     };
 
@@ -8445,6 +8450,11 @@ ${cssInforme()}
     }
     if (sur.length) bloque('CAÑO SUR · CENTAUROS', sur);
 
+    if (r === 3) {   // encabezado + pesos moleculares y nada más
+      enc(cerr ? 'Todavía no hay hallazgos reparados con este filtro.'
+               : 'No hay hallazgos activos con este filtro.', 'xl-tit');
+    }
+
     return { filas, formulas, cols: 40 };
   }
 
@@ -8453,7 +8463,7 @@ ${cssInforme()}
     let N, dentro;
 
     if (v.vivo) {
-      const viva = xlVivo(xlFac);
+      const viva = xlVivo(xlFac, v.estado);
       xlFx = viva.formulas;
       N = viva.cols;
       dentro = viva.filas.map(f => [f.r, f.celdas, f.clase, f.fac]);
@@ -8578,13 +8588,14 @@ ${cssInforme()}
       archivo. Al tocar una celda con fórmula —las verdes— arriba aparece la fórmula del libro.
       Abajo, las tres pestañas. <b>Cromatografía</b> son las muestras de gas (filas 4 a 25) y
       <b>Campaña julio 2026</b> son los hallazgos con su GEI (filas 60 a 84): esas dos son el
-      archivo y no cambian. <b>Hoy en el tablero</b> se arma en el momento con lo que el
-      tablero tiene ahora, pero con <b>las mismas columnas del GOP-F-006, de la A a la AL</b>, y
-      sus mismas fórmulas: la cromatografía del área va en G:X y de ahí sale todo hasta
-      <b>AJ</b>, el GEI. Al dar de baja un hallazgo su fila queda <b>tachada y marcada CERRADA</b>
-      en AM: AJ se sigue calculando igual que en el libro, pero el <b>SUBTOTAL ACTIVO</b> es un
-      <code>SUMIF</code> sobre AM y deja de contarla, y lo que dejó de emitir aparece en
-      <b>EVITADO POR CIERRES</b>. Rubiales y Caño Sur llevan subtotal aparte.</p>`;
+      archivo y no cambian. <b>Hoy en el tablero</b> y <b>Ya reparados</b> se arman en el
+      momento con lo que el tablero tiene ahora, pero con <b>las mismas columnas del GOP-F-006,
+      de la A a la AL</b>, y sus mismas fórmulas: la cromatografía del área va en G:X y de ahí
+      sale todo hasta <b>AJ</b>, el GEI. En la primera está lo que falta por reparar; en la
+      segunda, lo que ya se reparó y por tanto dejó de emitir. Al dar de baja un hallazgo su fila
+      se pasa de una a la otra y queda marcada <b>CERRADA</b> en AM; el subtotal es un
+      <code>SUMIF</code> sobre esa columna, así que el estado es lo que decide. Rubiales y Caño
+      Sur llevan subtotal aparte.</p>`;
   }
 
   /* El resumen por área es lo que se lee de un vistazo; el punto por punto
