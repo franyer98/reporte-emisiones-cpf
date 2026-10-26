@@ -5036,6 +5036,8 @@ function refrescarTodo() {
   try { if (map3d1) map3d1.rebuild(DATA1); } catch (e) {}
   try { if (map3d2) map3d2.rebuild(DATA2); } catch (e) {}
   try { if (map3d3) map3d3.rebuild(DATACS); } catch (e) {}
+  // la memoria de cálculo, si está abierta, se rehace con los datos nuevos
+  try { if (typeof window.memRepintar === 'function') window.memRepintar(); } catch (e) {}
 }
 refrescarTodo();
 
@@ -8599,6 +8601,14 @@ ${cssInforme()}
   function memPintar() {
     const caja = document.getElementById('memCuerpo');
     if (!caja) return;
+    /* Repintar rehace el HTML entero, así que lo que el lector tenía
+       desplegado se cerraba solo. Se anota antes y se repone después: los
+       desplegables, el detalle punto por punto y a qué altura iba. */
+    const abiertos = [...caja.querySelectorAll('.mem-mas')].map(d => d.open);
+    const detVisible = (() => { const d = caja.querySelector('#memDetalle');
+      return d ? d.style.display !== 'none' : false; })();
+    const capa = caja.closest('.mem-capa');
+    const scroll = capa ? capa.scrollTop : 0;
     const det = memTablaDetalle(memAlcance);
     const { campo } = memPartes(memAlcance);
 
@@ -8661,7 +8671,21 @@ ${cssInforme()}
     const gop = document.getElementById('memGop');
     if (gop) gop.onclick = () => exportarGOP(gop);
     xlEnganchar();
+
+    caja.querySelectorAll('.mem-mas').forEach((d, i) => { if (abiertos[i]) d.open = true; });
+    if (detVisible) {
+      const d = caja.querySelector('#memDetalle'), v = caja.querySelector('#memVerDetalle');
+      if (d) d.style.display = '';
+      if (v) v.textContent = 'Ocultar el detalle';
+    }
+    if (capa && scroll) capa.scrollTop = scroll;
   }
+
+  /* Si alguien corrige un dato con la hoja abierta, la hoja tiene que
+     moverse con él: si no, estaría enseñando un total que ya no existe. */
+  window.memRepintar = function () {
+    if (document.querySelector('.mem-capa')) memPintar();
+  };
 
 
   /* El libro abierto vive fuera de la función: al repintar la sección se
