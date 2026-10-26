@@ -2973,6 +2973,21 @@ THREE.OrbitControls = OrbitControls;
   .intro-wrap { max-width: 760px; margin: 0 auto; padding: 0 24px; }
   header.intro-hero { padding: 56px 0 36px; text-align: center; background: radial-gradient(ellipse 700px 400px at 50% -10%, rgba(45,212,238,0.14), transparent 62%); }
   .intro-eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: .14em; color: var(--cool); margin-bottom: 18px; }
+  /* Se queda arriba a la derecha mientras se baja la guía: quien ya la leyó
+     no tiene que recorrerla entera para encontrar la puerta. */
+  .intro-saltar {
+    position: fixed; top: 66px; right: 18px; z-index: 40;
+    background: var(--surface); border: 1px solid var(--border); color: var(--text-dim);
+    border-radius: 999px; padding: 8px 16px; cursor: pointer;
+    font-family: 'JetBrains Mono', monospace; font-size: 11.5px; letter-spacing: .02em;
+    transition: color .15s ease, border-color .15s ease, background .15s ease;
+  }
+  .intro-saltar:hover { color: var(--text); border-color: var(--cool); background: var(--cpf2-dim); }
+  .intro-saltar:focus-visible { outline: 2px solid var(--cool); outline-offset: 2px; }
+  @media (max-width: 760px) {
+    .intro-saltar { top: auto; bottom: 14px; right: 12px; left: 12px; padding: 11px 16px;
+      font-size: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.45); }
+  }
   h1.intro-title { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: clamp(28px,6vw,42px); letter-spacing: -0.02em; margin-bottom: 16px; }
   .intro-lede { font-size: 16px; color: var(--text-dim); max-width: 560px; margin: 0 auto; }
 
@@ -3132,6 +3147,9 @@ THREE.OrbitControls = OrbitControls;
 <header class="intro-hero">
   <div class="intro-wrap">
     <div class="intro-eyebrow">GUÍA INTRODUCTORIA</div>
+    <!-- Para quien ya conoce la guía: el botón de entrar estaba sólo al final,
+         después de toda la explicación, y había que bajarla entera. -->
+    <button class="intro-saltar" id="introSaltar">Saltar la guía · ir al tablero &#8594;</button>
     <h1 class="intro-title">¿Qué son las<br>emisiones fugitivas?</h1>
     <p class="intro-lede">Metodología de cuantificación de emisiones fugitivas: de la medición directa en campo (g/h) al resultado en toneladas de CO2 equivalente por año.</p>
   </div>
@@ -7355,6 +7373,8 @@ try { initCharts(); } catch (e) {}
   const menuToggle = document.getElementById('menuToggle');
 
   function abrirDashboard() {
+    const saltar = document.getElementById('introSaltar');
+    if (saltar) saltar.style.display = 'none';   // va fijo: no basta con ocultar la guía
     pageIntro.style.display = 'none';
     pageDashboard.style.display = 'block';
     menuToggle.style.display = 'flex';
@@ -7373,6 +7393,9 @@ try { initCharts(); } catch (e) {}
   menuToggle.style.display = 'flex';
   window.abrirDashboard = abrirDashboard;
   btn.addEventListener('click', abrirDashboard);
+  // el atajo de arriba hace lo mismo y desaparece con la guía
+  const saltar = document.getElementById('introSaltar');
+  if (saltar) saltar.addEventListener('click', abrirDashboard);
 })();
 </script>
 
