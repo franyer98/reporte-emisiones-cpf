@@ -1691,16 +1691,6 @@ THREE.OrbitControls = OrbitControls;
   .bar-val .u { color: var(--text-faint); font-weight: 400; font-size: 10.5px; }
 
   /* ---------- BANNER ---------- */
-  .banner {
-    background: linear-gradient(120deg, rgba(255,71,87,.12), rgba(255,178,56,.06));
-    border: 1px solid rgba(255,71,87,.28); border-radius: 12px; padding: 26px 28px;
-    display: flex; align-items: center; gap: 22px; flex-wrap: wrap;
-  }
-  .banner.cpf2 { background: linear-gradient(120deg, rgba(224,138,79,.14), rgba(224,138,79,.04)); border-color: rgba(224,138,79,.32); }
-  .banner-num { font-family:'Space Grotesk',sans-serif; font-weight:700; font-size: 40px; color: var(--hot); line-height: 1; }
-  .banner.cpf2 .banner-num { color: var(--cpf2); }
-  .banner-text { flex:1; min-width: 240px; font-size: 14px; color: var(--text-dim); }
-  .banner-text b { color: var(--text); }
 
   /* ---------- FILTERS ---------- */
   .filters { display:flex; gap: 8px; flex-wrap: wrap; margin-bottom: 26px; }
@@ -3125,7 +3115,6 @@ THREE.OrbitControls = OrbitControls;
         <a href="#" class="nav-link" data-tab="t1" data-target="mapa3d">Vista 3D de tanques</a>
         <a href="#" class="nav-link" data-tab="t1" data-target="ranking">Ranking de severidad</a>
         <a href="#" class="nav-link" data-tab="t1" data-target="composicion">Composición de la fuga</a>
-        <a href="#" class="nav-link" data-tab="t1" data-target="accion">Puntos críticos</a>
         <a href="#" class="nav-link" data-tab="t1" data-target="detalle">Detalle e inspección</a>
       </div>
       <div class="nav-group">
@@ -3134,7 +3123,6 @@ THREE.OrbitControls = OrbitControls;
         <a href="#" class="nav-link" data-tab="t2" data-target="mapa3d2">Vista 3D de tanques</a>
         <a href="#" class="nav-link" data-tab="t2" data-target="ranking2">Ranking de severidad</a>
         <a href="#" class="nav-link" data-tab="t2" data-target="composicion2">Composición de la fuga</a>
-        <a href="#" class="nav-link" data-tab="t2" data-target="accion2">Puntos críticos</a>
         <a href="#" class="nav-link" data-tab="t2" data-target="detalle2">Detalle e inspección</a>
       </div>
     </div>
@@ -3375,14 +3363,6 @@ THREE.OrbitControls = OrbitControls;
       </div>
     </div>
   </section>
-  <section id="accion">
-    <div class="wrap">
-      <div class="banner">
-        <div class="banner-num" id="banner1Num">70%</div>
-        <div class="banner-text" id="banner1Text"><b>3 de los 14 puntos concentran el 70% de toda la fuga detectada en CPF-1</b> — dos manholes de TK-901B y el manhole de TK-901C, todos en el área de PROCESOS. Intervenir estos tres puntos primero reduce la mayor parte del volumen fugado con el menor esfuerzo.</div>
-      </div>
-    </div>
-  </section>
   <section id="detalle">
     <div class="wrap">
       <div class="section-head"><h2>Detalle por punto de inspección</h2><div class="section-note">CON EVIDENCIA FOTOGRÁFICA (FLIR)</div></div>
@@ -3432,14 +3412,6 @@ THREE.OrbitControls = OrbitControls;
             <div class="donut-list" id="listaEq2"></div>
           </div>
         </div>
-      </div>
-    </div>
-  </section>
-  <section id="accion2">
-    <div class="wrap">
-      <div class="banner cpf2">
-        <div class="banner-num" id="banner2Num">67%</div>
-        <div class="banner-text" id="banner2Text"><b>3 de los 11 puntos concentran el 67% de toda la fuga detectada en CPF-2</b> — los dos hallazgos de mayor tasa en 300-TK-0103 (brida de instrumentación y manhole) y el manhole de 300-TK-0201. TK-0103 concentra más de la mitad del volumen total de esta facilidad.</div>
       </div>
     </div>
   </section>
@@ -3752,8 +3724,6 @@ function aggregate(data) {
     eqLabels: eqSorted.map(e => e[0]), eqValues: eqSorted.map(e => e[1]),
     eqColors: eqSorted.map(e => colors[e[0]]),
     total, nPuntos: data.length,
-    top3: sorted.slice(0, 3),
-    top3pct: Math.round(sorted.slice(0, 3).reduce((s, d) => s + d.tasa, 0) / Math.max(1, total) * 100),
     critByArea
   };
 }
@@ -3926,12 +3896,6 @@ function updateKPIs() {
   set('kpiF1Crit', critRowsHTML(AGG1.critByArea));
   set('kpiF2Crit', critRowsHTML(AGG2.critByArea));
   set('tabN1', AGG1.nPuntos); set('tabN2', AGG2.nPuntos);
-  [[1, AGG1], [2, AGG2]].forEach(([n, a]) => {
-    set('banner' + n + 'Num', a.top3pct + '%');
-    const eqs = [...new Set(a.top3.map(d => d.equipo))].join(', ');
-    set('banner' + n + 'Text', `<b>3 de los ${a.nPuntos} puntos concentran el ${a.top3pct}% de toda la fuga detectada en CPF-${n}</b>`
-      + ` — se ubican en ${eqs}. Intervenir estos tres puntos primero reduce la mayor parte del volumen fugado con el menor esfuerzo.`);
-  });
 }
 
 function tierLabel(t) { return {alto:'ALTO', medio:'MEDIO', bajo:'BAJO'}[t]; }
