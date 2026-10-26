@@ -8257,7 +8257,11 @@ ${cssInforme()}
      un solo subtotal, que es el que corresponde a lo que muestra. */
   function xlVivo(filtro, estado) {
     const cerr = estado === 'CERRADA';
-    const filas = [], formulas = {};
+    /* La hoja redondea para que se pueda leer, pero quien comprueba a mano
+       necesita el número entero: dividir 52,85 entre 240 no devuelve el
+       factor y parece que algo no cuadra. Se guarda aparte el valor sin
+       redondear, y la barra de arriba lo enseña al tocar la celda. */
+    const filas = [], formulas = {}, exactos = {};
     let r = 1;
 
     filas.push({ r, celdas: XL_ENC.concat(['Estado', 'Fecha de cierre']), clase: 'xl-enc', fac: '' }); r++;
@@ -8274,6 +8278,9 @@ ${cssInforme()}
       const clave = fac + '|' + d.area;
       const mol = XL_MOL[clave] || XL_MOL['CPF-2|ALMACENAMIENTO'];
       const der = xlCadenaVal(mol, d.tasa);
+      // F es la lectura; de Y en adelante, lo que la cadena deriva de ella
+      exactos[r + ':6'] = d.tasa;
+      der.forEach((v, i) => { exactos[r + ':' + (25 + i)] = v; });
       const c = [
         // el equipo lleva el área pegada, como en el libro: «TK-901B PROCESOS»
         d.fid || '', fac, d.equipo + ' ' + d.area, d.punto, d.elemento, xlNum(d.tasa, 0),
@@ -8326,6 +8333,7 @@ ${cssInforme()}
       const c = new Array(40).fill('');
       c[0] = (cerr ? 'EVITADO POR CIERRES · ' : 'SUBTOTAL ACTIVO · ') + titulo;
       c[5] = xlNum(gTot, 0); c[35] = xlNum(tTot, 2);
+      exactos[r + ':6'] = gTot; exactos[r + ':36'] = tTot;
       c[38] = pts.length + (pts.length === 1 ? ' punto' : ' puntos');
       filas.push({ r, celdas: c, clase: cerr ? 'xl-sub xl-sub-cerr' : 'xl-sub', fac: '' });
       // el SUMIF se queda: es lo que enseña que el estado es lo que decide
@@ -8355,8 +8363,12 @@ ${cssInforme()}
                : 'No hay hallazgos activos con este filtro.', 'xl-tit');
     }
 
-    return { filas, formulas, cols: 40 };
+    return { filas, formulas, exactos, cols: 40 };
   }
+
+  /* Lo que la barra de arriba necesita de la vista que se está mirando: las
+     fórmulas y, en la hoja del tablero, los valores sin redondear. */
+  let xlFx = {}, xlExactos = {};
 
   function xlHojaHTML() {
     const v = XL_VISTAS.find(x => x.id === xlVista) || XL_VISTAS[0];
@@ -8365,10 +8377,12 @@ ${cssInforme()}
     if (v.vivo) {
       const viva = xlVivo(xlFac, v.estado);
       xlFx = viva.formulas;
+      xlExactos = viva.exactos;
       N = viva.cols;
       dentro = viva.filas.map(f => [f.r, f.celdas, f.clase, f.fac]);
     } else {
       xlFx = HOJA.formulas;
+      xlExactos = {};          // las hojas del libro ya traen todos sus decimales
       N = 38;
       dentro = HOJA.filas.filter(([r]) => r >= v.desde && r <= v.hasta)
         .map(([r, celdas]) => [r, celdas,
@@ -8463,8 +8477,16 @@ ${cssInforme()}
       ref.textContent = xlLetra(col) + fil;
       // si la celda tiene fórmula, se muestra la fórmula y no el resultado
       const f = xlFx[fil + ':' + (col + 1)];
+      const ex = xlExactos[fil + ':' + (col + 1)];
+      // el número sin redondear, para quien rehaga la cuenta con calculadora
+      // sólo donde hay decimales que la celda no enseña: la lectura es entera
+      const crudo = (typeof ex === 'number' && isFinite(ex) && !Number.isInteger(ex))
+        ? '   ·   sin redondear: ' + ex.toLocaleString('es-CO',
+            { minimumFractionDigits: 6, maximumFractionDigits: 6 })
+        : '';
       // en la hoja del tablero, la columna H lleva una explicación, no una fórmula
-      val.textContent = f ? (/^[A-Z]+\(/.test(f) ? '=' + f : f) : (td.textContent || '(vacía)');
+      val.textContent = (f ? (/^[A-Z]+\(/.test(f) ? '=' + f : f)
+                           : (td.textContent || '(vacía)')) + crudo;
     }
 
     tabla.addEventListener('click', ev => {
