@@ -2428,7 +2428,7 @@ THREE.OrbitControls = OrbitControls;
     justify-content:center;font-style:italic;font-size:12px;color:#5a646e}
   .xl-val{flex:1;padding:6px 10px;font-family:'JetBrains Mono',monospace;font-size:11.5px;
     color:#0f5132;overflow:auto;white-space:nowrap;display:flex;align-items:center}
-  .xl-rejilla{overflow:auto;max-height:52vh}
+  .xl-rejilla{overflow:auto;max-height:72vh;min-height:300px}
   table.xl-t{border-collapse:separate;border-spacing:0;font-size:11.5px;
     font-family:'JetBrains Mono',monospace;white-space:nowrap}
   table.xl-t th,table.xl-t td{border-right:1px solid #d8dde1;border-bottom:1px solid #d8dde1;
@@ -2483,7 +2483,7 @@ THREE.OrbitControls = OrbitControls;
   .xl-pestana span.activa{background:#f3f4f6;border-top:2px solid #107c41;color:#107c41;
     font-weight:700;margin-bottom:-1px;padding-bottom:8px}
   .xl-pestana span:hover{color:#107c41}
-  @media (max-width:620px){ .xl-rejilla{max-height:60vh} .xl-ref{width:72px} }
+  @media (max-width:620px){ .xl-rejilla{max-height:68vh} .xl-ref{width:72px} }
 
   /* El aviso de que llegaron datos nuevos. Vive fuera del módulo de edición
      porque el tablero público también se sincroniza. */
@@ -8601,8 +8601,6 @@ ${cssInforme()}
       // en la hoja del tablero hay que rehacerla, para que los subtotales
       // sumen lo que se ve; en las del libro basta con esconder filas
       memPintar();
-      const d = document.querySelector('.mem-mas:last-of-type');
-      if (d) d.open = true;
     });
     aplicarFiltroFilas(caja);
 
@@ -8611,8 +8609,6 @@ ${cssInforme()}
       if (!sp || sp.dataset.v === xlVista) return;
       xlVista = sp.dataset.v;
       memPintar();
-      const d = document.querySelector('.mem-mas:last-of-type');
-      if (d) d.open = true;
     });
   }
 
@@ -8722,7 +8718,15 @@ ${cssInforme()}
     const det = memTotal(memAlcance);
     const { campo } = memPartes(memAlcance);
 
+    /* La hoja estaba al final y plegada: había que bajar toda la sección y
+       además abrirla. Es lo que más se mira, así que va arriba y abierta.
+       El resumen y la comprobación quedan debajo, que son el resguardo. */
     caja.innerHTML = `
+      <details class="mem-mas" open>
+        <summary>LA HOJA DEL GOP-F-006, COMPLETA</summary>
+        ${memCromaHTML()}
+      </details>
+
       ${memDemo(memAlcance)}
 
       <div class="mem-sec">EMISIONES ACTIVAS · ${memEsc(campo).toUpperCase()}</div>
@@ -8734,14 +8738,6 @@ ${cssInforme()}
       </div>
       ${memResumen(memAlcance)}
       ${memComprobacion(memAlcance, det.totCo2)}
-
-
-      <details class="mem-mas">
-        <summary>LA HOJA DEL GOP-F-006, COMPLETA</summary>
-        ${memCromaHTML()}
-
-      </details>
-
       `;
 
     const barra = document.getElementById('memBarra');
@@ -8753,7 +8749,10 @@ ${cssInforme()}
     }
     xlEnganchar();
 
-    caja.querySelectorAll('.mem-mas').forEach((d, i) => { if (abiertos[i]) d.open = true; });
+    // la hoja nace abierta; al repintar se respeta si alguien la cerró
+    caja.querySelectorAll('.mem-mas').forEach((d, i) => {
+      if (abiertos.length) d.open = !!abiertos[i];
+    });
     if (capa && scroll) capa.scrollTop = scroll;
   }
 
