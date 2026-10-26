@@ -8365,7 +8365,11 @@ ${cssInforme()}
         // el equipo lleva el área pegada, como en el libro: «TK-901B PROCESOS»
         d.fid || '', fac, d.equipo + ' ' + d.area, d.punto, d.elemento, xlNum(d.tasa, 0),
         ...mol.map(v => xlNum(v, 4)),
-        ...der.map((v, i) => xlNum(v, i >= 11 ? 3 : 6)),
+        /* AJ lleva dos decimales, los mismos que el tablero. Con tres salía
+           745,705 donde el tablero decía 745,70 y parecía una diferencia
+           cuando es el mismo 745,7049. AK y AL se quedan en tres: no se
+           comparan con nada de la pantalla. */
+        ...der.map((v, i) => xlNum(v, i === 11 ? 2 : (i > 11 ? 3 : 6))),
         cerrada ? 'CERRADA' : 'ACTIVA',
         cerrada ? (d.fechaCierre || '') : '',
       ];
@@ -8408,7 +8412,7 @@ ${cssInforme()}
       const tTot = grupos.reduce((a, g) => a + suma(lista(g), g.fac), 0);
       const c = new Array(40).fill('');
       c[0] = (cerr ? 'EVITADO POR CIERRES · ' : 'SUBTOTAL ACTIVO · ') + titulo;
-      c[5] = xlNum(gTot, 0); c[35] = xlNum(tTot, 3);
+      c[5] = xlNum(gTot, 0); c[35] = xlNum(tTot, 2);
       c[38] = pts.length + (pts.length === 1 ? ' punto' : ' puntos');
       filas.push({ r, celdas: c, clase: cerr ? 'xl-sub xl-sub-cerr' : 'xl-sub', fac: '' });
       // el SUMIF se queda: es lo que enseña que el estado es lo que decide
