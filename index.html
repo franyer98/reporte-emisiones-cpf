@@ -3823,12 +3823,21 @@ function updateKPIs() {
         + ` = <b>${n(g, 0)} g</b> = <b>${n(g / 1000, 2)} kg</b> = <b>${n(tonToc, 3)} ton de TOC</b><br>`
         + `<span class="hf-p">2 · EL EQUIVALENTE EN CO₂ <i>— el mismo gas, medido por su efecto climático</i></span>`
         + `<b>${n(tonToc, 3)} ton de TOC</b> × <b>${n(F, 4)}</b>`
-        + ` <i>(de la cromatografía, con GWP 28)</i> = <b>${n(co2P, 2)} ton CO₂eq</b> ${PERIODOS[P].etiqueta}<br>`
+        + ` <i>(ver abajo)</i> = <b>${n(co2P, 2)} ton CO₂eq</b> ${PERIODOS[P].etiqueta}<br>`
         // con el periodo anual la línea de arriba ya es la del titular: repetirla sobra
         + (P === 'anio'
             ? `<em>esa es la cifra verde de arriba.</em><br>`
             : `al año: <em>${n(co2, 2)} ton CO₂eq</em> — la cifra verde de arriba.<br>`)
-        + `<span class="hf-n">Las dos son correctas y no son la misma: una tonelada de este gas`
+        /* De dónde sale el factor. Aparecía a secas y era la pregunta obvia:
+           no está en el libro, es el promedio de los factores de área pesado
+           por lo que fuga cada una. El tablero no lo aplica así —multiplica
+           área por área—, y eso hay que decirlo, no dejarlo entender. */
+        + `<span class="hf-n"><b>El ${n(F, 4)}</b> no es un factor del libro: es el promedio de los`
+        + ` factores de cada área, pesado por lo que fuga cada una. El tablero no lo usa así`
+        + ` —multiplica área por área, con la cromatografía de cada una— y aquí sale de dividir`
+        + ` <b>${n(co2, 2)} ÷ ${n(tt * 8760 / 1e6, 3)}</b>. El factor de cada área está en sus`
+        + ` tarjetas y en la memoria de cálculo.<br><br>`
+        + `Las dos cifras de arriba son correctas y no son la misma: una tonelada de este gas`
         + ` pesa una tonelada, pero calienta como ${n(F, 2)} toneladas de CO₂, porque casi todo`
         + ` es metano. Al reporte ambiental van las toneladas de CO₂eq.</span>`;
     }
