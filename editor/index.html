@@ -8161,6 +8161,12 @@ ${cssInforme()}
 
   /* El detalle punto por punto, agrupado por facilidad y área, con los
      subtotales que permiten cuadrar contra cualquier tarjeta del tablero. */
+  /* El punto por punto. Llevaba seis columnas: además de la tasa y las
+     toneladas, iba la masa de TOC intermedia y una columna repitiendo el
+     factor del área en cada fila. Las dos sobraban —el TOC no se reporta y
+     el factor ya está en la cabecera de su área—, y con tres niveles de
+     subtotal encima la tabla se leía mal. Quedan cuatro columnas: qué es,
+     dónde, cuánto mide y cuánto pesa en CO₂eq. */
   function memTablaDetalle(clave) {
     const { partes } = memPartes(clave);
     let html = '', totG = 0, totToc = 0, totCo2 = 0, n = 0;
@@ -8172,8 +8178,9 @@ ${cssInforme()}
       areas.forEach(area => {
         const pts = lista.filter(d => d.area === area).sort((a, b) => b.tasa - a.tasa);
         const K = kDe(fac, area);
+        // el factor del área va aquí una vez, no repetido en cada fila
         html += `<tr class="mem-area"><td class="izq" colspan="2">${memEsc(fac)} · ${memEsc(area)}</td>`
-              + `<td colspan="4">K = ${memN(K, 7)}</td></tr>`;
+              + `<td colspan="2"><small>cada g/Hr de esta área pesa</small> ${memN(K, 7)} <small>ton CO₂eq/año</small></td></tr>`;
         let aG = 0, aToc = 0, aCo2 = 0;
         pts.forEach(d => {
           const toc = d.tasa * MEM_HORAS / 1e6;
@@ -8181,17 +8188,16 @@ ${cssInforme()}
           aG += d.tasa; aToc += toc; aCo2 += co2; n++;
           html += `<tr><td class="izq eq">${memEsc(d.equipo)}${d.nuevo ? ' <small>nueva</small>' : ''}</td>`
                 + `<td class="izq"><small>${memEsc(d.punto)} · ${memEsc(d.elemento)}</small></td>`
-                + `<td>${memG(d.tasa)}</td><td>${memN(toc, 4)}</td>`
-                + `<td><small>× ${memN(K, 7)}</small></td><td>${memN(co2, 3)}</td></tr>`;
+                + `<td>${memG(d.tasa)}</td><td>${memN(co2, 2)}</td></tr>`;
         });
         html += `<tr class="mem-sub"><td class="izq" colspan="2">Subtotal ${memEsc(area)} · ${pts.length} punto${pts.length === 1 ? '' : 's'}</td>`
-              + `<td>${memG(aG)}</td><td>${memN(aToc, 4)}</td><td></td><td>${memN(aCo2, 3)}</td></tr>`;
+              + `<td>${memG(aG)}</td><td>${memN(aCo2, 2)}</td></tr>`;
         facG += aG; facToc += aToc; facCo2 += aCo2;
       });
 
       if (partes.length > 1) {
         html += `<tr class="mem-sub"><td class="izq" colspan="2">TOTAL ${memEsc(fac)}</td>`
-              + `<td>${memG(facG)}</td><td>${memN(facToc, 4)}</td><td></td><td>${memN(facCo2, 3)}</td></tr>`;
+              + `<td>${memG(facG)}</td><td>${memN(facCo2, 2)}</td></tr>`;
       }
       totG += facG; totToc += facToc; totCo2 += facCo2;
     });
@@ -8199,14 +8205,13 @@ ${cssInforme()}
     const etiqueta = clave === 'RUBIALES' ? 'TOTAL CAMPO RUBIALES · CPF-1 + CPF-2'
                    : clave === 'CANOSUR' ? 'TOTAL CAÑO SUR' : 'TOTAL ' + clave;
     html += `<tr class="mem-tot"><td class="izq" colspan="2">${etiqueta} · ${n} punto${n === 1 ? '' : 's'}</td>`
-          + `<td>${memG(totG)} g/Hr</td><td>${memN(totToc, 3)} ton TOC</td><td></td>`
-          + `<td>${memN(totCo2, 2)} ton CO₂eq</td></tr>`;
+          + `<td>${memG(totG)} g/Hr</td><td>${memN(totCo2, 2)} ton CO₂eq</td></tr>`;
 
     return {
       html: `<div class="mem-tabla-caja"><table class="mem-t">
-        <thead><tr><th>Equipo</th><th class="izq">Punto · elemento</th><th>Tasa g/Hr</th>
-          <th>ton TOC/año<br><small>tasa × 8.760 ÷ 1e6</small></th><th>factor</th>
-          <th>ton CO₂eq/año<br><small>tasa × K</small></th></tr></thead>
+        <thead><tr><th>Equipo</th><th class="izq">Punto · elemento</th>
+          <th>Tasa medida<br><small>g/Hr</small></th>
+          <th>Equivalente en CO₂<br><small>tasa × factor del área</small></th></tr></thead>
         <tbody>${html}</tbody></table></div>`,
       totG, totToc, totCo2, n,
     };
@@ -8673,7 +8678,8 @@ ${cssInforme()}
       ${memResumen(memAlcance)}
       ${memComprobacion(memAlcance, det.totCo2)}
 
-      <button class="mem-plegar" id="memVerDetalle">Ver punto por punto</button>
+      <button class="mem-plegar" id="memVerDetalle" data-n="${det.n}">Ver los ${det.n}
+        punto${det.n === 1 ? '' : 's'}, uno por uno</button>
       <div id="memDetalle" style="display:none;margin-top:12px">${det.html}</div>
 
       <details class="mem-mas">
@@ -8696,7 +8702,10 @@ ${cssInforme()}
     if (ver && det2) ver.onclick = () => {
       const abierto = det2.style.display !== 'none';
       det2.style.display = abierto ? 'none' : '';
-      ver.textContent = abierto ? 'Ver punto por punto' : 'Ocultar el detalle';
+      const cuantos = ver.dataset.n;
+      ver.textContent = abierto
+        ? `Ver los ${cuantos} punto${cuantos === '1' ? '' : 's'}, uno por uno`
+        : 'Ocultar el punto por punto';
     };
     xlEnganchar();
 
@@ -8704,7 +8713,7 @@ ${cssInforme()}
     if (detVisible) {
       const d = caja.querySelector('#memDetalle'), v = caja.querySelector('#memVerDetalle');
       if (d) d.style.display = '';
-      if (v) v.textContent = 'Ocultar el detalle';
+      if (v) v.textContent = 'Ocultar el punto por punto';
     }
     if (capa && scroll) capa.scrollTop = scroll;
   }
