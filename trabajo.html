@@ -2458,6 +2458,16 @@ THREE.OrbitControls = OrbitControls;
   table.xl-t tr.xl-cerr td{color:#8a949d;text-decoration:line-through;background:#f7f8f9}
   table.xl-t tr.xl-cerr td.xl-der{background:#f1f5f2}
   table.xl-t td.sel{outline:2px solid #107c41;outline-offset:-2px;background:#d7ebdf!important}
+  /* la cruz de la celda elegida: su fila y su columna, como en Excel */
+  table.xl-t td.xl-fila,table.xl-t td.xl-col{background:#eaf4ee}
+  table.xl-t td.xl-der.xl-fila,table.xl-t td.xl-der.xl-col{background:#e1efe7}
+  table.xl-t tr.xl-enc td.xl-col,table.xl-t tr.xl-pm td.xl-col,
+  table.xl-t tr.xl-sub td.xl-col,table.xl-t tr.xl-tit td.xl-col{background:#dcebe1}
+  /* la letra de arriba y el número de la izquierda, resaltados */
+  table.xl-t thead th.xl-act,table.xl-t td.xl-n.xl-act{background:#107c41;color:#fff;
+    font-weight:700}
+  .xl-rejilla:focus{outline:2px solid rgba(16,124,65,.5);outline-offset:-2px}
+  .xl-rejilla:focus-visible{outline:2px solid #107c41;outline-offset:-2px}
   .xl-chips{display:flex;gap:6px;flex-wrap:wrap;padding:8px 9px;background:#f3f4f6;
     border-top:1px solid #c9ced3}
   .xl-chips button{background:#fff;border:1px solid #9aa4ad;border-radius:5px;padding:4px 11px;
@@ -8452,7 +8462,7 @@ ${cssInforme()}
         <div class="xl-barra">
           <div class="xl-ref" id="xlRef">—</div>
           <div class="xl-fx">fx</div>
-          <div class="xl-val" id="xlVal">Toca una celda para ver qué tiene dentro</div>
+          <div class="xl-val" id="xlVal">Toca una celda para ver qué tiene dentro · luego muévete con las flechas</div>
         </div>
         <div class="xl-rejilla"><table class="xl-t"><thead>${cab}</thead><tbody>${cuerpo}</tbody></table></div>
         <div class="xl-chips" id="xlChips">
@@ -8486,17 +8496,95 @@ ${cssInforme()}
     const ref = caja.querySelector('#xlRef');
     const val = caja.querySelector('#xlVal');
 
-    caja.querySelector('.xl-t').addEventListener('click', ev => {
-      const td = ev.target.closest('td');
-      if (!td || td.classList.contains('xl-n')) return;
-      caja.querySelectorAll('td.sel').forEach(o => o.classList.remove('sel'));
+    const tabla = caja.querySelector('.xl-t');
+    const rejilla = caja.querySelector('.xl-rejilla');
+
+    /* Señalar la celda no basta: en una hoja de cuarenta columnas uno pierde
+       de vista en qué letra y en qué fila está. Como en Excel, se tiñe la
+       cruz —su fila y su columna— y se marcan la letra de arriba y el número
+       de la izquierda. */
+    function xlPintarSel(td) {
+      caja.querySelectorAll('.sel, .xl-fila, .xl-col, .xl-act')
+        .forEach(o => o.classList.remove('sel', 'xl-fila', 'xl-col', 'xl-act'));
+      if (!td) return;
+      const col = +td.dataset.c, tr = td.parentElement, fil = tr.dataset.r;
+
       td.classList.add('sel');
-      const col = +td.dataset.c, fil = td.parentElement.dataset.r;
+      tr.querySelectorAll('td').forEach(o => { if (o !== td) o.classList.add('xl-fila'); });
+      tabla.querySelectorAll(`td[data-c="${col}"]`).forEach(o => {
+        if (o !== td) o.classList.add('xl-col');
+      });
+      const th = tabla.querySelectorAll('thead th')[col + 1];
+      if (th) th.classList.add('xl-act');
+      const n = tr.querySelector('td.xl-n');
+      if (n) n.classList.add('xl-act');
+
       ref.textContent = xlLetra(col) + fil;
       // si la celda tiene fórmula, se muestra la fórmula y no el resultado
       const f = xlFx[fil + ':' + (col + 1)];
       // en la hoja del tablero, la columna H lleva una explicación, no una fórmula
       val.textContent = f ? (/^[A-Z]+\(/.test(f) ? '=' + f : f) : (td.textContent || '(vacía)');
+    }
+
+    tabla.addEventListener('click', ev => {
+      const td = ev.target.closest('td');
+      if (!td || td.classList.contains('xl-n')) return;
+      xlPintarSel(td);
+      rejilla.focus({ preventScroll: true });
+    });
+
+    /* Moverse con las flechas, como en una hoja de cálculo. Sólo cuentan las
+       filas a la vista: con un filtro puesto, bajar no debe caer en una fila
+       escondida. */
+    const visibles = () => [...tabla.querySelectorAll('tbody tr')]
+      .filter(tr => tr.style.display !== 'none' && tr.querySelector('td:not(.xl-n)'));
+
+    function mover(dFil, dCol, aExtremo) {
+      const act = caja.querySelector('td.sel');
+      const filas = visibles();
+      if (!filas.length) return;
+      if (!act) {                       // nada elegido todavía: la primera celda
+        const t = filas[0].querySelector('td:not(.xl-n)');
+        if (t) { xlPintarSel(t); t.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }
+        return;
+      }
+      const tr = act.parentElement;
+      let i = filas.indexOf(tr);
+      let c = +act.dataset.c;
+      const celdas = tr => [...tr.querySelectorAll('td:not(.xl-n)')];
+
+      if (aExtremo) {
+        if (dCol < 0) c = 0;
+        if (dCol > 0) c = celdas(tr).length - 1;
+        if (dFil < 0) i = 0;
+        if (dFil > 0) i = filas.length - 1;
+      } else {
+        i = Math.min(filas.length - 1, Math.max(0, i + dFil));
+        c = Math.max(0, c + dCol);
+      }
+      const destino = celdas(filas[i]);
+      if (!destino.length) return;
+      const td = destino[Math.min(c, destino.length - 1)];
+      xlPintarSel(td);
+      td.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }
+
+    rejilla.setAttribute('tabindex', '0');
+    rejilla.addEventListener('keydown', ev => {
+      const k = ev.key;
+      const saltar = ev.ctrlKey || ev.metaKey;
+      const pasos = {
+        ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1],
+        PageUp: [-10, 0], PageDown: [10, 0],
+      };
+      if (pasos[k]) {
+        ev.preventDefault();
+        return mover(pasos[k][0], pasos[k][1], saltar && k.indexOf('Arrow') === 0);
+      }
+      if (k === 'Home')  { ev.preventDefault(); return mover(saltar ? -1 : 0, -1, true); }
+      if (k === 'End')   { ev.preventDefault(); return mover(saltar ? 1 : 0, 1, true); }
+      if (k === 'Enter') { ev.preventDefault(); return mover(ev.shiftKey ? -1 : 1, 0); }
+      if (k === 'Tab')   { ev.preventDefault(); return mover(0, ev.shiftKey ? -1 : 1); }
     });
 
     const chips = caja.querySelector('#xlChips');
