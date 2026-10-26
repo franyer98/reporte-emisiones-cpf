@@ -1627,6 +1627,9 @@ THREE.OrbitControls = OrbitControls;
   .hero-formula .hf-l{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
     padding:2px 0}
   .hero-formula .hf-l > span:first-child{color:var(--text-faint)}
+  .hero-formula .hf-o{font-size:10.5px;line-height:1.6;color:var(--text-faint);
+    padding:0 0 6px 13px;border-left:1px solid var(--border);margin:1px 0 4px 2px}
+  .hero-formula .hf-o b{color:var(--text-dim);font-weight:700}
   .hero-formula .hf-suma{margin-top:5px;padding-top:7px;border-top:1px solid var(--border)}
   .hero-formula .hf-suma > span:first-child{color:var(--text);font-weight:700}
   @media (max-width:600px){ .hero-formula .hf-l{display:block} }
@@ -3583,6 +3586,20 @@ const K_AREA = {
    simulador devuelve exactamente su GEI. */
 const MUESTRAS_GOP = [{"fila": 7, "fac": "EP-1", "equipo": "ETK-1101-A FWKO", "lectura": 1200, "gei": 271.561959, "k": 0.2263016325}, {"fila": 8, "fac": "EP-1", "equipo": "ETK-1101-B FWKO", "lectura": 8500, "gei": 1923.563877, "k": 0.2263016325882353}, {"fila": 9, "fac": "CPF-1", "equipo": "TK-905", "lectura": 160, "gei": 24.627711, "k": 0.15392319375000002}, {"fila": 10, "fac": "CPF-1", "equipo": "TK-905", "lectura": 21, "gei": 3.232387, "k": 0.1539231904761905}, {"fila": 11, "fac": "CPF-1", "equipo": "TK-906-B", "lectura": 1100, "gei": 169.315511, "k": 0.15392319181818181}, {"fila": 12, "fac": "CPF-1", "equipo": "TK-906-A", "lectura": 790, "gei": 121.599322, "k": 0.1539231924050633}, {"fila": 13, "fac": "CPF-1", "equipo": "TK-904", "lectura": 1900, "gei": 292.454065, "k": 0.15392319210526317}, {"fila": 14, "fac": "CPF-1", "equipo": "TK-904", "lectura": 730, "gei": 112.36393, "k": 0.15392319178082192}, {"fila": 15, "fac": "CPF-1", "equipo": "TK-901-C-PROCESOS", "lectura": 2200, "gei": 543.453737, "k": 0.24702442590909093}, {"fila": 16, "fac": "CPF-1", "equipo": "HEAD-TK-902", "lectura": 370, "gei": 91.599559, "k": 0.2475663756756757}, {"fila": 17, "fac": "CPF-1", "equipo": "TK-906-B -SKIM TANK", "lectura": 180, "gei": 39.634246, "k": 0.22019025555555555}, {"fila": 18, "fac": "CPF-1", "equipo": "TK-906-A SKIM TANK", "lectura": 400, "gei": 88.076101, "k": 0.2201902525}, {"fila": 19, "fac": "CPF-2", "equipo": "300 TK- 0103 ALMACENAMIENTO", "lectura": 160, "gei": 39.616358, "k": 0.2476022375}, {"fila": 20, "fac": "CPF-2", "equipo": "400-TK-0301", "lectura": 280, "gei": 69.325402, "k": 0.24759072142857141}, {"fila": 21, "fac": "CPF-2", "equipo": "300-TK-0301 FWKOS", "lectura": 670, "gei": 162.960483, "k": 0.24322460149253733}, {"fila": 22, "fac": "CPF-2", "equipo": "HEAD-300-TK-0001", "lectura": 820, "gei": 203.058663, "k": 0.24763251585365853}, {"fila": 23, "fac": "CPF-2", "equipo": "400-TK-0401", "lectura": 890, "gei": 220.355743, "k": 0.2475907224719101}, {"fila": 24, "fac": "CPF-2", "equipo": "400-TK-0101", "lectura": 1200, "gei": 297.108867, "k": 0.24759072249999997}];
 
+/* De dónde sale cada factor, para poder señalarlo con el dedo en el libro:
+   la fila de su muestra en la hoja «Calculos CO2 2026», su equipo, y las dos
+   celdas que se dividen —GEI entre lectura—. Son datos del archivo: no
+   cambian con los hallazgos. */
+const K_ORIGEN = {
+  'CPF-1|PROCESOS':       { fila: 15, equipo: 'TK-901-C-PROCESOS',           gei: 543.453737, lect: 2200 },
+  'CPF-1|SKIM TANK':      { fila: 17, equipo: 'TK-906-B -SKIM TANK',         gei: 39.634246,  lect: 180 },
+  'CPF-2|ALMACENAMIENTO': { fila: 19, equipo: '300 TK- 0103 ALMACENAMIENTO', gei: 39.616358,  lect: 160 },
+  'CPF-2|FWKOS':          { fila: 21, equipo: '300-TK-0301 FWKOS',           gei: 162.960483, lect: 670 },
+  'CAÑO SUR|FWKOS':       { fila: 7,  equipo: 'ETK-1101-A FWKO',             gei: 271.561959, lect: 1200 },
+  // Caño Sur no tiene análisis propio del SKIM TANK: usa el de CPF-1
+  'CAÑO SUR|SKIM TANK':   { fila: 17, equipo: 'TK-906-B -SKIM TANK (CPF-1)', gei: 39.634246,  lect: 180 },
+};
+
 const K_FALLBACK = { 1: 0.24760223983966112, 2: 0.24698816042558724 };
 function kDe(fac, area) {
   return K_AREA[fac + '|' + area] ?? K_FALLBACK[fac === 'CPF-1' ? 1 : 2];
@@ -3815,10 +3832,18 @@ function bloqueDosPasos(partes, tt, co2) {
     filas.forEach((f, i) => { f.ton = redondeadas[i] / 100; });
   }
 
-  const lineas = filas.map(f =>
-    `<div class="hf-l"><span>${esc(f.fac)} · ${esc(f.area)}</span>`
-    + `<span><b>${n(f.gArea, 0)}</b> g/Hr × <b>${n(f.K, 7)}</b> =`
-    + ` <b>${n(f.ton, 2)}</b> ton CO₂eq/año</span></div>`).join('');
+  const lineas = filas.map(f => {
+    // el factor no puede aparecer de la nada: debajo va la división del libro
+    const o = K_ORIGEN[f.fac + '|' + f.area];
+    const origen = o
+      ? `<div class="hf-o">${n(f.K, 7)} = GEI ÷ lectura de la muestra`
+        + ` <b>${esc(o.equipo)}</b>, fila ${o.fila} del libro:`
+        + ` ${n(o.gei, 6)} ÷ ${n(o.lect, 0)}</div>`
+      : '';
+    return `<div class="hf-l"><span>${esc(f.fac)} · ${esc(f.area)}</span>`
+      + `<span><b>${n(f.gArea, 0)}</b> g/Hr × <b>${n(f.K, 7)}</b> =`
+      + ` <b>${n(f.ton, 2)}</b> ton CO₂eq/año</span></div>` + origen;
+  }).join('');
 
   cajaF.style.display = '';
   cajaF.innerHTML =
@@ -3830,10 +3855,7 @@ function bloqueDosPasos(partes, tt, co2) {
     + lineas
     + `<div class="hf-l hf-suma"><span>TOTAL</span><span><em>${n(co2, 2)} ton CO₂eq/año</em>`
     + ` — la cifra verde de arriba</span></div>`
-    + `<span class="hf-n">El factor de cada línea sale de su muestra en el GOP-F-006: la columna`
-    + ` <b>GEI ton CO₂eq/año</b> dividida entre su <b>lectura</b>. Está en las tarjetas de arriba`
-    + ` y, con su número de fila, en la memoria de cálculo.<br><br>`
-    + `Las dos cifras son correctas y no son la misma: una tonelada de este gas pesa una`
+    + `<span class="hf-n">Las dos cifras son correctas y no son la misma: una tonelada de este gas pesa una`
     + ` tonelada, pero calienta como unas <b>${n(tt > 0 ? co2 * 1e6 / (tt * 8760) : 0, 1)}</b>`
     + ` toneladas de CO₂, porque casi todo es metano. Al reporte ambiental van las toneladas`
     + ` de CO₂eq.</span>`;
