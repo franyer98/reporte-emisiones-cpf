@@ -1997,7 +1997,7 @@ THREE.OrbitControls = OrbitControls;
   .cmp-tras{position:absolute;inset:0;clip-path:inset(var(--pos) 0 0 0)}
   .cmp-linea{position:absolute;left:0;right:0;top:var(--pos);height:2px;
     background:rgba(255,255,255,.9);box-shadow:0 0 0 1px rgba(0,0,0,.35);z-index:4}
-  .cmp-grip{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  .cmp-grip{position:absolute;top:var(--pos);left:50%;transform:translate(-50%,-50%);
     width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.94);
     box-shadow:0 2px 10px rgba(0,0,0,.45);display:flex;align-items:center;
     justify-content:center;color:#0b0f13;font-size:12px;font-weight:700;line-height:1;
@@ -4098,6 +4098,7 @@ function comparador(caja) {
 
   grip.addEventListener('pointerdown', e => {
     e.stopPropagation();
+    if (caja._cancelarBarrido) caja._cancelarBarrido();   // manda la mano
     moviendo = true;
     caja._arrastrado = false;
     try { grip.setPointerCapture(e.pointerId); } catch (err) {}
@@ -4124,12 +4125,69 @@ function comparador(caja) {
   botones.forEach(b => {
     b.addEventListener('click', e => {
       e.stopPropagation();        // pulsar no debe ampliar la foto
+      if (caja._cancelarBarrido) caja._cancelarBarrido();
       const pct = b.dataset.ver === 'antes' ? 100 : 0;
       caja.style.setProperty('--pos', pct + '%');
       marcar(pct);
     });
   });
   marcar(50);
+
+  /* ---------- EL BARRIDO ----------
+     Antes había que arrastrar el tirador para ver la diferencia, y en una
+     reunión nadie lo hace: la ficha se quedaba a medias, con media foto de
+     cada toma y sin contar nada. Ahora, cuando la ficha entra en pantalla,
+     la línea baja sola desde el hallazgo hasta la verificación y se queda
+     ahí: la última imagen es la del punto reparado, que es la noticia.
+     Se repite al pasar el cursor. Arrastrar el tirador lo cancela. */
+  let anim = null;
+  const cancelar = () => { if (anim) { cancelAnimationFrame(anim); anim = null; } };
+  caja._cancelarBarrido = cancelar;
+
+  function barrer(ms) {
+    cancelar();
+    const t0 = performance.now();
+    caja.style.setProperty('--pos', '100%');
+    marcar(100);
+    const paso = t => {
+      const k = Math.min(1, (t - t0) / ms);
+      // easeInOutCubic: arranca y termina suave, como una mano que no tiembla
+      const e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+      const pct = 100 - e * 100;
+      caja.style.setProperty('--pos', pct.toFixed(1) + '%');
+      marcar(pct);
+      if (k < 1) anim = requestAnimationFrame(paso); else anim = null;
+    };
+    anim = requestAnimationFrame(paso);
+  }
+
+  // quien prefiere la pantalla quieta no ve nada moverse: va directo al final
+  const quieto = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (quieto) {
+    caja.style.setProperty('--pos', '0%');
+    marcar(0);
+  } else if ('IntersectionObserver' in window) {
+    let visto = false;
+    const obs = new IntersectionObserver(entradas => {
+      entradas.forEach(en => {
+        if (!en.isIntersecting || visto) return;
+        visto = true;
+        obs.disconnect();
+        // un respiro, para que no arranque antes de estar bien a la vista
+        setTimeout(() => barrer(1400), 220);
+      });
+    }, { threshold: 0.45 });
+    obs.observe(caja);
+    // al pasar el cursor se vuelve a contar, sin tener que recargar
+    caja.addEventListener('pointerenter', e => {
+      if (e.pointerType === 'touch' || anim) return;
+      barrer(1100);
+    });
+  } else {
+    caja.style.setProperty('--pos', '0%');
+    marcar(0);
+  }
 
   // qué mitad se tocó: arriba el hallazgo, abajo la verificación
   caja.addEventListener('pointerdown', e => {
