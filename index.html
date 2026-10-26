@@ -2463,6 +2463,9 @@ THREE.OrbitControls = OrbitControls;
   .xl-chips button{background:#fff;border:1px solid #9aa4ad;border-radius:5px;padding:4px 11px;
     font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#1b2026;cursor:pointer}
   .xl-chips button.activo{background:#107c41;border-color:#107c41;color:#fff;font-weight:700}
+  .xl-nota-filtro{font-family:'JetBrains Mono',monospace;font-size:10px;line-height:1.5;
+    color:#8a5a00;background:#fff4d6;border:1px solid #e8c877;border-radius:5px;
+    padding:4px 9px;align-self:center}
   .xl-pestana{display:flex;gap:0;background:#f3f4f6;border-top:1px solid #c9ced3;padding:0 9px}
   .xl-pestana span{padding:6px 14px;font-size:11px;background:#e8eaed;border:1px solid #c9ced3;
     border-bottom:0;color:#5a646e;cursor:pointer}
@@ -7558,7 +7561,14 @@ ${cssInforme()}
 
      Los campos no se mezclan: Rubiales (CPF-1 + CPF-2) lleva su subtotal y
      Caño Sur el suyo. No hay una fila que los sume. */
-  function xlVivo() {
+  /* La facilidad elegida con los botones de abajo. En las dos pestañas del
+     libro sólo esconde filas —ahí los números de fila son los del archivo y
+     no se pueden renumerar—, pero en la hoja del tablero rehace la hoja
+     entera: si no, los subtotales seguirían siendo los de todo y estarían
+     contando filas que ya no se ven. */
+  let xlFac = '';
+
+  function xlVivo(filtro) {
     const filas = [], formulas = {};
     let r = 1;
 
@@ -7634,13 +7644,20 @@ ${cssInforme()}
       enc('', '');
     };
 
-    bloque('CAMPO RUBIALES (CPF-1 + CPF-2)', [
+    const rub = [
       { fac: 'CPF-1', chip: 'CPF-1', activas: DATA1, cerradas: CERRADAS1 },
       { fac: 'CPF-2', chip: 'CPF-2', activas: DATA2, cerradas: CERRADAS2 },
-    ]);
-    bloque('CAÑO SUR · CENTAUROS', [
+    ].filter(g => !filtro || g.chip === filtro);
+    const sur = [
       { fac: 'CAÑO SUR', chip: 'EP-1', activas: DATACS, cerradas: [] },
-    ]);
+    ].filter(g => !filtro || g.chip === filtro);
+
+    // con el filtro puesto, el título dice qué se está sumando y qué no
+    if (rub.length) {
+      bloque(rub.length === 2 ? 'CAMPO RUBIALES (CPF-1 + CPF-2)'
+                              : 'CAMPO RUBIALES · SÓLO ' + rub[0].fac, rub);
+    }
+    if (sur.length) bloque('CAÑO SUR · CENTAUROS', sur);
 
     return { filas, formulas, cols: 40 };
   }
@@ -7650,7 +7667,7 @@ ${cssInforme()}
     let N, dentro;
 
     if (v.vivo) {
-      const viva = xlVivo();
+      const viva = xlVivo(xlFac);
       xlFx = viva.formulas;
       N = viva.cols;
       dentro = viva.filas.map(f => [f.r, f.celdas, f.clase, f.fac]);
@@ -7690,13 +7707,28 @@ ${cssInforme()}
         </div>
         <div class="xl-rejilla"><table class="xl-t"><thead>${cab}</thead><tbody>${cuerpo}</tbody></table></div>
         <div class="xl-chips" id="xlChips">
-          <button data-f="">Todas</button>
-          <button data-f="CPF-1">CPF-1</button>
-          <button data-f="CPF-2">CPF-2</button>
-          <button data-f="EP-1">Caño Sur · EP-1</button>
+          ${[['', 'Todas'], ['CPF-1', 'CPF-1'], ['CPF-2', 'CPF-2'], ['EP-1', 'Caño Sur · EP-1']]
+            .map(([f, t]) => `<button data-f="${f}" class="${f === xlFac ? 'activo' : ''}">${t}</button>`)
+            .join('')}
+          ${(!v.vivo && xlFac)
+            ? `<span class="xl-nota-filtro">El SUBTOTAL de esta hoja es el del libro:
+               es de la campaña completa y no cambia con el filtro.</span>` : ''}
         </div>
         <div class="xl-pestana" id="xlPest">${pest}</div>
       </div>`;
+  }
+
+  /* En las pestañas del libro las filas llevan el número del archivo, así que
+     filtrar no puede renumerar: se esconden y ya. La hoja del tablero no pasa
+     por aquí, porque se rehace entera con el filtro puesto. */
+  function aplicarFiltroFilas(caja) {
+    const v = XL_VISTAS.find(x => x.id === xlVista) || XL_VISTAS[0];
+    if (v.vivo) return;
+    caja.querySelectorAll('tbody tr').forEach(tr => {
+      const fac = tr.dataset.fac;
+      // encabezados, notas y subtotales no tienen facilidad: nunca se ocultan
+      tr.style.display = (!xlFac || !fac || fac === xlFac) ? '' : 'none';
+    });
   }
 
   function xlEnganchar() {
@@ -7722,15 +7754,14 @@ ${cssInforme()}
     chips.addEventListener('click', ev => {
       const b = ev.target.closest('button');
       if (!b) return;
-      chips.querySelectorAll('button').forEach(o => o.classList.toggle('activo', o === b));
-      const f = b.dataset.f;
-      caja.querySelectorAll('tbody tr').forEach(tr => {
-        const fac = tr.dataset.fac;
-        // las filas de encabezado y de notas no tienen facilidad: nunca se ocultan
-        tr.style.display = (!f || !fac || fac === f) ? '' : 'none';
-      });
+      xlFac = b.dataset.f;
+      // en la hoja del tablero hay que rehacerla, para que los subtotales
+      // sumen lo que se ve; en las del libro basta con esconder filas
+      memPintar();
+      const d = document.querySelector('.mem-mas:last-of-type');
+      if (d) d.open = true;
     });
-    chips.querySelector('button').classList.add('activo');
+    aplicarFiltroFilas(caja);
 
     caja.querySelector('#xlPest').addEventListener('click', ev => {
       const sp = ev.target.closest('span[data-v]');
