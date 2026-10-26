@@ -7371,8 +7371,6 @@ ${cssInforme()}
     return { campo: 'Campo Caño Sur', partes: [['CAÑO SUR', cs]] };
   }
 
-  /* El detalle punto por punto, agrupado por facilidad y área, con los
-     subtotales que permiten cuadrar contra cualquier tarjeta del tablero. */
   /* El punto por punto se retiró: el resumen por área ya dice de dónde sale
      cada número y la hoja de abajo trae los puntos con sus fórmulas. De
      aquella tabla sólo sobrevive la suma, porque es contra la que se
@@ -7788,6 +7786,14 @@ ${cssInforme()}
 
   /* El punto más grande del alcance: es el que van a preguntar, y con él la
      demostración vale para todos, porque todos pasan por lo mismo. */
+  /* De qué alcance se está sacando el ejemplo. Sin decirlo, al pasar de
+     Rubiales a CPF-2 salía el mismo punto —el mayor de los dos es el mismo—
+     y parecía que la pantalla se hubiera quedado pegada. */
+  const ALCANCE_TXT = {
+    'CPF-1': 'de CPF-1', 'CPF-2': 'de CPF-2',
+    'RUBIALES': 'de Rubiales (CPF-1 + CPF-2)', 'CANOSUR': 'de Caño Sur',
+  };
+
   function memDemo(clave) {
     const { partes } = memPartes(clave);
     let mejor = null;
@@ -7806,12 +7812,16 @@ ${cssInforme()}
       <div class="mem-demo-l">${memG(mejor.d.tasa)} g/Hr × ${memN(K, 7)} =
         <b>${memN(co2, 2)} ton CO₂eq/año</b></div>
       <p class="mem-demo-p">Eso es todo lo que hace el tablero con cada punto: <b>multiplicar la
-      lectura de la cámara por el factor del gas de esa área</b>. ${memEsc(mejor.d.equipo)},
-      ${memEsc(mejor.fac)} · ${memEsc(mejor.d.area)}.</p>
+      lectura de la cámara por el factor del gas de esa área</b>. El ejemplo es
+      <b>${memEsc(mejor.d.equipo)}</b> (${memEsc(mejor.fac)} · ${memEsc(mejor.d.area)}), que es el
+      punto de mayor lectura ${ALCANCE_TXT[clave] || ''}; con cualquier otro la cuenta es la misma.</p>
       ${m ? `<p class="mem-demo-p" style="margin-top:14px"><b>Y el factor está en el Excel</b>, en
         dos celdas de la hoja «${memEsc(CROMA.hoja)}»:</p>
       <div class="mem-paso"><i>1</i><span>Busca la muestra
-        <b>${memEsc(m.fila[0])}</b> (${memEsc(m.fila[2])}).</span></div>
+        <b>${memEsc(m.fila[0])}</b> (${memEsc(m.fila[2])}), que es la cromatografía de
+        <b>${memEsc(mejor.d.area)}</b> en ${memEsc(mejor.fac)}${
+          String(m.fila[2]).indexOf(String(mejor.d.equipo)) < 0
+            ? ': el análisis se tomó en ese equipo y aplica a toda el área' : ''}.</span></div>
       <div class="mem-paso"><i>2</i><span>Divide su columna <b>GEI ton CO₂eq/año</b> entre su
         <b>lectura</b>: ${memN(gei, 6)} ÷ ${memG(lect)} = <b>${memN(gei / lect, 7)}</b>.</span></div>
       <div class="mem-paso"><i>3</i><span>Ese número es el factor de arriba. Multiplícalo por
