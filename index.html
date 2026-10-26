@@ -1623,6 +1623,13 @@ THREE.OrbitControls = OrbitControls;
   .hero-formula i{font-style:normal;opacity:.78}
   .hero-formula .hf-n{display:block;margin-top:9px;padding-top:8px;line-height:1.75;
     border-top:1px solid var(--border);font-family:inherit}
+  /* Una línea por área: a la izquierda cuál es, a la derecha su cuenta. */
+  .hero-formula .hf-l{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
+    padding:2px 0}
+  .hero-formula .hf-l > span:first-child{color:var(--text-faint)}
+  .hero-formula .hf-suma{margin-top:5px;padding-top:7px;border-top:1px solid var(--border)}
+  .hero-formula .hf-suma > span:first-child{color:var(--text);font-weight:700}
+  @media (max-width:600px){ .hero-formula .hf-l{display:block} }
   @media (max-width:600px){ .hero-formula{font-size:11px;line-height:1.95} }
   .facility-row {
     display: grid; grid-template-columns: 0.9fr 1fr 1fr; gap: 14px;
@@ -3721,6 +3728,8 @@ function heroCanoSur() {
     ? `Es la lectura de la cámara en los puntos abiertos de Caño Sur.`
     : `Proyección${et} de esa misma lectura: <b>${a.total.toLocaleString('es-CO')} g/Hr</b>`
       + ` sostenidos durante ${PERIODOS[P].horas.toLocaleString('es-CO')} horas.`);
+  // antes este bloque se quedaba con las cuentas de Rubiales al pasar a Caño Sur
+  bloqueDosPasos([['CAÑO SUR', DATACS]], a.total, co2eqDe(DATACS, 'CAÑO SUR'));
   set('kpiTotPuntos', a.nPuntos);
   set('kpiTotSub', esTasa ? `${a.total.toLocaleString('es-CO')} g/Hr · ${a.nPuntos} puntos medidos`
                           : `${masaAcumulada(a.total, P)}${et}`);
@@ -3754,6 +3763,80 @@ function heroCanoSur() {
   if (tot) tot.textContent = 'Total · Caño Sur';
   const fila = document.querySelector('.fcard.total .fcard-row .v');
   if (fila) fila.textContent = 'CENTAUROS';
+}
+
+/* ---------- CÓMO SALE ESTE NÚMERO ----------
+   Dos pasos: primero el gas que se fuga, que es masa y se pesa; después su
+   equivalente en CO2.
+
+   El segundo paso llevaba una sola multiplicación con un factor promedio.
+   Era cómodo de leer y imposible de rastrear: ese promedio no está en el
+   libro —sale de pesar los factores de área por lo que fuga cada una— y
+   cambia aunque no cambie ninguna cromatografía, sólo con que se mueva el
+   reparto entre áreas. Ahora van las áreas una por una, con el factor que
+   sí se puede buscar en el GOP-F-006, y debajo su suma. */
+function bloqueDosPasos(partes, tt, co2) {
+  const cajaF = document.getElementById('kpiFormula');
+  if (!cajaF) return;
+  const P = PERIODO_GLOBAL;
+  if (P === 'hora') { cajaF.style.display = 'none'; return; }
+
+  const n = (v, d) => v.toLocaleString('es-CO',
+    { minimumFractionDigits: d, maximumFractionDigits: d });
+  // memEsc vive dentro del módulo de la memoria y aquí no se ve
+  const esc = t => String(t).replace(/[&<>"]/g,
+    c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const h = PERIODOS[P].horas;
+  const g = tt * h;
+  const tonToc = g / 1e6;
+
+  // una línea por área, con su factor y su aporte
+  const filas = [];
+  partes.forEach(([fac, lista]) => {
+    [...new Set(lista.map(d => d.area))].forEach(area => {
+      const gArea = lista.filter(d => d.area === area).reduce((a, d) => a + d.tasa, 0);
+      if (!gArea) return;
+      const K = kDe(fac, area);
+      filas.push({ fac, area, gArea, K, ton: gArea * K });
+    });
+  });
+  filas.sort((a, b) => b.ton - a.ton);
+
+  /* Las líneas se redondean a dos decimales cada una y el total es el
+     redondeo de la suma exacta: sumadas a mano daban un centavo más que el
+     total, y eso, puesto uno debajo del otro, parece un error. El centavo se
+     ajusta en la línea mayor —el reparto de restos de toda la vida—, así
+     que lo que se ve suma exactamente lo que dice el total. */
+  if (filas.length) {
+    const objetivo = Math.round(co2 * 100);
+    const redondeadas = filas.map(f => Math.round(f.ton * 100));
+    const sobra = redondeadas.reduce((a, b) => a + b, 0) - objetivo;
+    redondeadas[0] -= sobra;
+    filas.forEach((f, i) => { f.ton = redondeadas[i] / 100; });
+  }
+
+  const lineas = filas.map(f =>
+    `<div class="hf-l"><span>${esc(f.fac)} · ${esc(f.area)}</span>`
+    + `<span><b>${n(f.gArea, 0)}</b> g/Hr × <b>${n(f.K, 7)}</b> =`
+    + ` <b>${n(f.ton, 2)}</b> ton CO₂eq/año</span></div>`).join('');
+
+  cajaF.style.display = '';
+  cajaF.innerHTML =
+    `<span class="hf-t">CÓMO SALE ESTE NÚMERO · DOS PASOS</span>`
+    + `<span class="hf-p">1 · EL GAS QUE SE FUGA <i>— masa real, la que marcaría una báscula</i></span>`
+    + `<b>${n(tt, 0)} g/Hr</b> × <b>${n(h, 0)} h</b> (${PERIODOS[P].etiqueta})`
+    + ` = <b>${n(g, 0)} g</b> = <b>${n(g / 1000, 2)} kg</b> = <b>${n(tonToc, 3)} ton de TOC</b><br>`
+    + `<span class="hf-p">2 · EL EQUIVALENTE EN CO₂ <i>— cada área con la cromatografía que le toca</i></span>`
+    + lineas
+    + `<div class="hf-l hf-suma"><span>TOTAL</span><span><em>${n(co2, 2)} ton CO₂eq/año</em>`
+    + ` — la cifra verde de arriba</span></div>`
+    + `<span class="hf-n">El factor de cada línea sale de su muestra en el GOP-F-006: la columna`
+    + ` <b>GEI ton CO₂eq/año</b> dividida entre su <b>lectura</b>. Está en las tarjetas de arriba`
+    + ` y, con su número de fila, en la memoria de cálculo.<br><br>`
+    + `Las dos cifras son correctas y no son la misma: una tonelada de este gas pesa una`
+    + ` tonelada, pero calienta como unas <b>${n(tt > 0 ? co2 * 1e6 / (tt * 8760) : 0, 1)}</b>`
+    + ` toneladas de CO₂, porque casi todo es metano. Al reporte ambiental van las toneladas`
+    + ` de CO₂eq.</span>`;
 }
 
 function updateKPIs() {
@@ -3796,52 +3879,7 @@ function updateKPIs() {
   /* La cadena completa, con los números de la pantalla y en las tres unidades.
      El jefe no tiene por qué fiarse del tablero: aquí puede rehacer la cuenta
      con una calculadora. */
-  const cajaF = document.getElementById('kpiFormula');
-  if (cajaF) {
-    if (esTasa) {
-      cajaF.style.display = 'none';
-    } else {
-      const h = PERIODOS[P].horas;
-      const g = tt * h;
-      // decimales fijos: si el panel de arriba dice 745,70 esta línea no puede
-      // decir 746 ni 745,7. Es el mismo número y tiene que escribirse igual.
-      const n = (v, d) => v.toLocaleString('es-CO',
-        { minimumFractionDigits: d, maximumFractionDigits: d });
-      cajaF.style.display = '';
-      /* Antes este bloque sólo llevaba la cuenta de la masa y terminaba
-         avisando «esto no es CO₂eq», que es justo lo que uno quiere saber.
-         Quedaba explicando un número que no era el de arriba. Ahora van los
-         dos tramos seguidos y el último cae en la cifra verde del titular. */
-      const tonToc = g / 1e6;                       // masa del periodo
-      const F = tt > 0 ? co2 * 1e6 / (tt * 8760) : 0;   // ton CO2eq por ton de TOC
-      const co2P = co2 * h / 8760;                  // el mismo periodo, en CO2eq
-      cajaF.style.display = '';
-      cajaF.innerHTML =
-        `<span class="hf-t">CÓMO SALE ESTE NÚMERO · DOS PASOS</span>`
-        + `<span class="hf-p">1 · EL GAS QUE SE FUGA <i>— masa real, la que marcaría una báscula</i></span>`
-        + `<b>${n(tt, 0)} g/Hr</b> × <b>${n(h, 0)} h</b> (${PERIODOS[P].etiqueta})`
-        + ` = <b>${n(g, 0)} g</b> = <b>${n(g / 1000, 2)} kg</b> = <b>${n(tonToc, 3)} ton de TOC</b><br>`
-        + `<span class="hf-p">2 · EL EQUIVALENTE EN CO₂ <i>— el mismo gas, medido por su efecto climático</i></span>`
-        + `<b>${n(tonToc, 3)} ton de TOC</b> × <b>${n(F, 4)}</b>`
-        + ` <i>(ver abajo)</i> = <b>${n(co2P, 2)} ton CO₂eq</b> ${PERIODOS[P].etiqueta}<br>`
-        // con el periodo anual la línea de arriba ya es la del titular: repetirla sobra
-        + (P === 'anio'
-            ? `<em>esa es la cifra verde de arriba.</em><br>`
-            : `al año: <em>${n(co2, 2)} ton CO₂eq</em> — la cifra verde de arriba.<br>`)
-        /* De dónde sale el factor. Aparecía a secas y era la pregunta obvia:
-           no está en el libro, es el promedio de los factores de área pesado
-           por lo que fuga cada una. El tablero no lo aplica así —multiplica
-           área por área—, y eso hay que decirlo, no dejarlo entender. */
-        + `<span class="hf-n"><b>El ${n(F, 4)}</b> no es un factor del libro: es el promedio de los`
-        + ` factores de cada área, pesado por lo que fuga cada una. El tablero no lo usa así`
-        + ` —multiplica área por área, con la cromatografía de cada una— y aquí sale de dividir`
-        + ` <b>${n(co2, 2)} ÷ ${n(tt * 8760 / 1e6, 3)}</b>. El factor de cada área está en sus`
-        + ` tarjetas y en la memoria de cálculo.<br><br>`
-        + `Las dos cifras de arriba son correctas y no son la misma: una tonelada de este gas`
-        + ` pesa una tonelada, pero calienta como ${n(F, 2)} toneladas de CO₂, porque casi todo`
-        + ` es metano. Al reporte ambiental van las toneladas de CO₂eq.</span>`;
-    }
-  }
+  bloqueDosPasos([['CPF-1', DATA1], ['CPF-2', DATA2]], tt, co2);
 
   set('kpiTotPuntos', AGG1.nPuntos + AGG2.nPuntos);
   set('kpiTotSub', esTasa ? `${tt.toLocaleString('es-CO')} g/Hr · ${AGG1.nPuntos + AGG2.nPuntos} puntos medidos`
