@@ -2470,6 +2470,21 @@ THREE.OrbitControls = OrbitControls;
   .xl-pestana span:hover{color:#107c41}
   @media (max-width:620px){ .xl-rejilla{max-height:60vh} .xl-ref{width:72px} }
 
+  /* El aviso de que llegaron datos nuevos. Vive fuera del módulo de edición
+     porque el tablero público también se sincroniza. */
+  .sync-aviso{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(14px);
+    z-index:300;background:var(--surface);border:1px solid rgba(0,184,40,.45);
+    border-left:3px solid #00b828;border-radius:10px;padding:11px 16px;color:var(--text);
+    font-family:'JetBrains Mono',monospace;font-size:12px;box-shadow:0 10px 30px rgba(0,0,0,.45);
+    display:flex;align-items:center;gap:10px;opacity:0;transition:opacity .2s ease,transform .2s ease}
+  .sync-aviso.ver{opacity:1;transform:translateX(-50%) translateY(0)}
+  .sync-aviso b{color:#00b828;font-weight:700}
+  .sync-aviso button{background:transparent;border:1px solid var(--border);color:var(--text-dim);
+    border-radius:7px;padding:5px 11px;font-family:inherit;font-size:11px;cursor:pointer}
+  .sync-aviso button:hover{border-color:#00b828;color:#00b828}
+  @media (max-width:600px){ .sync-aviso{left:12px;right:12px;transform:translateY(14px);
+    bottom:14px} .sync-aviso.ver{transform:translateY(0)} }
+
   /* ---------- MEMORIA DE CÁLCULO ----------
      La sección para cuando alguien pregunta "¿y esto de dónde sale?": la
      cromatografía de cada área con su origen en el GOP-F-006 y, punto por
@@ -5498,6 +5513,11 @@ refrescarTodo();
     }
     setTimeout(() => { boton.textContent = previo; }, 3000);
   }
+
+  /* El bucle de sincronización vive fuera de este módulo y no puede nombrar
+     el modo edición —la versión pública se arma quitando este bloque—, así
+     que se le deja esta puerta: si existe, es que hay editor. */
+  window.editando = () => !!window.MODO_EDICION;
 
   function avisoFlotante(txt) {
     const n = document.createElement('div');
@@ -8979,23 +8999,96 @@ ${cssInforme()}
    instante y la que sirve si se abre sin conexión. Enseguida se pregunta al
    servidor si hay una versión más reciente —la que dejó quien editó por
    última vez— y, si la hay, se repinta todo con ella.
+
+   Y se sigue preguntando: cada 30 segundos, mientras la pestaña esté a la
+   vista. Así un tablero proyectado en una reunión se actualiza solo cuando
+   alguien cierra un hallazgo desde el celular, sin que nadie recargue.
    ============================================================ */
 (function () {
   if (!/^https?:/.test(location.protocol)) return;   // abierto como archivo local
-  fetch('/api/datos', { cache: 'no-store' })
-    .then(r => (r.ok ? r.json() : null))
-    .then(d => {
-      if (!d || !Array.isArray(d.DATA1)) return;
-      const poner = (arr, nuevos) => { arr.length = 0; (nuevos || []).forEach(x => arr.push(x)); };
-      poner(DATA1, d.DATA1);
-      poner(DATA2, d.DATA2);
-      poner(CERRADAS1, d.CERRADAS1);
-      poner(CERRADAS2, d.CERRADAS2);
-      if (typeof sanearIds === 'function') sanearIds();
-      if (typeof refrescarTodo === 'function') refrescarTodo();
-      if (window.contarIntro) window.contarIntro();
-    })
-    .catch(() => {});   // sin servidor, se queda con los datos de dentro
+
+  /* Preguntar por los datos enteros cada rato sería caro: llevan las fotos
+     dentro y pesan megas. Por eso el servidor publica aparte un sello con la
+     fecha de la última escritura —unos bytes—, y sólo cuando ese sello cambia
+     se bajan los datos. Mientras nadie edite, cada consulta es casi nada. */
+  const CADA = 30000;          // 30 s mirando el sello
+  let sello = null;            // el último que se aplicó
+  let ocupado = false;
+
+  const poner = (arr, nuevos) => { arr.length = 0; (nuevos || []).forEach(x => arr.push(x)); };
+
+  function aviso(html, alRecargar) {
+    document.querySelectorAll('.sync-aviso').forEach(n => n.remove());
+    const n = document.createElement('div');
+    n.className = 'sync-aviso';
+    n.innerHTML = html;
+    if (alRecargar) {
+      const b = document.createElement('button');
+      b.textContent = 'Recargar';
+      b.onclick = () => location.reload();
+      n.appendChild(b);
+    }
+    document.body.appendChild(n);
+    requestAnimationFrame(() => n.classList.add('ver'));
+    setTimeout(() => { n.classList.remove('ver'); setTimeout(() => n.remove(), 300); },
+               alRecargar ? 20000 : 5000);
+  }
+
+  function aplicar(d) {
+    if (!d || !Array.isArray(d.DATA1)) return false;
+    poner(DATA1, d.DATA1);
+    poner(DATA2, d.DATA2);
+    poner(CERRADAS1, d.CERRADAS1);
+    poner(CERRADAS2, d.CERRADAS2);
+    if (typeof sanearIds === 'function') sanearIds();
+    if (typeof refrescarTodo === 'function') refrescarTodo();
+    if (window.contarIntro) window.contarIntro();
+    return true;
+  }
+
+  async function traerDatos(primeraVez) {
+    const r = await fetch('/api/datos', { cache: 'no-store' });
+    if (!r.ok) return;
+    const d = await r.json();
+    /* En el editor no se pisa lo que alguien está escribiendo: se avisa y él
+       decide cuándo recargar. Perder una corrección a medio hacer por un
+       refresco automático sería peor que mostrar un dato viejo un rato. */
+    if (!primeraVez && typeof window.editando === 'function' && window.editando()) {
+      aviso('<b>Hay cambios nuevos</b> guardados desde otro equipo.', true);
+      return;
+    }
+    if (!aplicar(d)) return;
+    if (!primeraVez) {
+      const n = [...DATA1, ...DATA2].length;
+      aviso('<b>Datos actualizados.</b> ' + n + (n === 1 ? ' punto activo' : ' puntos activos') + '.');
+    }
+  }
+
+  async function mirar(primeraVez) {
+    if (ocupado) return;
+    ocupado = true;
+    try {
+      const r = await fetch('/api/version', { cache: 'no-store' });
+      const v = r.ok ? (await r.text()).trim() : '';
+      // sin sello todavía (nadie ha guardado desde que existe): se baja igual
+      if (primeraVez || v !== sello) {
+        await traerDatos(primeraVez);
+        sello = v;
+      }
+    } catch (e) {
+      // sin señal se sigue con lo que hay dentro; se reintenta al rato
+    } finally {
+      ocupado = false;
+    }
+  }
+
+  mirar(true);
+  setInterval(() => { if (document.visibilityState === 'visible') mirar(false); }, CADA);
+  // al volver a la pestaña o al recuperar señal, sin esperar el turno
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') mirar(false);
+  });
+  window.addEventListener('online', () => mirar(false));
 })();
 
 /* El ayudante que deja abrir el tablero sin señal. Sólo tiene sentido

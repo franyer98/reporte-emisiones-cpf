@@ -2,6 +2,8 @@
  * Guarda los datos del tablero en el servidor.
  *
  *   GET  /api/datos               lectura pública: es lo que el tablero muestra.
+ *   GET  /api/version             sello de la última escritura, para preguntar
+ *                                 «¿cambió algo?» sin traerse los datos enteros.
  *   POST /editor/api/datos        guardar.
  *   GET  /editor/api/versiones    lista de copias de los últimos siete días.
  *   POST /editor/api/restaurar    vuelve a una de esas copias.
@@ -12,6 +14,10 @@
  */
 
 const CLAVE = 'datos';
+/* El sello de la última escritura, aparte de los datos. Los tableros abiertos
+   preguntan por él cada tanto: son unos bytes, mientras que los datos llevan
+   las fotos dentro y pesan megas. Sólo cuando el sello cambia se bajan. */
+const CLAVE_VERSION = 'version';
 const PREFIJO = 'v:';
 const SIETE_DIAS = 7 * 24 * 60 * 60;   // en segundos, que es lo que espera KV
 
@@ -20,7 +26,8 @@ function esValido(d) {
 }
 
 const texto = (t, status = 200) =>
-  new Response(t, { status, headers: { 'content-type': 'text/plain; charset=utf-8' } });
+  new Response(t, { status, headers: {
+    'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' } });
 
 const json = (t, status = 200) =>
   new Response(t, { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
@@ -33,6 +40,11 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     const ruta = url.pathname;
+
+    if (ruta === '/api/version' && request.method === 'GET') {
+      const v = await env.EMISIONES.get(CLAVE_VERSION);
+      return texto(v || '', 200);
+    }
 
     if (ruta === '/api/datos' && request.method === 'GET') {
       const guardado = await env.EMISIONES.get(CLAVE);
@@ -53,6 +65,7 @@ export default {
       const sello = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
       await env.EMISIONES.put(PREFIJO + sello, cuerpo, { expirationTtl: SIETE_DIAS });
       await env.EMISIONES.put(CLAVE, cuerpo);
+      await env.EMISIONES.put(CLAVE_VERSION, sello);
       return texto('guardado');
     }
 
@@ -81,6 +94,9 @@ export default {
         await env.EMISIONES.put(PREFIJO + sello, actual, { expirationTtl: SIETE_DIAS });
       }
       await env.EMISIONES.put(CLAVE, copia);
+      // restaurar también cambia lo que se ve: lleva sello propio
+      await env.EMISIONES.put(CLAVE_VERSION,
+        new Date().toISOString().replace(/\.\d+Z$/, 'Z'));
       return texto('restaurado');
     }
 
