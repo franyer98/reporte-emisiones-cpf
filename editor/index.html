@@ -2539,10 +2539,6 @@ THREE.OrbitControls = OrbitControls;
     justify-content:center;font-size:12px;font-weight:700;background:rgba(0,184,40,.16);color:#00b828}
   .mem-ok.mal .pico{background:rgba(255,71,87,.16);color:var(--hot)}
   .mem-ok.mal{color:var(--hot)}
-  .mem-aviso{border:1px solid rgba(255,176,32,.4);background:rgba(255,176,32,.07);
-    border-radius:10px;padding:12px 15px;font-size:12.5px;color:var(--text-dim);
-    line-height:1.7;margin:14px 0 0}
-  .mem-aviso b{color:#ffb020}
   @media (max-width:620px){
     .mem-cuerpo{padding:16px 13px}
     .mem-top{padding:13px 14px}
@@ -8676,14 +8672,6 @@ ${cssInforme()}
       </div>
       ${memResumen(memAlcance)}
       ${memComprobacion(memAlcance, det.totCo2)}
-      ${memAlcance === 'RUBIALES'
-        ? `<div class="mem-aviso"><b>Sólo Campo Rubiales.</b> CPF-1 y CPF-2 son dos facilidades del
-           mismo campo, por eso se suman. Caño Sur es otro campo, con su propia cromatografía, y
-           sus toneladas no se agregan a estas.</div>`
-        : memAlcance === 'CANOSUR'
-          ? `<div class="mem-aviso"><b>Campo Caño Sur.</b> Estas toneladas no se suman con las de
-             Rubiales: son campos distintos y se reportan por separado.</div>`
-          : ''}
 
       <button class="mem-plegar" id="memVerDetalle">Ver punto por punto</button>
       <div id="memDetalle" style="display:none;margin-top:12px">${det.html}</div>
