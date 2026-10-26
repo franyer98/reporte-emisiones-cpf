@@ -7795,21 +7795,12 @@ ${cssInforme()}
       : `<span>ORIGEN <b>${memEsc(CROMA.archivo)}</b></span>
          <span>HOJA <b>${memEsc(CROMA.hoja)}</b></span>
          <span>${CROMA.filas.length} muestras</span>`;
+    /* Debajo de la hoja iba un párrafo explicando las pestañas, las columnas
+       y el SUMIF. La hoja ya lo enseña sola: las pestañas se ven, la fórmula
+       sale arriba al tocar la celda y el subtotal se lee. Explicarlo además
+       por escrito era repetirlo y tapaba los datos. */
     return `<div class="mem-croma-cab">${cab}</div>
-      ${xlHojaHTML()}
-      <p class="mem-nota">Es la hoja del procedimiento dentro del tablero, con sus letras de
-      columna y sus números de fila: la celda <b>AJ62</b> de aquí es la misma <b>AJ62</b> del
-      archivo. Al tocar una celda con fórmula —las verdes— arriba aparece la fórmula del libro.
-      Abajo, las tres pestañas. <b>Cromatografía</b> son las muestras de gas (filas 4 a 25) y
-      <b>Campaña julio 2026</b> son los hallazgos con su GEI (filas 60 a 84): esas dos son el
-      archivo y no cambian. <b>Hoy en el tablero</b> y <b>Ya reparados</b> se arman en el
-      momento con lo que el tablero tiene ahora, pero con <b>las mismas columnas del GOP-F-006,
-      de la A a la AL</b>, y sus mismas fórmulas: la cromatografía del área va en G:X y de ahí
-      sale todo hasta <b>AJ</b>, el GEI. En la primera está lo que falta por reparar; en la
-      segunda, lo que ya se reparó y por tanto dejó de emitir. Al dar de baja un hallazgo su fila
-      se pasa de una a la otra y queda marcada <b>CERRADA</b> en AM; el subtotal es un
-      <code>SUMIF</code> sobre esa columna, así que el estado es lo que decide. Rubiales y Caño
-      Sur llevan subtotal aparte.</p>`;
+      ${xlHojaHTML()}`;
   }
 
   /* El resumen por área es lo que se lee de un vistazo; el punto por punto
@@ -7922,11 +7913,9 @@ ${cssInforme()}
         <button class="bd-b bd-pri" id="memGop">Exportar en formato GOP-F-006</button>
         <button class="bd-b" id="memExcel">Descargar en Excel</button>
       </div>
-      <p class="mem-nota"><b>Formato GOP-F-006:</b> la hoja «Calculos CO2» de la campaña, con las
-      columnas del procedimiento, la fila de pesos moleculares y las mismas fórmulas del libro
-      original —no números pegados—. Se abre en Excel y se puede pegar junto a las demás campañas.
-      <br><b>Descargar en Excel:</b> una hoja por alcance —CPF-1, CPF-2, Rubiales y Caño Sur— con
-      las toneladas como fórmula viva, para auditarlas celda por celda.</p>`;
+      <p class="mem-nota">El primero sale en el formato del procedimiento, para pegar junto a
+      las demás campañas. El segundo, una hoja por alcance. Los dos llevan las fórmulas
+      vivas, no números pegados.</p>`;
 
     const barra = document.getElementById('memBarra');
     if (barra) {
