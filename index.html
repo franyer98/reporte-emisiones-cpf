@@ -1648,6 +1648,10 @@ THREE.OrbitControls = OrbitControls;
   .fcard-row .k { font-size: 11px; color: var(--text-faint); font-family: 'JetBrains Mono', monospace; text-transform: uppercase; }
   .fcard-row .k i { display:block; font-style:normal; text-transform:none; font-size:11px;
     color:var(--text); font-weight:600; margin-top:2px; }
+  /* El equivalente en CO2 del área: es el número que se reporta, así que va
+     en verde y en su propia línea, no escondido en la de los gramos. */
+  .fcard-co2 { display:block; font-family:'JetBrains Mono',monospace; font-size:11px;
+    font-weight:700; color:#00b828; margin-top:3px; letter-spacing:0; }
   .fcard-row .v { font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 14px; }
   .fcard-row .v small { color: var(--text-dim); font-weight: 400; font-size: 11px; }
   @media (max-width: 760px) { .facility-row { grid-template-columns: 1fr; } }
@@ -3679,12 +3683,19 @@ const n2 = (v, d) => v.toFixed(d);
    total de la facilidad—, a la derecha el equipo que más aporta dentro de
    ella, con su parte. El equipo de la derecha NO es un punto suelto: puede
    agrupar varios del mismo tanque, y nunca es la lista completa del área. */
-function critRowsHTML(crit) {
+function critRowsHTML(crit, fac) {
   const P = PERIODO_GLOBAL;
   const fmt = v => (P === 'hora') ? v.toLocaleString('es-CO') + ' g/Hr' : masaAcumulada(v, P);
+  /* El CO2eq del área, con la cromatografía que le toca. Va siempre al año,
+     cambie o no el periodo de arriba: la lectura se proyecta, el equivalente
+     no, y mezclarlos sería la confusión de siempre. Por eso lleva el «/año»
+     escrito al lado. */
+  const co2 = v => v.toLocaleString('es-CO',
+    { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   return crit.map(c =>
     `<div class="fcard-row"><span class="k">${c.area}`
-    + `<i>${fmt(c.areaTotal)} · ${c.nPuntos} ${c.nPuntos === 1 ? 'punto' : 'puntos'}</i></span>`
+    + `<i>${fmt(c.areaTotal)} · ${c.nPuntos} ${c.nPuntos === 1 ? 'punto' : 'puntos'}`
+    + `<b class="fcard-co2">${co2(c.areaTotal * kDe(fac, c.area))} ton CO₂eq/año</b></i></span>`
     + `<span class="v">${c.equipo} <small>${fmt(c.tasa)} · ${c.pct}%</small></span></div>`).join('');
 }
 
@@ -3727,8 +3738,11 @@ function heroCanoSur() {
     const crit = [...pts].sort((x, y) => y.tasa - x.tasa).slice(0, 2);
     tarjeta.querySelector('.fcard-label').textContent = area;
     tarjeta.querySelector('.fcard-main').innerHTML = `<span>${pts.length}</span> <small>puntos</small>`;
-    tarjeta.querySelector('.fcard-sub').textContent = esTasa
-      ? `${tot.toLocaleString('es-CO')} g/Hr medidos` : `${masaAcumulada(tot, P)}${et}`;
+    const areaCo2 = pts.reduce((x, d) => x + d.tasa * kDe('CAÑO SUR', d.area), 0);
+    tarjeta.querySelector('.fcard-sub').innerHTML = (esTasa
+      ? `${tot.toLocaleString('es-CO')} g/Hr medidos` : `${masaAcumulada(tot, P)}${et}`)
+      + `<b class="fcard-co2">${areaCo2.toLocaleString('es-CO',
+          { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ton CO₂eq/año</b>`;
     const lbl = tarjeta.querySelector('.fcard-crit-label');
     if (lbl) lbl.textContent = 'PUNTOS DE MAYOR TASA';
     const cont = document.getElementById('kpiF' + (i + 1) + 'Crit');
@@ -3827,8 +3841,8 @@ function updateKPIs() {
   set('kpiF1Sub', esTasa ? `${t1.toLocaleString('es-CO')} g/Hr medidos` : `${masaAcumulada(t1, P)}${et}`);
   set('kpiF2Puntos', AGG2.nPuntos);
   set('kpiF2Sub', esTasa ? `${t2.toLocaleString('es-CO')} g/Hr medidos` : `${masaAcumulada(t2, P)}${et}`);
-  set('kpiF1Crit', critRowsHTML(AGG1.critByArea));
-  set('kpiF2Crit', critRowsHTML(AGG2.critByArea));
+  set('kpiF1Crit', critRowsHTML(AGG1.critByArea, 'CPF-1'));
+  set('kpiF2Crit', critRowsHTML(AGG2.critByArea, 'CPF-2'));
   set('tabN1', AGG1.nPuntos); set('tabN2', AGG2.nPuntos);
 }
 
