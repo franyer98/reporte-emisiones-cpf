@@ -3105,6 +3105,7 @@ THREE.OrbitControls = OrbitControls;
         <a href="#" class="nav-link" id="navOrden">Orden de trabajo · por tanque</a>
         <a href="#" class="nav-link" id="navSimulador">Simulador · cuánto deja de emitirse</a>
         <a href="#" class="nav-link" id="navMemoria">Memoria de cálculo · de dónde sale cada número</a>
+        <a href="#" class="nav-link" id="navHojaGOP">Hoja GOP-F-006 · puntos activos de Rubiales</a>
       </div>
 
       <div class="nav-group">
@@ -7824,6 +7825,126 @@ ${cssInforme()}
       memPintar();
     });
   }
+
+  /* ============================================================
+     LA HOJA DEL GOP-F-006 CON LOS PUNTOS ACTIVOS
+     Genera un .xlsx con el mismo esqueleto del libro —encabezados en la
+     fila 4, pesos moleculares en la 6, datos desde la 7— y los puntos que
+     el tablero tenga abiertos en ese momento en CPF-1 y CPF-2.
+
+     Las columnas derivadas van como FÓRMULA, no como número pegado: quien
+     lo reciba pisa una celda, ve de dónde sale y puede cambiar la lectura
+     para ver cómo se mueve todo. Es lo que hace que sea auditable en vez
+     de ser «un número que mandó el tablero».
+
+     Sólo Rubiales. Caño Sur es otro campo y se exporta aparte: mezclarlos
+     en una hoja sería invitar a que alguien sume los dos totales.
+     ============================================================ */
+  /* Las mismas fórmulas de XL_CADENA, pero escritas para el archivo: punto
+     decimal y coma como separador —así se guardan dentro de un .xlsx, sea
+     cual sea el idioma de quien lo abra— y la fila de pesos moleculares en
+     la 6, que es donde la tiene el libro (en la hoja de pantalla está en la
+     2). Convertirlas con reemplazos era frágil; van escritas aparte. */
+  const GOP_CADENA = {
+    25: 'SUMPRODUCT(G{r}:X{r},$G$6:$X$6)/100',
+    26: 'K{r}*$K$6/Y{r}',
+    27: 'J{r}*$J$6/Y{r}',
+    28: 'SUMPRODUCT(K{r}:X{r},$K$6:$X$6)/Y{r}',
+    29: 'Z{r}*100/AB{r}',
+    30: '(F{r}*(AB{r}/100*AC{r}/100)/1000)*(8.314472*288.15)/(101.325*$K$6)*24',
+    31: 'F{r}*AC{r}/100',
+    32: 'F{r}/AB{r}*100*AA{r}/100',
+    33: 'AE{r}*24/1000/1000',
+    34: 'AG{r}*365',
+    35: 'AF{r}*24*365/1000/1000',
+    36: 'IF(AH{r}="","",AI{r}+(AH{r}*28))',
+    37: 'AD{r}*365',
+    38: 'AK{r}/0.0283168',
+  };
+
+  function gopFilas() {
+    const filas = [];
+    [['CPF-1', DATA1], ['CPF-2', DATA2]].forEach(([fac, lista]) => {
+      [...lista].sort((a, b) => b.tasa - a.tasa).forEach(d => {
+        filas.push({ fac, d, mol: XL_MOL[fac + '|' + d.area] || null });
+      });
+    });
+    return filas;
+  }
+
+  async function exportarHojaGOP(enlace) {
+    const previo = enlace ? enlace.textContent : '';
+    if (enlace) { enlace.textContent = 'Generando…'; enlace.style.pointerEvents = 'none'; }
+    try {
+      const raiz = location.pathname.replace(/[^/]*$/, '').replace(/editor\/$/, '');
+      await cargarScript(raiz + 'lib/xlsx.mini.min.js');
+
+      const filas = gopFilas();
+      if (!filas.length) { alert('No hay puntos activos en CPF-1 ni CPF-2.'); return; }
+
+      const FIL1 = 7;                    // los datos empiezan en la fila 7, como en el libro
+      const hoja = {};
+      const pon = (ref, celda) => { hoja[ref] = celda; };
+      const L = i => {                   // 0 → A, 26 → AA
+        let n = i, t = '';
+        do { t = String.fromCharCode(65 + (n % 26)) + t; n = Math.floor(n / 26) - 1; } while (n >= 0);
+        return t;
+      };
+
+      // cabecera del formato, donde la tiene el original
+      pon('D1', { t: 's', v: 'Formato para Identificación y Gestión de Emisiones Fugitivas' });
+      pon('D2', { t: 's', v: 'Gestión y Optimización de la Producción' });
+      pon('D3', { t: 's', v: 'GOP-F-006' });
+      pon('A1', { t: 's', v: 'PUNTOS ACTIVOS · CAMPO RUBIALES (CPF-1 + CPF-2)' });
+      pon('A2', { t: 's', v: 'Generado desde el tablero el ' + fechaLarga(hoyISO())
+        + '. Las columnas derivadas son fórmulas del procedimiento, no números pegados.' });
+
+      XL_ENC.forEach((t, i) => pon(L(i) + '4', { t: 's', v: String(t).replace(/\n/g, ' ') }));
+      pon('F6', { t: 's', v: 'Peso Molecular Mwi' });
+      XL_PM.forEach((v, i) => pon(L(6 + i) + '6', { t: 'n', v }));
+
+      filas.forEach((f, k) => {
+        const r = FIL1 + k;
+        pon('A' + r, { t: 's', v: f.d.fid || '' });
+        pon('B' + r, { t: 's', v: f.fac });
+        pon('C' + r, { t: 's', v: (f.d.equipo || '') + ' ' + (f.d.area || '') });
+        pon('D' + r, { t: 's', v: f.d.punto || '' });
+        pon('E' + r, { t: 's', v: f.d.elemento || '' });
+        pon('F' + r, { t: 'n', v: f.d.tasa });
+        if (f.mol) f.mol.forEach((v, i) => pon(L(6 + i) + r, { t: 'n', v }));
+        // de Y a AL, las fórmulas del libro con esta fila
+        Object.keys(GOP_CADENA).forEach(col => {
+          pon(L(+col - 1) + r, { t: 'n', f: GOP_CADENA[col].replace(/\{r\}/g, r) });
+        });
+      });
+
+      // subtotal, con SUM de verdad
+      const ult = FIL1 + filas.length - 1, sub = ult + 1;
+      pon('A' + sub, { t: 's', v: 'SUBTOTAL PUNTOS ACTIVOS · RUBIALES' });
+      pon('F' + sub, { t: 'n', f: `SUM(F${FIL1}:F${ult})` });
+      pon('AJ' + sub, { t: 'n', f: `SUM(AJ${FIL1}:AJ${ult})` });
+
+      hoja['!ref'] = 'A1:AL' + sub;
+      hoja['!cols'] = XL_ENC.map((_, i) => ({ wch: i <= 4 ? 26 : 14 }));
+
+      const libro = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(libro, hoja, 'Calculos CO2 2026');
+      XLSX.writeFile(libro, 'GOP-F-006-puntos-activos-' + hoyISO() + '.xlsx');
+    } catch (e) {
+      alert('No se pudo generar la hoja: ' + (e && e.message ? e.message : e));
+    } finally {
+      if (enlace) { enlace.textContent = previo; enlace.style.pointerEvents = ''; }
+    }
+  }
+
+  const nhg = document.getElementById('navHojaGOP');
+  if (nhg) nhg.addEventListener('click', e => {
+    e.preventDefault();
+    const m = document.querySelector('.nav-menu');
+    if (m) m.classList.remove('open');
+    exportarHojaGOP(nhg);
+  });
+  window.hojaGOP = exportarHojaGOP;
 
   function memCromaHTML() {
     // la cabecera cambia con la pestaña: las dos primeras vienen del archivo,
