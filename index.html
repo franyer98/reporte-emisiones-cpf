@@ -6100,6 +6100,10 @@ function buildTankMap3D(canvasId, hintId, data, totalId) {
   // la explanada de concreto se ajusta al tamano real de la planta
   const expW = maxRowWidth + 2*radius3D*1.85 + 5.5;
   const expD = totalDepth + 5.5;
+  /* El encuadre se calculaba con el conjunto de tanques, que es más
+     estrecho que la explanada. Con el dique puesto en el borde, eso lo
+     dejaba cortado por los lados: ahora manda lo que de verdad ocupa. */
+  fitSphere = 0.5 * Math.sqrt((expW + 0.7)*(expW + 0.7) + (expD + 0.7)*(expD + 0.7) + layoutH*layoutH);
   ground.geometry.dispose();
   ground.geometry = new THREE.PlaneGeometry(expW, expD);
   ground.position.set(0, -0.02, (layoutMinZ + layoutMaxZ) / 2);
@@ -6108,7 +6112,10 @@ function buildTankMap3D(canvasId, hintId, data, totalId) {
   if (!scene.userData.borde) {
     const borde = new THREE.Mesh(
       new THREE.PlaneGeometry(1, 1),
-      new THREE.MeshStandardMaterial({ color: 0x8a6f4e, roughness: 1, metalness: 0 })
+      /* Tierra de verdad. En 0x8a6f4e se quemaba con la luz y, ahora que el
+         dique le pasa por encima, quedaba un halo blanco rodeando la
+         planta en vez de una franja de piso. */
+      new THREE.MeshStandardMaterial({ color: 0x6b5840, roughness: 1, metalness: 0 })
     );
     borde.rotation.x = -Math.PI/2;
     scene.add(borde);
@@ -6118,6 +6125,107 @@ function buildTankMap3D(canvasId, hintId, data, totalId) {
   borde.geometry.dispose();
   borde.geometry = new THREE.PlaneGeometry(expW + 2.6, expD + 2.6);
   borde.position.set(0, -0.035, (layoutMinZ + layoutMaxZ) / 2);
+
+  /* ---------- dique de contención y tubería ----------
+     Sin nada alrededor, los tanques flotaban sobre una losa y no se sabía
+     si eran de dos metros o de doce. El dique da la referencia: en campo
+     es un muro bajo de concreto que rodea la explanada, y basta verlo al
+     pie del tanque para que la altura se entienda sola.
+
+     Las medidas salen de la escala del propio modelo: el tanque mide 4,2
+     de alto y en campo son unos 12 m, así que una unidad son ~2,9 m. Un
+     dique de metro y medio es 0,5. */
+  {
+    const zc = (layoutMinZ + layoutMaxZ) / 2;
+    const ALTO = 0.5, GRUESO = 0.34;
+    const dique = new THREE.Group();
+
+    /* El muro necesita textura propia. Con un color plano se quemaba con la
+       luz y salía blanco, más claro que el cielo; el concreto de campo es
+       gris sucio y tiene la marca horizontal de las formaletas. */
+    const cC = document.createElement('canvas');
+    cC.width = cC.height = 128;
+    const cx = cC.getContext('2d');
+    cx.fillStyle = '#8c877e'; cx.fillRect(0, 0, 128, 128);
+    for (let i = 0; i < 2200; i++) {
+      const v = 108 + Math.random() * 46;
+      cx.fillStyle = `rgba(${v|0},${(v-4)|0},${(v-12)|0},${0.18 + Math.random()*0.42})`;
+      cx.fillRect(Math.random()*128, Math.random()*128, 1 + Math.random()*2, 1 + Math.random()*2);
+    }
+    // juntas de formaleta y algún escurrido, como en las fotos
+    cx.strokeStyle = 'rgba(78,74,68,0.40)'; cx.lineWidth = 1;
+    [26, 64, 102].forEach(y => { cx.beginPath(); cx.moveTo(0, y); cx.lineTo(128, y); cx.stroke(); });
+    for (let i = 0; i < 16; i++) {
+      cx.fillStyle = `rgba(90,84,76,${0.10 + Math.random()*0.18})`;
+      cx.fillRect(Math.random()*128, 0, 1 + Math.random()*3, 128);
+    }
+    const muroTex = new THREE.CanvasTexture(cC);
+    muroTex.wrapS = muroTex.wrapT = THREE.RepeatWrapping;
+    muroTex.repeat.set(10, 1);
+    if ('colorSpace' in muroTex) muroTex.colorSpace = THREE.SRGBColorSpace;
+    else if ('encoding' in muroTex) muroTex.encoding = THREE.sRGBEncoding;
+
+    const matMuro = new THREE.MeshStandardMaterial({
+      map: muroTex, color: 0x8e887f, roughness: 0.97, metalness: 0 });
+    // el canto de arriba se ve más claro en campo, por el sol y el desgaste
+    const matCanto = new THREE.MeshStandardMaterial({
+      map: muroTex, color: 0xa39c91, roughness: 0.92, metalness: 0 });
+
+    const tramo = (ancho, fondo, x, z) => {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(ancho, ALTO, fondo), matMuro);
+      m.position.set(x, ALTO / 2, z);
+      m.castShadow = true; m.receiveShadow = true;
+      dique.add(m);
+      const c = new THREE.Mesh(new THREE.BoxGeometry(ancho * 1.004, 0.06, fondo * 1.04), matCanto);
+      c.position.set(x, ALTO + 0.02, z);
+      c.receiveShadow = true;
+      dique.add(c);
+    };
+    const W = expW / 2, D = expD / 2;
+    tramo(expW + GRUESO, GRUESO, 0, zc - D);
+    tramo(expW + GRUESO, GRUESO, 0, zc + D);
+    tramo(GRUESO, expD + GRUESO, -W, zc);
+    tramo(GRUESO, expD + GRUESO,  W, zc);
+
+    /* Un tramo de tubería al pie, de las gruesas que entran y salen de los
+       tanques. Es lo otro que da escala: al lado de un tubo se sabe de qué
+       tamaño es todo lo demás. */
+    const matTubo = new THREE.MeshStandardMaterial({
+      color: 0xb9bdc2, roughness: 0.42, metalness: 0.65 });
+    const matSoporte = new THREE.MeshStandardMaterial({
+      color: 0x6f6a63, roughness: 0.95, metalness: 0.1 });
+    const RT = 0.15, yT = 0.46, zT = zc - D + 0.95;
+    const largo = Math.max(2, expW - 1.6);
+
+    const tubo = new THREE.Mesh(new THREE.CylinderGeometry(RT, RT, largo, 14), matTubo);
+    tubo.rotation.z = Math.PI / 2;
+    tubo.position.set(0, yT, zT);
+    tubo.castShadow = true;
+    dique.add(tubo);
+
+    // los extremos bajan al piso, como las bajantes que van a las bombas
+    [-1, 1].forEach(s => {
+      const baja = new THREE.Mesh(new THREE.CylinderGeometry(RT, RT, yT, 14), matTubo);
+      baja.position.set(s * largo / 2, yT / 2, zT);
+      baja.castShadow = true;
+      dique.add(baja);
+      const brida = new THREE.Mesh(new THREE.CylinderGeometry(RT * 1.7, RT * 1.7, 0.07, 14), matTubo);
+      brida.position.set(s * largo / 2, yT * 0.55, zT);
+      dique.add(brida);
+    });
+
+    const nSop = Math.max(2, Math.round(largo / 3.2));
+    for (let i = 0; i < nSop; i++) {
+      const x = -largo / 2 + (largo / (nSop - 1 || 1)) * i;
+      if (Math.abs(Math.abs(x) - largo / 2) < 0.2) continue;   // no bajo las bajantes
+      const sop = new THREE.Mesh(new THREE.BoxGeometry(0.16, yT - RT, 0.16), matSoporte);
+      sop.position.set(x, (yT - RT) / 2, zT);
+      sop.castShadow = true; sop.receiveShadow = true;
+      dique.add(sop);
+    }
+
+    contentGroup.add(dique);
+  }
 
   // luz principal centrada sobre la planta, para sombras coherentes
   keyLight.position.set(9, 15, 7 + totalDepth/2);
@@ -6136,8 +6244,11 @@ function buildTankMap3D(canvasId, hintId, data, totalId) {
     const aspect = camera.aspect && isFinite(camera.aspect) ? camera.aspect : 2.2;
     const hFov = 2 * Math.atan(Math.tan(vFov/2) * aspect);
     const d = fitSphere / Math.sin(Math.max(0.2, Math.min(vFov, hFov)) / 2);
-    // encuadre cerrado: antes la planta era una franja con cielo y suelo vacíos
-    return Math.max(5, Math.min(58, d * 0.68));
+    /* Encuadre cerrado: antes la planta era una franja con cielo y suelo
+       vacíos. El 0,56 compensa que ahora el radio se mide sobre la
+       explanada entera —para que el dique no quede cortado— y no sobre el
+       grupo de tanques, que es bastante más pequeño. */
+    return Math.max(5, Math.min(58, d * 0.56));
   }
 
   canvas.style.touchAction = 'none';
