@@ -7844,17 +7844,28 @@ ${cssInforme()}
      2026» y se vuelve a cerrar. Las otras 114 piezas del archivo salen
      byte por byte como entraron.
 
-     El bloque se escribe siempre desde la misma fila y antes de escribir
-     se borra lo que hubiera de esa fila en adelante: se puede repetir
-     todas las veces que haga falta sin ir apilando bloques viejos.
+     Dónde cae el bloque NO se decide a dedo. La primera versión lo puso
+     en la fila 120 y quedó justo debajo de un gráfico que flota anclado
+     de la 115 a la 144: las celdas estaban bien, pero el gráfico tapaba
+     las primeras cinco columnas y el resultado era ilegible. Las filas
+     vacías de una hoja no están necesariamente libres. Así que ahora se
+     mira hasta dónde llegan los datos Y hasta dónde llegan los dibujos
+     anclados, y el bloque arranca debajo de lo más bajo de los dos.
+
+     Para poder repetirlo sin apilar bloques viejos, al terminar se deja
+     un nombre definido —GOP_TABLERO— apuntando al bloque. En la corrida
+     siguiente se busca ese nombre y se reemplaza lo que haya ahí. Si el
+     nombre se perdiera, queda el plan B: buscar el título del bloque,
+     que Excel guarda como cadena compartida al volver a guardar.
 
      Sólo Rubiales (CPF-1 + CPF-2). Caño Sur es otro campo y tiene su
      propio archivo; mezclarlos aquí sería invitar a sumar los dos
      totales.
      ============================================================ */
-  const GOP_INICIO = 120;      // primera fila del bloque del tablero
   const GOP_TOPE = 1000000;    // se limpia hasta aquí; la fila suelta de más abajo se respeta
   const GOP_PMROW = 6;         // la fila de pesos moleculares, dentro del libro
+  const GOP_NOMBRE = 'GOP_TABLERO';                        // el nombre definido que marca el bloque
+  const GOP_SENT = 'TABLERO EN LÍNEA · PUNTOS DE RUBIALES'; // y el título, por si el nombre se pierde
 
   /* Las fórmulas van en inglés y con coma: así es como Excel las guarda
      dentro del XML, sea cual sea el idioma con que se vean en pantalla. */
@@ -7909,15 +7920,28 @@ ${cssInforme()}
     return Math.round((Date.UTC(+m[1], +m[2] - 1, +m[3]) - Date.UTC(1899, 11, 30)) / 86400000);
   }
 
-  function gopFilaPunto(r, p, mol, ref, cerrada) {
+  /* «MANHOLE» → «Manhole»: el libro escribe estas dos columnas en minúscula
+     con inicial mayúscula, y en mayúscula sostenida desentonaban. */
+  const gopTitulo = s => {
+    const t = String(s || '').trim();
+    return t ? t.charAt(0).toUpperCase() + t.slice(1).toLowerCase() : '';
+  };
+
+  function gopFilaPunto(r, p, mol, ref, cerrada, color) {
     const d = p.d;
     const der = xlCadenaVal(mol, d.tasa);
-    let x = '<row r="' + r + '" spans="1:97">';
-    x += gopTxt('A' + r, GOP_EST.id, d.fid || '');
-    x += gopTxt('B' + r, GOP_EST.id, p.fac);
-    x += gopTxt('C' + r, GOP_EST.id, (d.equipo || '') + ' ' + (d.area || ''));
-    x += gopTxt('D' + r, GOP_EST.punto, d.punto || '');
-    x += gopTxt('E' + r, GOP_EST.punto, d.elemento || 'Fuga');
+    /* Altura fija de una línea. Sin ella, un texto largo en D o E hace
+       crecer la fila y el bloque sale escalonado, con las tres primeras
+       columnas desalineadas respecto al resto. */
+    let x = '<row r="' + r + '" spans="1:97" ht="15" customHeight="1">';
+    x += gopTxt('A' + r, color, d.fid || '');
+    x += gopTxt('B' + r, color, p.fac);
+    x += gopTxt('C' + r, color, (d.equipo || '') + ' ' + (d.area || ''));
+    x += gopTxt('D' + r, GOP_EST.punto, gopTitulo(d.punto));
+    /* La columna E del libro dice siempre «Fuga»: es el tipo de hallazgo,
+       no el elemento. Poner ahí «EMPAQUE Y SIN PERNO» era meter un dato
+       en una columna que significa otra cosa. */
+    x += gopTxt('E' + r, GOP_EST.punto, 'Fuga');
     x += gopNum('F' + r, GOP_EST.punto, d.tasa);
     GOP_MOLC.forEach((c, i) => { x += gopNum(c + r, GOP_EST.mol, mol[i]); });
     GOP_DERIV.forEach((c, i) => {
@@ -7935,13 +7959,90 @@ ${cssInforme()}
     return x + '</row>';
   }
 
-  function gopFilaTitulo(r, t) {
-    return '<row r="' + r + '" spans="1:97">' + gopTxt('A' + r, GOP_EST.titulo, t) + '</row>';
+  function gopFilaTitulo(r, t, estilo) {
+    return '<row r="' + r + '" spans="1:97" ht="15" customHeight="1">'
+      + gopTxt('A' + r, estilo == null ? GOP_EST.titulo : estilo, t) + '</row>';
   }
 
-  function gopFilaSub(r, rotulo, ini, fin, n) {
-    let x = '<row r="' + r + '" spans="1:97">';
-    x += gopTxt('A' + r, GOP_EST.subA, rotulo + '  (' + n + (n === 1 ? ' punto)' : ' puntos)'));
+  /* ---------- un estilo alineado a la izquierda para los rótulos ----------
+     Los estilos del libro están centrados, y un rótulo más ancho que la
+     columna A se derrama a los dos lados: por la derecha no molesta, pero
+     por la izquierda se sale de la hoja y parece cortado. Se clonan los
+     estilos que hacen falta cambiándoles la alineación, y se añaden AL
+     FINAL de la lista: así ningún índice que ya existía se mueve y el
+     resto del libro sigue viéndose igual. */
+  function gopEstilosIzquierda(z, F, bases) {
+    const st = F.strFromU8(z['xl/styles.xml']);
+    const m = /<cellXfs count="(\d+)">([\s\S]*?)<\/cellXfs>/.exec(st);
+    if (!m) return bases.map(b => b);          // sin lista de estilos, se deja todo igual
+    const xfs = m[2].match(/<xf [^>]*?(?:\/>|>[\s\S]*?<\/xf>)/g) || [];
+    const todos = xfs.slice();
+    let extra = '';
+    const nuevos = bases.map(base => {
+      const orig = xfs[base];
+      if (!orig) return base;
+      let x = orig;
+      if (/<alignment/.test(x)) {
+        x = x.replace(/<alignment([^>]*)\/>/, (t, a) => '<alignment'
+          + (/horizontal="/.test(a) ? a.replace(/horizontal="[^"]*"/, 'horizontal="left"')
+                                    : a + ' horizontal="left"') + '/>');
+      } else {
+        x = x.replace(/\/>$/, '><alignment horizontal="left" vertical="center"/></xf>');
+      }
+      if (!/applyAlignment="1"/.test(x)) x = x.replace(/^<xf /, '<xf applyAlignment="1" ');
+      /* Si ya está —de una corrida anterior—, se reutiliza. Si no, el libro
+         iría engordando dos estilos cada vez que se actualiza. */
+      const ya = todos.indexOf(x);
+      if (ya >= 0) return ya;
+      todos.push(x);
+      extra += x;
+      return todos.length - 1;
+    });
+    if (!extra) return nuevos;
+    z['xl/styles.xml'] = F.strToU8(st.replace(m[0],
+      '<cellXfs count="' + todos.length + '">' + m[2] + extra + '</cellXfs>'));
+    return nuevos;
+  }
+
+  /* ---------- el color dice de qué cromatografía viene la fila ----------
+     El libro ya tiene ese código: la leyenda de abajo pinta PROCESOS,
+     SKIM TANK, ALMACENAMIENTO y FWKOS cada uno de un color, y los
+     registros de la campaña de julio llevan el color de su área. Aquí no
+     se inventan colores: se leen los de esa leyenda, que son filas con el
+     área en A y «fila NN» en B. Si no aparece, todo va de un solo color. */
+  function gopColorPorArea(z, F, hoja) {
+    const mapa = {};
+    const sl = [];
+    if (z['xl/sharedStrings.xml']) {
+      F.strFromU8(z['xl/sharedStrings.xml']).replace(/<si>([\s\S]*?)<\/si>/g, (t, c) => {
+        sl.push((c.match(/<t[^>]*>[\s\S]*?<\/t>/g) || [])
+          .map(u => u.replace(/<[^>]*>/g, '')).join(''));
+        return t;
+      });
+    }
+    const valor = (at, cuerpo) => {
+      const v = /<v>([\s\S]*?)<\/v>/.exec(cuerpo);
+      if (/t="s"/.test(at) && v) return sl[+v[1]] || '';
+      const t = /<t[^>]*>([\s\S]*?)<\/t>/.exec(cuerpo);
+      return t ? t[1] : (v ? v[1] : '');
+    };
+    hoja.replace(/<row r="(\d+)"[^>]*?>([\s\S]*?)<\/row>/g, (todo, n, cuerpo) => {
+      const ca = new RegExp('<c r="A' + n + '"([^>]*?)(?:/>|>([\\s\\S]*?)</c>)').exec(cuerpo);
+      const cb = new RegExp('<c r="B' + n + '"([^>]*?)(?:/>|>([\\s\\S]*?)</c>)').exec(cuerpo);
+      if (!ca || !cb) return todo;
+      if (!/^fila \d+$/.test(valor(cb[1], cb[2] || ''))) return todo;
+      const area = valor(ca[1], ca[2] || '');
+      const s = /s="(\d+)"/.exec(ca[1]);
+      if (area && s) mapa[area.toUpperCase()] = s[1];
+      return todo;
+    });
+    return mapa;
+  }
+
+  function gopFilaSub(r, rotulo, ini, fin, n, estilo) {
+    let x = '<row r="' + r + '" spans="1:97" ht="15" customHeight="1">';
+    x += gopTxt('A' + r, estilo == null ? GOP_EST.subA : estilo,
+      rotulo + '  (' + n + (n === 1 ? ' punto)' : ' puntos)'));
     ['F', 'AH', 'AI', 'AJ', 'AK', 'AL'].forEach(c => {
       x += '<c r="' + c + r + '" s="' + GOP_EST.subN + '"><f>SUM(' + c + ini + ':' + c + fin + ')</f></c>';
     });
@@ -7958,13 +8059,16 @@ ${cssInforme()}
       + m[1].replace(/<c r="([A-Z]+)4"/g, (_, c) => '<c r="' + c + r + '"') + '</row>';
   }
 
-  function gopBloque(hoja, sello) {
+  function gopBloque(hoja, sello, inicio, colores, izq) {
     const { activos, cerrados } = gopPuntos();
-    let r = GOP_INICIO, x = '';
-    x += gopFilaTitulo(r++, 'TABLERO EN LÍNEA · PUNTOS DE RUBIALES (CPF-1 + CPF-2) — ' + sello);
-    x += gopFilaTitulo(r++, 'Caño Sur no entra aquí: es otro campo y lleva su propio archivo. '
-      + 'La composición del gas de G a X se copia de la muestra que indica la columna AM; '
-      + 'de Y en adelante son las fórmulas de este libro, no números pegados.');
+    const eTit = izq && izq[0], eSub = izq && izq[1];
+    let r = inicio, x = '';
+    /* Dos renglones cortos, del largo del título que ya lleva el bloque de
+       julio. Antes el segundo era un párrafo de tres líneas metido en una
+       sola celda: se derramaba a lo ancho de media hoja y se veía mal. */
+    x += gopFilaTitulo(r++, GOP_SENT + ' (CPF-1 + CPF-2) — ' + sello, eTit);
+    x += gopFilaTitulo(r++, 'Sólo Rubiales; Caño Sur lleva su propio archivo. '
+      + 'De Y a AL son las fórmulas de este libro.', eTit);
     r++;
     x += gopFilaEnc(hoja, r++);
 
@@ -7974,16 +8078,91 @@ ${cssInforme()}
       [...lista].sort((a, b) => b.d.tasa - a.d.tasa).forEach(p => {
         const clave = p.fac + '|' + p.d.area;
         const mol = XL_MOL[clave] || XL_MOL['CPF-2|ALMACENAMIENTO'];
-        x += gopFilaPunto(r++, p, mol, XL_REF[clave], cerrada);
+        const color = (colores && colores[String(p.d.area || '').toUpperCase()]) || GOP_EST.id;
+        x += gopFilaPunto(r++, p, mol, XL_REF[clave], cerrada, color);
       });
       x += gopFilaSub(r++, cerrada ? 'EVITADO POR CIERRES · RUBIALES'
-        : 'SUBTOTAL ACTIVO · RUBIALES (CPF-1 + CPF-2)', ini, r - 2, lista.length);
+        : 'SUBTOTAL ACTIVO · RUBIALES (CPF-1 + CPF-2)', ini, r - 2, lista.length, eSub);
       r++;
       return lista.length;
     };
     grupo(activos, false);
     grupo(cerrados, true);
-    return x;
+    return { xml: x, fin: r - 1 };
+  }
+
+  /* ---------- dónde cabe el bloque ----------
+     Una fila vacía no está necesariamente libre: puede tener encima un
+     gráfico o una imagen anclados. Aquí se mira hasta dónde llegan las
+     dos cosas —los datos y los dibujos— y se devuelve la primera fila
+     que está libre de verdad. */
+  function gopUltimaFilaDibujos(z, F, rutaHoja) {
+    const rels = 'xl/worksheets/_rels/' + rutaHoja.split('/').pop() + '.rels';
+    if (!z[rels]) return 0;
+    let ultima = 0;
+    const txt = F.strFromU8(z[rels]);
+    const destinos = [];
+    txt.replace(/Target="([^"]+)"/g, (t, d) => {
+      if (/drawings\/drawing\d+\.xml$/.test(d)) destinos.push('xl/' + d.replace(/^\.\.\//, ''));
+      return t;
+    });
+    destinos.forEach(ruta => {
+      if (!z[ruta]) return;
+      const dib = F.strFromU8(z[ruta]);
+      // anclado a dos celdas: vale la fila de abajo
+      dib.replace(/<xdr:to>[\s\S]*?<xdr:row>(\d+)<\/xdr:row>/g, (t, n) => {
+        ultima = Math.max(ultima, +n + 1); return t;
+      });
+      /* anclado a una sola celda: no dice dónde termina, así que se le
+         conceden 30 filas de alto, que sobra para una imagen normal */
+      dib.replace(/<xdr:oneCellAnchor>[\s\S]*?<xdr:row>(\d+)<\/xdr:row>/g, (t, n) => {
+        ultima = Math.max(ultima, +n + 1 + 30); return t;
+      });
+    });
+    return ultima;
+  }
+
+  function gopUltimaFilaDatos(hoja) {
+    let ultima = 0;
+    hoja.replace(/<row r="(\d+)"/g, (t, n) => {
+      // la fila suelta del final del archivo no cuenta como dato
+      if (+n <= GOP_TOPE) ultima = Math.max(ultima, +n);
+      return t;
+    });
+    return ultima;
+  }
+
+  /* ---------- dónde quedó el bloque anterior ----------
+     Primero por el nombre definido. Si no está —alguien lo borró, u otra
+     herramienta lo perdió—, se busca el título: Excel convierte el texto
+     en cadena compartida al volver a guardar, así que hay que mirar en
+     los dos sitios. Devuelve la fila donde empezaba, o 0. */
+  function gopBloqueAnterior(z, F, wbTxt, hoja) {
+    const m = new RegExp('<definedName name="' + GOP_NOMBRE + '"[^>]*>([\\s\\S]*?)</definedName>')
+      .exec(wbTxt);
+    if (m) {
+      const r = /\$A\$(\d+)/.exec(m[1]);
+      if (r) return +r[1];
+    }
+    const idx = [];
+    if (z['xl/sharedStrings.xml']) {
+      let i = 0;
+      F.strFromU8(z['xl/sharedStrings.xml']).replace(/<si>([\s\S]*?)<\/si>/g, (t, c) => {
+        if (c.indexOf(GOP_SENT) >= 0) idx.push(String(i));
+        i++; return t;
+      });
+    }
+    let fila = 0;
+    hoja.replace(/<row r="(\d+)"[^>]*?>([\s\S]*?)<\/row>/g, (t, n, cuerpo) => {
+      const a = new RegExp('<c r="A' + n + '"[^>]*?>([\\s\\S]*?)</c>').exec(cuerpo);
+      if (a) {
+        const v = /<v>(\d+)<\/v>/.exec(a[1]);
+        const dentro = a[1].indexOf(GOP_SENT) >= 0 || (v && idx.indexOf(v[1]) >= 0);
+        if (dentro && (!fila || +n < fila)) fila = +n;
+      }
+      return t;
+    });
+    return fila;
   }
 
   /* La cirugía. Recibe el archivo tal como lo dio el usuario y devuelve el
@@ -7998,14 +8177,18 @@ ${cssInforme()}
     const mapa = {};
     F.strFromU8(z['xl/_rels/workbook.xml.rels'])
       .replace(/Id="([^"]+)"[^>]*Target="([^"]+)"/g, (t, id, d) => { mapa[id] = d; return t; });
+    /* Se guardan TODAS las hojas, aunque a alguna le falte el enlace: la
+       posición en esta lista es el localSheetId que pide el nombre
+       definido, y saltarse una desplazaría todas las demás. */
     const hojas = [];
     wbTxt.replace(/<sheet[^>]*\/>/g, s => {
       const n = /name="([^"]*)"/.exec(s), i = /r:id="([^"]*)"/.exec(s);
-      if (n && i && mapa[i[1]]) hojas.push([n[1], mapa[i[1]]]);
+      hojas.push([n ? n[1] : '', (i && mapa[i[1]]) || '']);
       return s;
     });
-    let par = hojas.find(h => h[0] === 'Calculos CO2 2026')
-      || hojas.filter(h => /^Calculos CO2 \d{4}$/.test(h[0])).sort().pop();
+    const utiles = hojas.filter(h => h[1]);
+    let par = utiles.find(h => h[0] === 'Calculos CO2 2026')
+      || utiles.filter(h => /^Calculos CO2 \d{4}$/.test(h[0])).sort().pop();
     if (!par) {
       throw new Error('No encontré la hoja «Calculos CO2 2026» dentro del libro. '
         + 'Hojas que trae: ' + hojas.map(h => h[0]).join(', '));
@@ -8015,17 +8198,30 @@ ${cssInforme()}
 
     let hoja = F.strFromU8(z[ruta]);
 
-    // fuera cualquier bloque anterior: todo lo que haya de GOP_INICIO en adelante
-    hoja = hoja.replace(/<row r="(\d+)"[^>]*?(?:\/>|>[\s\S]*?<\/row>)/g, (todo, n) =>
-      (+n >= GOP_INICIO && +n <= GOP_TOPE) ? '' : todo);
+    /* El bloque viejo se quita ANTES de medir. Si no, sus propias filas
+       contarían como datos y el bloque nuevo se iría bajando un poco más
+       en cada corrida. */
+    const previo = gopBloqueAnterior(z, F, wbTxt, hoja);
+    if (previo) {
+      hoja = hoja.replace(/<row r="(\d+)"[^>]*?(?:\/>|>[\s\S]*?<\/row>)/g, (todo, n) =>
+        (+n >= previo && +n <= GOP_TOPE) ? '' : todo);
+    }
+
+    /* Y ahora dónde ponerlo. Una fila vacía no está libre si tiene un
+       gráfico encima, así que se mira hasta dónde llegan los datos y
+       hasta dónde llegan los dibujos. El bloque se queda donde estaba,
+       salvo que ahí haya estorbo: entonces baja y no vuelve a subir. */
+    const libre = Math.max(gopUltimaFilaDatos(hoja), gopUltimaFilaDibujos(z, F, ruta)) + 3;
+    const inicio = previo ? Math.max(previo, libre) : libre;
 
     // y dentro el bloque nuevo, respetando el orden de las filas
-    const bloque = gopBloque(hoja, sello);
+    const izq = gopEstilosIzquierda(z, F, [GOP_EST.titulo, GOP_EST.subA]);
+    const bloque = gopBloque(hoja, sello, inicio, gopColorPorArea(z, F, hoja), izq);
     const busca = /<row r="(\d+)"[^>]*?(?:\/>|>[\s\S]*?<\/row>)/g;
     let corte = -1, m;
     while ((m = busca.exec(hoja))) { if (+m[1] > GOP_TOPE) { corte = m.index; break; } }
-    hoja = corte >= 0 ? hoja.slice(0, corte) + bloque + hoja.slice(corte)
-      : hoja.replace('</sheetData>', bloque + '</sheetData>');
+    hoja = corte >= 0 ? hoja.slice(0, corte) + bloque.xml + hoja.slice(corte)
+      : hoja.replace('</sheetData>', bloque.xml + '</sheetData>');
     z[ruta] = F.strToU8(hoja);
 
     /* La cadena de cálculo del libro está hecha para las fórmulas viejas; si
@@ -8039,10 +8235,23 @@ ${cssInforme()}
 
     /* Y se le pide a Excel que recalcule al abrir: los valores que dejo
        escritos quedan así confirmados por el propio Excel, no por mí. */
-    z['xl/workbook.xml'] = F.strToU8(wbTxt.replace(/<calcPr([^>]*?)\/>/, (t, a) =>
-      /fullCalcOnLoad/.test(a) ? t : '<calcPr' + a + ' fullCalcOnLoad="1"/>'));
+    let wb2 = wbTxt.replace(/<calcPr([^>]*?)\/>/, (t, a) =>
+      /fullCalcOnLoad/.test(a) ? t : '<calcPr' + a + ' fullCalcOnLoad="1"/>');
 
-    return F.zipSync(z, { level: 6 });
+    /* El nombre definido deja marcado dónde quedó el bloque, para que la
+       próxima corrida lo reemplace en vez de escribir otro más abajo. De
+       paso, en Excel se puede saltar ahí desde el cuadro de nombres. */
+    const idHoja = hojas.findIndex(h => h[0] === par[0]);
+    const rango = '\'' + par[0].replace(/'/g, "''") + '\'!$A$' + inicio + ':$A$' + bloque.fin;
+    const def = '<definedName name="' + GOP_NOMBRE + '" localSheetId="' + idHoja + '">'
+      + rango + '</definedName>';
+    const viejo = new RegExp('<definedName name="' + GOP_NOMBRE + '"[^>]*>[\\s\\S]*?</definedName>');
+    if (viejo.test(wb2)) wb2 = wb2.replace(viejo, def);
+    else if (wb2.indexOf('<definedNames>') >= 0) wb2 = wb2.replace('<definedNames>', '<definedNames>' + def);
+    else wb2 = wb2.replace('</sheets>', '</sheets><definedNames>' + def + '</definedNames>');
+    z['xl/workbook.xml'] = F.strToU8(wb2);
+
+    return { zip: F.zipSync(z, { level: 6 }), inicio: inicio, hoja: par[0] };
   }
 
   async function actualizarLibroGOP(enlace) {
@@ -8073,7 +8282,7 @@ ${cssInforme()}
 
         const base = arch.name.replace(/\.xlsx$/i, '').replace(/ — actualizado.*$/, '');
         const nombre = base + ' — actualizado ' + hoyISO() + '.xlsx';
-        const url = URL.createObjectURL(new Blob([salida],
+        const url = URL.createObjectURL(new Blob([salida.zip],
           { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
         const a = document.createElement('a');
         a.href = url; a.download = nombre;
@@ -8086,7 +8295,7 @@ ${cssInforme()}
         }, { g: 0, t: 0 });
         const A = suma(activos), C = suma(cerrados);
         alert('Listo: ' + nombre + '\n\n'
-          + 'En la hoja «Calculos CO2 2026», desde la fila ' + GOP_INICIO + ':\n'
+          + 'En la hoja «' + salida.hoja + '», desde la fila ' + salida.inicio + ':\n'
           + '  · ' + activos.length + ' puntos ACTIVOS — '
           + xlNum(A.g, 0) + ' g/Hr · ' + xlNum(A.t, 2) + ' ton CO2eq/año\n'
           + (cerrados.length
