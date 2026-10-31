@@ -3105,7 +3105,7 @@ THREE.OrbitControls = OrbitControls;
         <a href="#" class="nav-link" id="navOrden">Orden de trabajo · por tanque</a>
         <a href="#" class="nav-link" id="navSimulador">Simulador · cuánto deja de emitirse</a>
         <a href="#" class="nav-link" id="navMemoria">Memoria de cálculo · de dónde sale cada número</a>
-        <a href="#" class="nav-link" id="navHojaGOP">Hoja GOP-F-006 · puntos activos de Rubiales</a>
+        <a href="#" class="nav-link" id="navHojaGOP">Actualizar mi archivo GOP-F-006</a>
       </div>
 
       <div class="nav-group">
@@ -8613,114 +8613,284 @@ ${cssInforme()}
   }
 
   /* ============================================================
-     LA HOJA DEL GOP-F-006 CON LOS PUNTOS ACTIVOS
-     Genera un .xlsx con el mismo esqueleto del libro —encabezados en la
-     fila 4, pesos moleculares en la 6, datos desde la 7— y los puntos que
-     el tablero tenga abiertos en ese momento en CPF-1 y CPF-2.
+     ACTUALIZAR EL GOP-F-006 DE VERDAD
 
-     Las columnas derivadas van como FÓRMULA, no como número pegado: quien
-     lo reciba pisa una celda, ve de dónde sale y puede cambiar la lectura
-     para ver cómo se mueve todo. Es lo que hace que sea auditable en vez
-     de ser «un número que mandó el tablero».
+     Antes esto generaba una hoja aparte para pegar a mano. Lo que hace
+     falta es otra cosa: que el archivo GOP-F-006 que ya existe quede
+     actualizado con lo que el tablero tiene hoy, sin perder nada de lo
+     que ya trae.
 
-     Sólo Rubiales. Caño Sur es otro campo y se exporta aparte: mezclarlos
-     en una hoja sería invitar a que alguien sume los dos totales.
+     Ese libro no se puede volver a guardar con una librería de Excel.
+     Lleva vínculos a otros archivos, una tabla dinámica con su caché,
+     cuatro gráficos, comentarios y siete hojas más; cualquier librería
+     que lo lea y lo reescriba se come la mitad de eso en silencio.
+
+     Así que no se reescribe. Un .xlsx es un .zip con un XML por hoja:
+     aquí se abre el zip, se cambia el texto de la hoja «Calculos CO2
+     2026» y se vuelve a cerrar. Las otras 114 piezas del archivo salen
+     byte por byte como entraron.
+
+     El bloque se escribe siempre desde la misma fila y antes de escribir
+     se borra lo que hubiera de esa fila en adelante: se puede repetir
+     todas las veces que haga falta sin ir apilando bloques viejos.
+
+     Sólo Rubiales (CPF-1 + CPF-2). Caño Sur es otro campo y tiene su
+     propio archivo; mezclarlos aquí sería invitar a sumar los dos
+     totales.
      ============================================================ */
-  /* Las mismas fórmulas de XL_CADENA, pero escritas para el archivo: punto
-     decimal y coma como separador —así se guardan dentro de un .xlsx, sea
-     cual sea el idioma de quien lo abra— y la fila de pesos moleculares en
-     la 6, que es donde la tiene el libro (en la hoja de pantalla está en la
-     2). Convertirlas con reemplazos era frágil; van escritas aparte. */
-  const GOP_CADENA = {
-    25: 'SUMPRODUCT(G{r}:X{r},$G$6:$X$6)/100',
-    26: 'K{r}*$K$6/Y{r}',
-    27: 'J{r}*$J$6/Y{r}',
-    28: 'SUMPRODUCT(K{r}:X{r},$K$6:$X$6)/Y{r}',
-    29: 'Z{r}*100/AB{r}',
-    30: '(F{r}*(AB{r}/100*AC{r}/100)/1000)*(8.314472*288.15)/(101.325*$K$6)*24',
-    31: 'F{r}*AC{r}/100',
-    32: 'F{r}/AB{r}*100*AA{r}/100',
-    33: 'AE{r}*24/1000/1000',
-    34: 'AG{r}*365',
-    35: 'AF{r}*24*365/1000/1000',
-    36: 'IF(AH{r}="","",AI{r}+(AH{r}*28))',
-    37: 'AD{r}*365',
-    38: 'AK{r}/0.0283168',
+  const GOP_INICIO = 120;      // primera fila del bloque del tablero
+  const GOP_TOPE = 1000000;    // se limpia hasta aquí; la fila suelta de más abajo se respeta
+  const GOP_PMROW = 6;         // la fila de pesos moleculares, dentro del libro
+
+  /* Las fórmulas van en inglés y con coma: así es como Excel las guarda
+     dentro del XML, sea cual sea el idioma con que se vean en pantalla. */
+  const GOP_FX = {
+    Y: 'SUMPRODUCT(G{r}:X{r},$G$6:$X$6)/100',
+    Z: 'K{r}*$K$6/Y{r}',
+    AA: 'J{r}*$J$6/Y{r}',
+    AB: 'SUMPRODUCT(K{r}:X{r},$K$6:$X$6)/Y{r}',
+    AC: 'Z{r}*100/AB{r}',
+    AD: '(F{r}*(AB{r}/100*AC{r}/100)/1000)*(8.314472*288.15)/(101.325*$K$6)*24',
+    AE: 'F{r}*AC{r}/100',
+    AF: 'F{r}/AB{r}*100*AA{r}/100',
+    AG: 'AE{r}*24/1000/1000',
+    AH: 'AG{r}*365',
+    AI: 'AF{r}*24*365/1000/1000',
+    AJ: 'IF(AH{r}="","",AI{r}+(AH{r}*28))',
+    AK: 'AD{r}*365',
+    AL: 'AK{r}/0.0283168',
+  };
+  const GOP_DERIV = ['Y', 'Z', 'AA', 'AB', 'AC', 'AD', 'AE', 'AF', 'AG', 'AH', 'AI', 'AJ', 'AK', 'AL'];
+  const GOP_MOLC = ['G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X'];
+
+  /* Los estilos se piden prestados a las filas que ya trae el libro —la 21
+     para los datos, la 25 para el subtotal— para que el bloque nuevo no
+     desentone con el resto de la hoja. */
+  const GOP_EST = {
+    id: 274, punto: 25, mol: 55, Y: 55, Z: 55, AA: 62, AB: 62, AC: 62, AD: 62,
+    AE: 53, AF: 53, AG: 53, AH: 54, AI: 54, AJ: 55, AK: 70, AL: 51,
+    nota: 146, fecha: 184, cierre: 231, estado: 105, titulo: 25, subA: 183, subN: 182,
   };
 
-  function gopFilas() {
-    const filas = [];
-    [['CPF-1', DATA1], ['CPF-2', DATA2]].forEach(([fac, lista]) => {
-      [...lista].sort((a, b) => b.tasa - a.tasa).forEach(d => {
-        filas.push({ fac, d, mol: XL_MOL[fac + '|' + d.area] || null });
-      });
-    });
-    return filas;
+  function gopPuntos() {
+    const con = (lista, fac) => lista.map(d => ({ d, fac }));
+    return {
+      activos: [...con(DATA1, 'CPF-1'), ...con(DATA2, 'CPF-2')],
+      cerrados: [...con(CERRADAS1, 'CPF-1'), ...con(CERRADAS2, 'CPF-2')],
+    };
   }
 
-  async function exportarHojaGOP(enlace) {
-    const previo = enlace ? enlace.textContent : '';
-    if (enlace) { enlace.textContent = 'Generando…'; enlace.style.pointerEvents = 'none'; }
-    try {
-      const raiz = location.pathname.replace(/[^/]*$/, '').replace(/editor\/$/, '');
-      await cargarScript(raiz + 'lib/xlsx.mini.min.js');
+  const gopEsc = s => String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const gopTxt = (ref, s, t) =>
+    '<c r="' + ref + '" s="' + s + '" t="inlineStr"><is><t xml:space="preserve">' + gopEsc(t) + '</t></is></c>';
+  const gopNum = (ref, s, v) => '<c r="' + ref + '" s="' + s + '"><v>' + v + '</v></c>';
+  const gopFml = (ref, s, f, v) =>
+    '<c r="' + ref + '" s="' + s + '"><f>' + gopEsc(f) + '</f><v>' + v + '</v></c>';
 
-      const filas = gopFilas();
-      if (!filas.length) { alert('No hay puntos activos en CPF-1 ni CPF-2.'); return; }
+  /* Fecha a número de serie de Excel; null si no hay fecha que poner. */
+  function gopSerie(iso) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ''));
+    if (!m) return null;
+    return Math.round((Date.UTC(+m[1], +m[2] - 1, +m[3]) - Date.UTC(1899, 11, 30)) / 86400000);
+  }
 
-      const FIL1 = 7;                    // los datos empiezan en la fila 7, como en el libro
-      const hoja = {};
-      const pon = (ref, celda) => { hoja[ref] = celda; };
-      const L = i => {                   // 0 → A, 26 → AA
-        let n = i, t = '';
-        do { t = String.fromCharCode(65 + (n % 26)) + t; n = Math.floor(n / 26) - 1; } while (n >= 0);
-        return t;
-      };
-
-      // cabecera del formato, donde la tiene el original
-      pon('D1', { t: 's', v: 'Formato para Identificación y Gestión de Emisiones Fugitivas' });
-      pon('D2', { t: 's', v: 'Gestión y Optimización de la Producción' });
-      pon('D3', { t: 's', v: 'GOP-F-006' });
-      pon('A1', { t: 's', v: 'PUNTOS ACTIVOS · CAMPO RUBIALES (CPF-1 + CPF-2)' });
-      pon('A2', { t: 's', v: 'Generado desde el tablero el ' + fechaLarga(hoyISO())
-        + '. Las columnas derivadas son fórmulas del procedimiento, no números pegados.' });
-
-      XL_ENC.forEach((t, i) => pon(L(i) + '4', { t: 's', v: String(t).replace(/\n/g, ' ') }));
-      pon('F6', { t: 's', v: 'Peso Molecular Mwi' });
-      XL_PM.forEach((v, i) => pon(L(6 + i) + '6', { t: 'n', v }));
-
-      filas.forEach((f, k) => {
-        const r = FIL1 + k;
-        pon('A' + r, { t: 's', v: f.d.fid || '' });
-        pon('B' + r, { t: 's', v: f.fac });
-        pon('C' + r, { t: 's', v: (f.d.equipo || '') + ' ' + (f.d.area || '') });
-        pon('D' + r, { t: 's', v: f.d.punto || '' });
-        pon('E' + r, { t: 's', v: f.d.elemento || '' });
-        pon('F' + r, { t: 'n', v: f.d.tasa });
-        if (f.mol) f.mol.forEach((v, i) => pon(L(6 + i) + r, { t: 'n', v }));
-        // de Y a AL, las fórmulas del libro con esta fila
-        Object.keys(GOP_CADENA).forEach(col => {
-          pon(L(+col - 1) + r, { t: 'n', f: GOP_CADENA[col].replace(/\{r\}/g, r) });
-        });
-      });
-
-      // subtotal, con SUM de verdad
-      const ult = FIL1 + filas.length - 1, sub = ult + 1;
-      pon('A' + sub, { t: 's', v: 'SUBTOTAL PUNTOS ACTIVOS · RUBIALES' });
-      pon('F' + sub, { t: 'n', f: `SUM(F${FIL1}:F${ult})` });
-      pon('AJ' + sub, { t: 'n', f: `SUM(AJ${FIL1}:AJ${ult})` });
-
-      hoja['!ref'] = 'A1:AL' + sub;
-      hoja['!cols'] = XL_ENC.map((_, i) => ({ wch: i <= 4 ? 26 : 14 }));
-
-      const libro = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(libro, hoja, 'Calculos CO2 2026');
-      XLSX.writeFile(libro, 'GOP-F-006-puntos-activos-' + hoyISO() + '.xlsx');
-    } catch (e) {
-      alert('No se pudo generar la hoja: ' + (e && e.message ? e.message : e));
-    } finally {
-      if (enlace) { enlace.textContent = previo; enlace.style.pointerEvents = ''; }
+  function gopFilaPunto(r, p, mol, ref, cerrada) {
+    const d = p.d;
+    const der = xlCadenaVal(mol, d.tasa);
+    let x = '<row r="' + r + '" spans="1:97">';
+    x += gopTxt('A' + r, GOP_EST.id, d.fid || '');
+    x += gopTxt('B' + r, GOP_EST.id, p.fac);
+    x += gopTxt('C' + r, GOP_EST.id, (d.equipo || '') + ' ' + (d.area || ''));
+    x += gopTxt('D' + r, GOP_EST.punto, d.punto || '');
+    x += gopTxt('E' + r, GOP_EST.punto, d.elemento || 'Fuga');
+    x += gopNum('F' + r, GOP_EST.punto, d.tasa);
+    GOP_MOLC.forEach((c, i) => { x += gopNum(c + r, GOP_EST.mol, mol[i]); });
+    GOP_DERIV.forEach((c, i) => {
+      x += gopFml(c + r, GOP_EST[c], GOP_FX[c].replace(/\{r\}/g, r), der[i]);
+    });
+    if (ref) {
+      x += gopTxt('AM' + r, GOP_EST.nota, 'Cromatografía de «' + d.area + '» · ' + p.fac
+        + ' · muestra ' + ref.equipo + ', fila ' + ref.fila + ' de este mismo libro');
     }
+    const sd = gopSerie(d.fechaDeteccion);
+    if (sd !== null) x += gopNum('AN' + r, GOP_EST.fecha, sd);
+    const sc = gopSerie(d.fechaCierre);
+    if (sc !== null) x += gopNum('AO' + r, GOP_EST.cierre, sc);
+    x += gopTxt('AP' + r, GOP_EST.estado, cerrada ? 'CERRADA' : 'ACTIVA');
+    return x + '</row>';
+  }
+
+  function gopFilaTitulo(r, t) {
+    return '<row r="' + r + '" spans="1:97">' + gopTxt('A' + r, GOP_EST.titulo, t) + '</row>';
+  }
+
+  function gopFilaSub(r, rotulo, ini, fin, n) {
+    let x = '<row r="' + r + '" spans="1:97">';
+    x += gopTxt('A' + r, GOP_EST.subA, rotulo + '  (' + n + (n === 1 ? ' punto)' : ' puntos)'));
+    ['F', 'AH', 'AI', 'AJ', 'AK', 'AL'].forEach(c => {
+      x += '<c r="' + c + r + '" s="' + GOP_EST.subN + '"><f>SUM(' + c + ini + ':' + c + fin + ')</f></c>';
+    });
+    return x + '</row>';
+  }
+
+  /* El encabezado se copia literal de la fila 4 del libro, sólo renumerando
+     las referencias: así las columnas del bloque se llaman exactamente igual
+     que las de arriba, sin que yo las vuelva a escribir a mano. */
+  function gopFilaEnc(hoja, r) {
+    const m = /<row r="4"[^>]*>([\s\S]*?)<\/row>/.exec(hoja);
+    if (!m) return '';
+    return '<row r="' + r + '" spans="1:97" ht="46" customHeight="1">'
+      + m[1].replace(/<c r="([A-Z]+)4"/g, (_, c) => '<c r="' + c + r + '"') + '</row>';
+  }
+
+  function gopBloque(hoja, sello) {
+    const { activos, cerrados } = gopPuntos();
+    let r = GOP_INICIO, x = '';
+    x += gopFilaTitulo(r++, 'TABLERO EN LÍNEA · PUNTOS DE RUBIALES (CPF-1 + CPF-2) — ' + sello);
+    x += gopFilaTitulo(r++, 'Caño Sur no entra aquí: es otro campo y lleva su propio archivo. '
+      + 'La composición del gas de G a X se copia de la muestra que indica la columna AM; '
+      + 'de Y en adelante son las fórmulas de este libro, no números pegados.');
+    r++;
+    x += gopFilaEnc(hoja, r++);
+
+    const grupo = (lista, cerrada) => {
+      if (!lista.length) return 0;
+      const ini = r;
+      [...lista].sort((a, b) => b.d.tasa - a.d.tasa).forEach(p => {
+        const clave = p.fac + '|' + p.d.area;
+        const mol = XL_MOL[clave] || XL_MOL['CPF-2|ALMACENAMIENTO'];
+        x += gopFilaPunto(r++, p, mol, XL_REF[clave], cerrada);
+      });
+      x += gopFilaSub(r++, cerrada ? 'EVITADO POR CIERRES · RUBIALES'
+        : 'SUBTOTAL ACTIVO · RUBIALES (CPF-1 + CPF-2)', ini, r - 2, lista.length);
+      r++;
+      return lista.length;
+    };
+    grupo(activos, false);
+    grupo(cerrados, true);
+    return x;
+  }
+
+  /* La cirugía. Recibe el archivo tal como lo dio el usuario y devuelve el
+     mismo archivo con la hoja de cálculos actualizada. */
+  function gopParchear(u8, sello) {
+    const F = window.fflate;
+    const z = F.unzipSync(u8);
+    if (!z['xl/workbook.xml']) throw new Error('Ese archivo no parece un libro de Excel.');
+
+    // la hoja se busca por su nombre, no por el número de archivo interno
+    const wbTxt = F.strFromU8(z['xl/workbook.xml']);
+    const mapa = {};
+    F.strFromU8(z['xl/_rels/workbook.xml.rels'])
+      .replace(/Id="([^"]+)"[^>]*Target="([^"]+)"/g, (t, id, d) => { mapa[id] = d; return t; });
+    const hojas = [];
+    wbTxt.replace(/<sheet[^>]*\/>/g, s => {
+      const n = /name="([^"]*)"/.exec(s), i = /r:id="([^"]*)"/.exec(s);
+      if (n && i && mapa[i[1]]) hojas.push([n[1], mapa[i[1]]]);
+      return s;
+    });
+    let par = hojas.find(h => h[0] === 'Calculos CO2 2026')
+      || hojas.filter(h => /^Calculos CO2 \d{4}$/.test(h[0])).sort().pop();
+    if (!par) {
+      throw new Error('No encontré la hoja «Calculos CO2 2026» dentro del libro. '
+        + 'Hojas que trae: ' + hojas.map(h => h[0]).join(', '));
+    }
+    const ruta = 'xl/' + par[1].replace(/^\/?xl\//, '');
+    if (!z[ruta]) throw new Error('La hoja «' + par[0] + '» no está donde el libro dice.');
+
+    let hoja = F.strFromU8(z[ruta]);
+
+    // fuera cualquier bloque anterior: todo lo que haya de GOP_INICIO en adelante
+    hoja = hoja.replace(/<row r="(\d+)"[^>]*?(?:\/>|>[\s\S]*?<\/row>)/g, (todo, n) =>
+      (+n >= GOP_INICIO && +n <= GOP_TOPE) ? '' : todo);
+
+    // y dentro el bloque nuevo, respetando el orden de las filas
+    const bloque = gopBloque(hoja, sello);
+    const busca = /<row r="(\d+)"[^>]*?(?:\/>|>[\s\S]*?<\/row>)/g;
+    let corte = -1, m;
+    while ((m = busca.exec(hoja))) { if (+m[1] > GOP_TOPE) { corte = m.index; break; } }
+    hoja = corte >= 0 ? hoja.slice(0, corte) + bloque + hoja.slice(corte)
+      : hoja.replace('</sheetData>', bloque + '</sheetData>');
+    z[ruta] = F.strToU8(hoja);
+
+    /* La cadena de cálculo del libro está hecha para las fórmulas viejas; si
+       se deja desactualizada, Excel avisa de un problema al abrir. Borrarla
+       es lo correcto: Excel la reconstruye sola. */
+    delete z['xl/calcChain.xml'];
+    z['[Content_Types].xml'] = F.strToU8(F.strFromU8(z['[Content_Types].xml'])
+      .replace(/<Override PartName="\/xl\/calcChain\.xml"[^>]*\/>/, ''));
+    z['xl/_rels/workbook.xml.rels'] = F.strToU8(F.strFromU8(z['xl/_rels/workbook.xml.rels'])
+      .replace(/<Relationship[^>]*Target="calcChain\.xml"[^>]*\/>/, ''));
+
+    /* Y se le pide a Excel que recalcule al abrir: los valores que dejo
+       escritos quedan así confirmados por el propio Excel, no por mí. */
+    z['xl/workbook.xml'] = F.strToU8(wbTxt.replace(/<calcPr([^>]*?)\/>/, (t, a) =>
+      /fullCalcOnLoad/.test(a) ? t : '<calcPr' + a + ' fullCalcOnLoad="1"/>'));
+
+    return F.zipSync(z, { level: 6 });
+  }
+
+  async function actualizarLibroGOP(enlace) {
+    const { activos, cerrados } = gopPuntos();
+    if (!activos.length && !cerrados.length) {
+      alert('No hay puntos de Rubiales en el tablero todavía.');
+      return;
+    }
+    const sel = document.createElement('input');
+    sel.type = 'file';
+    sel.accept = '.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    sel.style.display = 'none';
+    document.body.appendChild(sel);
+
+    sel.addEventListener('change', async () => {
+      const arch = sel.files && sel.files[0];
+      sel.remove();
+      if (!arch) return;
+      const previo = enlace ? enlace.textContent : '';
+      if (enlace) { enlace.textContent = 'Actualizando…'; enlace.style.pointerEvents = 'none'; }
+      try {
+        const raiz = location.pathname.replace(/[^/]*$/, '').replace(/editor\/$/, '');
+        await cargarScript(raiz + 'lib/fflate.min.js');
+
+        const sello = 'actualizado ' + fechaLarga(hoyISO());
+        const u8 = new Uint8Array(await arch.arrayBuffer());
+        const salida = gopParchear(u8, sello);
+
+        const base = arch.name.replace(/\.xlsx$/i, '').replace(/ — actualizado.*$/, '');
+        const nombre = base + ' — actualizado ' + hoyISO() + '.xlsx';
+        const url = URL.createObjectURL(new Blob([salida],
+          { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+        const a = document.createElement('a');
+        a.href = url; a.download = nombre;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 4000);
+
+        const suma = lista => lista.reduce((ac, p) => {
+          const mol = XL_MOL[p.fac + '|' + p.d.area] || XL_MOL['CPF-2|ALMACENAMIENTO'];
+          return { g: ac.g + p.d.tasa, t: ac.t + xlCadenaVal(mol, p.d.tasa)[11] };
+        }, { g: 0, t: 0 });
+        const A = suma(activos), C = suma(cerrados);
+        alert('Listo: ' + nombre + '\n\n'
+          + 'En la hoja «Calculos CO2 2026», desde la fila ' + GOP_INICIO + ':\n'
+          + '  · ' + activos.length + ' puntos ACTIVOS — '
+          + xlNum(A.g, 0) + ' g/Hr · ' + xlNum(A.t, 2) + ' ton CO2eq/año\n'
+          + (cerrados.length
+            ? '  · ' + cerrados.length + ' puntos CERRADOS — ' + xlNum(C.g, 0) + ' g/Hr · '
+              + xlNum(C.t, 2) + ' ton CO2eq/año evitadas\n'
+            : '')
+          + '\nTodo lo que ya traía el archivo queda igual: el bloque de julio, '
+          + 'las muestras de cromatografía, los vínculos, la tabla dinámica y los gráficos.\n\n'
+          + 'Las columnas de Y a AL son fórmulas, no números pegados: Excel las '
+          + 'recalcula al abrir el archivo.');
+      } catch (e) {
+        alert('No se pudo actualizar el archivo: ' + (e && e.message ? e.message : e)
+          + '\n\nEl archivo original no se tocó.');
+      } finally {
+        if (enlace) { enlace.textContent = previo; enlace.style.pointerEvents = ''; }
+      }
+    });
+    sel.click();
   }
 
   const nhg = document.getElementById('navHojaGOP');
@@ -8728,9 +8898,9 @@ ${cssInforme()}
     e.preventDefault();
     const m = document.querySelector('.nav-menu');
     if (m) m.classList.remove('open');
-    exportarHojaGOP(nhg);
+    actualizarLibroGOP(nhg);
   });
-  window.hojaGOP = exportarHojaGOP;
+  window.actualizarGOP = actualizarLibroGOP;
 
   function memCromaHTML() {
     // la cabecera cambia con la pestaña: las dos primeras vienen del archivo,
