@@ -3105,7 +3105,7 @@ THREE.OrbitControls = OrbitControls;
         <a href="#" class="nav-link" id="navOrden">Orden de trabajo · por tanque</a>
         <a href="#" class="nav-link" id="navSimulador">Simulador · cuánto deja de emitirse</a>
         <a href="#" class="nav-link" id="navMemoria">Memoria de cálculo · de dónde sale cada número</a>
-        <a href="#" class="nav-link" id="navHojaGOP">Actualizar mi archivo GOP-F-006</a>
+        <a href="#" class="nav-link" id="navHojaGOP">Descargar GOP-F-006 actualizado</a>
       </div>
 
       <div class="nav-group">
@@ -7964,6 +7964,109 @@ ${cssInforme()}
       + gopTxt('A' + r, estilo == null ? GOP_EST.titulo : estilo, t) + '</row>';
   }
 
+  /* ---------- la tabla mensual que alimenta el gráfico ----------
+     El gráfico de la hoja no tiene datos propios: lee $B$47:$B$59 (PLAN) y
+     $C$47:$C$59 (REAL) de esa misma hoja. Así que para actualizarlo no hay
+     que tocar el gráfico —eso sería frágil— sino la celda REAL del mes, y
+     Excel redibuja solo al abrir, porque el libro va con recálculo
+     obligatorio.
+
+     La tabla no se busca por número de fila sino por su encabezado (MES /
+     PLAN / REAL), que es lo que no cambia aunque el libro se reorganice. */
+  function gopFilaMes(hoja, mes, leer) {
+    let cab = 0;
+    hoja.replace(/<row r="(\d+)"[^>]*?>([\s\S]*?)<\/row>/g, (todo, n, cuerpo) => {
+      if (cab) return todo;
+      const a = leer(cuerpo, 'A', n), b = leer(cuerpo, 'B', n), c = leer(cuerpo, 'C', n);
+      if (a.toUpperCase() === 'MES' && b.toUpperCase() === 'PLAN' && c.toUpperCase() === 'REAL') cab = +n;
+      return todo;
+    });
+    // encabezado, luego INICIAL, y de ahí los doce meses
+    return cab ? cab + 1 + mes : 0;
+  }
+
+  /* Pone una celda dentro de una fila que ya existe, respetando el orden de
+     las columnas. Si la celda ya estaba, se reemplaza conservando su
+     estilo; si no, se cuela en su sitio con el estilo que se le indique. */
+  function gopPonerCelda(hoja, col, fila, valor, estiloSiFalta) {
+    const ref = col + fila;
+    const idx = c => { let n = 0; for (let i = 0; i < c.length; i++) n = n * 26 + (c.charCodeAt(i) - 64); return n; };
+    const miRow = new RegExp('(<row r="' + fila + '"[^>]*?>)([\\s\\S]*?)(</row>)');
+    const m = miRow.exec(hoja);
+    if (!m) return hoja;                       // sin esa fila no hay nada que actualizar
+    let cuerpo = m[2];
+    const existe = new RegExp('<c r="' + ref + '"([^>]*?)(?:/>|>[\\s\\S]*?</c>)').exec(cuerpo);
+    if (existe) {
+      const s = /s="(\d+)"/.exec(existe[1]);
+      cuerpo = cuerpo.replace(existe[0],
+        '<c r="' + ref + '"' + (s ? ' s="' + s[1] + '"' : '') + '><v>' + valor + '</v></c>');
+    } else {
+      const nueva = '<c r="' + ref + '"'
+        + (estiloSiFalta != null ? ' s="' + estiloSiFalta + '"' : '') + '><v>' + valor + '</v></c>';
+      let puesto = false;
+      cuerpo = cuerpo.replace(/<c r="([A-Z]+)\d+"[^>]*?(?:\/>|>[\s\S]*?<\/c>)/g, t => {
+        if (puesto) return t;
+        const c = /<c r="([A-Z]+)/.exec(t)[1];
+        if (idx(c) > idx(col)) { puesto = true; return nueva + t; }
+        return t;
+      });
+      if (!puesto) cuerpo += nueva;
+    }
+    return hoja.replace(m[0], m[1] + cuerpo + m[3]);
+  }
+
+  /* ---------- y el gráfico, que guarda su propia copia de los números ----------
+     Un gráfico de Excel no lee las celdas al dibujarse: lleva dentro una
+     caché de los valores, y usa esa. Excel la rehace al recalcular, pero
+     cualquier visor que no calcule —y la vista previa del correo, y el PDF—
+     enseñaría la línea vieja. Así que se escribe en los dos sitios, igual
+     que en las celdas va la fórmula Y su resultado. */
+  function gopActualizarGrafico(z, F, rutaHoja, nombreHoja, col, idx, valor) {
+    const relHoja = 'xl/worksheets/_rels/' + rutaHoja.split('/').pop() + '.rels';
+    if (!z[relHoja]) return 0;
+    const dibujos = [];
+    F.strFromU8(z[relHoja]).replace(/Target="([^"]+)"/g, (t, d) => {
+      if (/drawings\/drawing\d+\.xml$/.test(d)) dibujos.push('xl/' + d.replace(/^\.\.\//, ''));
+      return t;
+    });
+    const graficos = [];
+    dibujos.forEach(d => {
+      const rd = 'xl/drawings/_rels/' + d.split('/').pop() + '.rels';
+      if (!z[rd]) return;
+      F.strFromU8(z[rd]).replace(/Target="([^"]+)"/g, (t, g) => {
+        if (/charts\/chart\d+\.xml$/.test(g)) graficos.push('xl/' + g.replace(/^\.\.\//, ''));
+        return t;
+      });
+    });
+
+    let tocados = 0;
+    graficos.forEach(ruta => {
+      if (!z[ruta]) return;
+      const antes = F.strFromU8(z[ruta]);
+      const despues = antes.replace(/<c:val>[\s\S]*?<\/c:val>/g, bloque => {
+        const f = /<c:f>(.*?)<\/c:f>/.exec(bloque);
+        // ¿esta serie lee la columna que acabo de cambiar, en esta hoja?
+        if (!f || f[1].indexOf(nombreHoja) < 0 || f[1].indexOf('$' + col + '$') < 0) return bloque;
+        return bloque.replace(/<c:numCache>[\s\S]*?<\/c:numCache>/, cache => {
+          const punto = '<c:pt idx="' + idx + '"><c:v>' + valor + '</c:v></c:pt>';
+          if (new RegExp('<c:pt idx="' + idx + '"').test(cache)) {
+            tocados++;
+            return cache.replace(new RegExp('<c:pt idx="' + idx + '"[^>]*>[\\s\\S]*?</c:pt>'), punto);
+          }
+          let puesto = false;
+          const nueva = cache.replace(/<c:pt idx="(\d+)"[\s\S]*?<\/c:pt>/g, (t, n) => {
+            if (!puesto && +n > idx) { puesto = true; return punto + t; }
+            return t;
+          });
+          tocados++;
+          return puesto ? nueva : nueva.replace('</c:numCache>', punto + '</c:numCache>');
+        });
+      });
+      if (despues !== antes) z[ruta] = F.strToU8(despues);
+    });
+    return tocados;
+  }
+
   /* ---------- un estilo alineado a la izquierda para los rótulos ----------
      Los estilos del libro están centrados, y un rótulo más ancho que la
      columna A se derrama a los dos lados: por la derecha no molesta, pero
@@ -8010,8 +8113,11 @@ ${cssInforme()}
      registros de la campaña de julio llevan el color de su área. Aquí no
      se inventan colores: se leen los de esa leyenda, que son filas con el
      área en A y «fila NN» en B. Si no aparece, todo va de un solo color. */
-  function gopColorPorArea(z, F, hoja) {
-    const mapa = {};
+  /* Leer el texto de una celda no es mirar el XML y ya: Excel guarda los
+     textos en una tabla aparte y la celda solo lleva el número de orden.
+     Mis filas, recién escritas, llevan el texto dentro. Hay que saber leer
+     las dos formas, o se encuentra la mitad de lo que hay. */
+  function gopLector(z, F) {
     const sl = [];
     if (z['xl/sharedStrings.xml']) {
       F.strFromU8(z['xl/sharedStrings.xml']).replace(/<si>([\s\S]*?)<\/si>/g, (t, c) => {
@@ -8020,20 +8126,29 @@ ${cssInforme()}
         return t;
       });
     }
-    const valor = (at, cuerpo) => {
-      const v = /<v>([\s\S]*?)<\/v>/.exec(cuerpo);
+    const leer = (cuerpo, col, n) => {
+      const c = new RegExp('<c r="' + col + n + '"([^>]*?)(?:/>|>([\\s\\S]*?)</c>)').exec(cuerpo);
+      if (!c) return '';
+      const at = c[1], dentro = c[2] || '';
+      const v = /<v>([\s\S]*?)<\/v>/.exec(dentro);
       if (/t="s"/.test(at) && v) return sl[+v[1]] || '';
-      const t = /<t[^>]*>([\s\S]*?)<\/t>/.exec(cuerpo);
+      const t = /<t[^>]*>([\s\S]*?)<\/t>/.exec(dentro);
       return t ? t[1] : (v ? v[1] : '');
     };
+    leer.estilo = (cuerpo, col, n) => {
+      const c = new RegExp('<c r="' + col + n + '"([^>]*?)[/>]').exec(cuerpo);
+      const s = c && /s="(\d+)"/.exec(c[1]);
+      return s ? s[1] : null;
+    };
+    return leer;
+  }
+
+  function gopColorPorArea(hoja, leer) {
+    const mapa = {};
     hoja.replace(/<row r="(\d+)"[^>]*?>([\s\S]*?)<\/row>/g, (todo, n, cuerpo) => {
-      const ca = new RegExp('<c r="A' + n + '"([^>]*?)(?:/>|>([\\s\\S]*?)</c>)').exec(cuerpo);
-      const cb = new RegExp('<c r="B' + n + '"([^>]*?)(?:/>|>([\\s\\S]*?)</c>)').exec(cuerpo);
-      if (!ca || !cb) return todo;
-      if (!/^fila \d+$/.test(valor(cb[1], cb[2] || ''))) return todo;
-      const area = valor(ca[1], ca[2] || '');
-      const s = /s="(\d+)"/.exec(ca[1]);
-      if (area && s) mapa[area.toUpperCase()] = s[1];
+      if (!/^fila \d+$/.test(leer(cuerpo, 'B', n))) return todo;
+      const area = leer(cuerpo, 'A', n), s = leer.estilo(cuerpo, 'A', n);
+      if (area && s) mapa[area.toUpperCase()] = s;
       return todo;
     });
     return mapa;
@@ -8215,13 +8330,35 @@ ${cssInforme()}
     const inicio = previo ? Math.max(previo, libre) : libre;
 
     // y dentro el bloque nuevo, respetando el orden de las filas
+    const leer = gopLector(z, F);
     const izq = gopEstilosIzquierda(z, F, [GOP_EST.titulo, GOP_EST.subA]);
-    const bloque = gopBloque(hoja, sello, inicio, gopColorPorArea(z, F, hoja), izq);
+    const bloque = gopBloque(hoja, sello, inicio, gopColorPorArea(hoja, leer), izq);
     const busca = /<row r="(\d+)"[^>]*?(?:\/>|>[\s\S]*?<\/row>)/g;
     let corte = -1, m;
     while ((m = busca.exec(hoja))) { if (+m[1] > GOP_TOPE) { corte = m.index; break; } }
     hoja = corte >= 0 ? hoja.slice(0, corte) + bloque.xml + hoja.slice(corte)
       : hoja.replace('</sheetData>', bloque.xml + '</sheetData>');
+
+    /* EL GRÁFICO SE QUEDA COMO ESTÁ, a propósito.
+
+       La maquinaria para moverlo está escrita y probada (gopFilaMes,
+       gopPonerCelda y gopActualizarGrafico, aquí arriba): sabe encontrar la
+       tabla PLAN/REAL por su encabezado, escribir la celda del mes y
+       refrescar la caché que el gráfico lleva dentro.
+
+       Lo que falta no es código. La serie REAL de ese gráfico es ACUMULADA
+       —192 en enero, 382 en febrero, 1.402 en julio: el CO2eq que se lleva
+       emitido en el año— y sale de las columnas por mes AQ:BN, que reparten
+       el total de cada hallazgo entre los meses que estuvo abierto. El
+       número del tablero es otra cosa: la tasa anual de lo que está fugando
+       hoy. Escribir uno donde va el otro hace que la línea se despeñe en el
+       mes en curso, y un gráfico que miente es peor que un gráfico viejo.
+
+       Para hacerlo bien hay que reproducir ese reparto por meses usando las
+       fechas de detección y de cierre que el tablero ya guarda. Eso es el
+       paso siguiente, y necesita que se confirme cómo lo define el
+       procedimiento. */
+    const mesFila = 0, mesTotal = 0;
     z[ruta] = F.strToU8(hoja);
 
     /* La cadena de cálculo del libro está hecha para las fórmulas viejas; si
@@ -8251,69 +8388,76 @@ ${cssInforme()}
     else wb2 = wb2.replace('</sheets>', '</sheets><definedNames>' + def + '</definedNames>');
     z['xl/workbook.xml'] = F.strToU8(wb2);
 
-    return { zip: F.zipSync(z, { level: 6 }), inicio: inicio, hoja: par[0] };
+    return {
+      zip: F.zipSync(z, { level: 6 }),
+      inicio: inicio, hoja: par[0], mesFila: mesFila, mesTotal: mesTotal,
+    };
   }
+
+  /* El molde vive con el tablero: no hay que subir nada. Se descarga el
+     GOP-F-006 que está publicado junto a la página, se le escribe lo que
+     el tablero tiene ahora y se entrega. Las imágenes, los logos de las
+     primeras casillas, las muestras de cromatografía y los vínculos
+     salen tal cual porque esas piezas del archivo ni se tocan. */
+  const GOP_MOLDE = 'plantilla/GOP-F-006.xlsx';
 
   async function actualizarLibroGOP(enlace) {
     const { activos, cerrados } = gopPuntos();
     if (!activos.length && !cerrados.length) {
-      alert('No hay puntos de Rubiales en el tablero todavía.');
+      alert('No hay puntos de Rubiales en el tablero todav\u00eda.');
       return;
     }
-    const sel = document.createElement('input');
-    sel.type = 'file';
-    sel.accept = '.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-    sel.style.display = 'none';
-    document.body.appendChild(sel);
+    const previo = enlace ? enlace.textContent : '';
+    const paso = t => { if (enlace) enlace.textContent = t; };
+    if (enlace) enlace.style.pointerEvents = 'none';
+    try {
+      const raiz = location.pathname.replace(/[^/]*$/, '').replace(/editor\/$/, '');
+      paso('Trayendo el molde\u2026');
+      const [, resp] = await Promise.all([
+        cargarScript(raiz + 'lib/fflate.min.js'),
+        fetch(raiz + GOP_MOLDE, { cache: 'no-cache' }),
+      ]);
+      if (!resp.ok) throw new Error('no pude traer el molde (' + resp.status + ')');
 
-    sel.addEventListener('change', async () => {
-      const arch = sel.files && sel.files[0];
-      sel.remove();
-      if (!arch) return;
-      const previo = enlace ? enlace.textContent : '';
-      if (enlace) { enlace.textContent = 'Actualizando…'; enlace.style.pointerEvents = 'none'; }
-      try {
-        const raiz = location.pathname.replace(/[^/]*$/, '').replace(/editor\/$/, '');
-        await cargarScript(raiz + 'lib/fflate.min.js');
+      paso('Actualizando\u2026');
+      const sello = 'actualizado ' + fechaLarga(hoyISO());
+      const salida = gopParchear(new Uint8Array(await resp.arrayBuffer()), sello);
 
-        const sello = 'actualizado ' + fechaLarga(hoyISO());
-        const u8 = new Uint8Array(await arch.arrayBuffer());
-        const salida = gopParchear(u8, sello);
+      const nombre = 'GOP-F-006 \u2014 ' + hoyISO() + '.xlsx';
+      const url = URL.createObjectURL(new Blob([salida.zip],
+        { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+      const a = document.createElement('a');
+      a.href = url; a.download = nombre;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
 
-        const base = arch.name.replace(/\.xlsx$/i, '').replace(/ — actualizado.*$/, '');
-        const nombre = base + ' — actualizado ' + hoyISO() + '.xlsx';
-        const url = URL.createObjectURL(new Blob([salida.zip],
-          { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
-        const a = document.createElement('a');
-        a.href = url; a.download = nombre;
-        document.body.appendChild(a); a.click(); a.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 4000);
-
-        const suma = lista => lista.reduce((ac, p) => {
-          const mol = XL_MOL[p.fac + '|' + p.d.area] || XL_MOL['CPF-2|ALMACENAMIENTO'];
-          return { g: ac.g + p.d.tasa, t: ac.t + xlCadenaVal(mol, p.d.tasa)[11] };
-        }, { g: 0, t: 0 });
-        const A = suma(activos), C = suma(cerrados);
-        alert('Listo: ' + nombre + '\n\n'
-          + 'En la hoja «' + salida.hoja + '», desde la fila ' + salida.inicio + ':\n'
-          + '  · ' + activos.length + ' puntos ACTIVOS — '
-          + xlNum(A.g, 0) + ' g/Hr · ' + xlNum(A.t, 2) + ' ton CO2eq/año\n'
-          + (cerrados.length
-            ? '  · ' + cerrados.length + ' puntos CERRADOS — ' + xlNum(C.g, 0) + ' g/Hr · '
-              + xlNum(C.t, 2) + ' ton CO2eq/año evitadas\n'
-            : '')
-          + '\nTodo lo que ya traía el archivo queda igual: el bloque de julio, '
-          + 'las muestras de cromatografía, los vínculos, la tabla dinámica y los gráficos.\n\n'
-          + 'Las columnas de Y a AL son fórmulas, no números pegados: Excel las '
-          + 'recalcula al abrir el archivo.');
-      } catch (e) {
-        alert('No se pudo actualizar el archivo: ' + (e && e.message ? e.message : e)
-          + '\n\nEl archivo original no se tocó.');
-      } finally {
-        if (enlace) { enlace.textContent = previo; enlace.style.pointerEvents = ''; }
-      }
-    });
-    sel.click();
+      const suma = lista => lista.reduce((ac, p) => {
+        const mol = XL_MOL[p.fac + '|' + p.d.area] || XL_MOL['CPF-2|ALMACENAMIENTO'];
+        return { g: ac.g + p.d.tasa, t: ac.t + xlCadenaVal(mol, p.d.tasa)[11] };
+      }, { g: 0, t: 0 });
+      const A = suma(activos), C = suma(cerrados);
+      const MES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio',
+        'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'][new Date().getMonth()];
+      alert('Listo: ' + nombre + '\n\n'
+        + 'En la hoja \u00ab' + salida.hoja + '\u00bb, desde la fila ' + salida.inicio + ':\n'
+        + '  \u00b7 ' + activos.length + ' puntos ACTIVOS \u2014 '
+        + xlNum(A.g, 0) + ' g/Hr \u00b7 ' + xlNum(A.t, 2) + ' ton CO2eq/a\u00f1o\n'
+        + (cerrados.length
+          ? '  \u00b7 ' + cerrados.length + ' puntos CERRADOS \u2014 ' + xlNum(C.g, 0) + ' g/Hr \u00b7 '
+            + xlNum(C.t, 2) + ' ton CO2eq/a\u00f1o evitadas\n'
+          : '')
+        + (salida.mesFila
+          ? '\nGr\u00e1fico: la columna REAL de ' + MES + ' (fila ' + salida.mesFila
+            + ') queda en ' + xlNum(salida.mesTotal, 2) + ' ton, y Excel lo redibuja al abrir.\n'
+          : '')
+        + '\nLas im\u00e1genes, los logos, las muestras de cromatograf\u00eda y el bloque de '
+        + 'julio salen tal cual: de ese archivo solo se toca la hoja de c\u00e1lculos.\n\n'
+        + 'Las columnas de Y a AL son f\u00f3rmulas, no n\u00fameros pegados.');
+    } catch (e) {
+      alert('No se pudo generar el archivo: ' + (e && e.message ? e.message : e));
+    } finally {
+      if (enlace) { enlace.textContent = previo; enlace.style.pointerEvents = ''; }
+    }
   }
 
   const nhg = document.getElementById('navHojaGOP');
