@@ -6224,9 +6224,19 @@ function makeAreaLabelSprite(text, colorHex) {
 
   const tex = new THREE.CanvasTexture(c);
   if ('colorSpace' in tex) tex.colorSpace = THREE.SRGBColorSpace;
-  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, toneMapped: false });
+  /* sizeAttenuation en false: el rótulo conserva su tamaño en pantalla
+     sin importar lo cerca que esté la cámara. Antes crecía con el
+     acercamiento y, como además se dibuja siempre encima, al acercarse en
+     el celular «PROCESOS» tapaba el tanque entero.
+
+     Con la atenuación apagada, la escala se mide como si el rótulo
+     estuviera a un metro: con fov 42° la altura visible ahí es 0,767, así
+     que 0,047 de alto son un 6% de la pantalla y 0,22 de ancho, un 29%.
+     Esas son las proporciones de una etiqueta, no de un cartel. */
+  const mat = new THREE.SpriteMaterial({
+    map: tex, transparent: true, depthTest: false, toneMapped: false, sizeAttenuation: false });
   const sprite = new THREE.Sprite(mat);
-  sprite.scale.set(3.4, 0.72, 1);
+  sprite.scale.set(0.17, 0.036, 1);
   return sprite;
 }
 
@@ -7140,7 +7150,7 @@ function buildTankMap3D(canvasId, hintId, data, totalId) {
     });
 
     const areaLabel = makeAreaLabelSprite(area, areaColor);
-    areaLabel.scale.set(4.2, 0.8, 1);
+    areaLabel.scale.set(0.17, 0.036, 1);
     areaLabel.position.set(0, 1.1, z0 - 1.1);
     contentGroup.add(areaLabel);
 
@@ -7364,31 +7374,32 @@ function buildTankMap3D(canvasId, hintId, data, totalId) {
     const d = document.createElement('div');
     d.textContent = txt;
     Object.assign(d.style, {
-      /* Arriba, no abajo: abajo chocaba con el selector de periodo y le
-         tapaba «Trimestre», «Semestre» y «Año». */
-      position: 'absolute', left: '50%', top: '84px', transform: 'translateX(-50%)',
-      padding: '8px 15px', borderRadius: '999px', zIndex: '6',
-      background: 'rgba(14,18,24,0.76)', color: '#e9eef5',
-      font: '600 13px/1 "Space Grotesk", system-ui, sans-serif',
+      /* En la esquina y pequeño. Centrado y a 13px se partía en dos
+         líneas en el celular y se comía el mapa, que es justo lo que no
+         debe hacer un aviso. */
+      position: 'absolute', left: '10px', top: '56px',
+      padding: '5px 10px', borderRadius: '999px', zIndex: '6',
+      background: 'rgba(14,18,24,0.72)', color: '#dbe3ec',
+      font: '600 11px/1 "Space Grotesk", system-ui, sans-serif',
       letterSpacing: '0.02em', whiteSpace: 'nowrap',
-      transition: 'opacity .22s ease', boxShadow: '0 2px 10px rgba(0,0,0,0.3)',
+      transition: 'opacity .22s ease', boxShadow: '0 2px 8px rgba(0,0,0,0.28)',
     });
     wrap.appendChild(d);
     return d;
   };
 
-  const aviso = pastilla(tactil ? 'Toca el mapa para moverlo' : 'Haz clic en el mapa para moverlo');
+  const aviso = pastilla(tactil ? 'Toca para mover' : 'Clic para mover');
   aviso.style.pointerEvents = 'none';
 
   const salir = document.createElement('button');
   salir.type = 'button';
-  salir.textContent = tactil ? 'Listo · soltar el mapa' : 'Listo';
+  salir.textContent = '\u2715  Soltar';
   Object.assign(salir.style, {
-    position: 'absolute', left: '50%', top: '84px', transform: 'translateX(-50%)',
-    padding: '8px 15px', borderRadius: '999px', zIndex: '7', display: 'none',
-    border: '1px solid rgba(63,169,245,0.6)', cursor: 'pointer',
-    background: 'rgba(14,18,24,0.86)', color: '#9fd4ff',
-    font: '600 13px/1 "Space Grotesk", system-ui, sans-serif', letterSpacing: '0.02em',
+    position: 'absolute', left: '10px', top: '56px',
+    padding: '5px 11px', borderRadius: '999px', zIndex: '7', display: 'none',
+    border: '1px solid rgba(63,169,245,0.55)', cursor: 'pointer',
+    background: 'rgba(14,18,24,0.82)', color: '#9fd4ff', whiteSpace: 'nowrap',
+    font: '600 11px/1 "Space Grotesk", system-ui, sans-serif', letterSpacing: '0.02em',
   });
   wrap.appendChild(salir);
 
