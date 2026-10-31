@@ -6328,6 +6328,30 @@ function getTankSkinWithLogo(nombreTanque) {
     ctx.fillStyle = `rgba(${v|0},${v|0},${(v+4)|0},0.30)`;
     ctx.fillRect(Math.random()*2048, Math.random()*512, 1 + Math.random()*40, 1 + Math.random()*2);
   }
+  /* --- el acanalado vertical del forro ---
+     Es lo que más distingue estos tanques en campo: toda la pared va
+     cubierta de nervaduras verticales muy juntas, el forro de la
+     aislación. Sin ellas el tanque lee como un cilindro liso de plástico,
+     por más suciedad que se le pinte encima.
+
+     Cada nervadura lleva su valle en sombra y su cresta con brillo; es lo
+     que da el relieve sin necesidad de geometría. */
+  const NERV = 256, wN = 2048 / NERV;
+  for (let i = 0; i < NERV; i++) {
+    const x = i * wN;
+    ctx.fillStyle = 'rgba(92,97,103,0.34)';
+    ctx.fillRect(x, 0, wN * 0.26, 512);
+    ctx.fillStyle = 'rgba(255,255,255,0.16)';
+    ctx.fillRect(x + wN * 0.46, 0, wN * 0.20, 512);
+  }
+  // el punteado de las láminas, que se ve de cerca
+  for (let gy = 0; gy < 512; gy += 9) {
+    for (let gx = (gy % 18 ? 4 : 0); gx < 2048; gx += 8) {
+      ctx.fillStyle = 'rgba(255,255,255,0.05)';
+      ctx.fillRect(gx, gy, 2, 2);
+    }
+  }
+
   for (let i = 0; i < 40; i++) {
     const x = Math.random()*2048, y = Math.random()*512, r = 12 + Math.random()*46;
     const gr = ctx.createRadialGradient(x, y, 0, x, y, r);
@@ -6337,6 +6361,26 @@ function getTankSkinWithLogo(nombreTanque) {
     ctx.fillStyle = gr;
     ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
   }
+
+  /* --- la franja amarilla del remate ---
+     Las nervaduras solo se ven de cerca: a la distancia por defecto, 256
+     rayas caben en menos de un píxel y se promedian a gris. Esta franja,
+     en cambio, se lee a cualquier tamaño, y es lo primero que distingue
+     al tanque en la foto. Va arriba del todo: en el mapeo del cilindro,
+     la fila 0 del lienzo es el borde superior. */
+  (function () {
+    const g = ctx.createLinearGradient(0, 0, 0, 30);
+    g.addColorStop(0.00, 'rgba(206,166,42,0.92)');
+    g.addColorStop(0.72, 'rgba(188,149,34,0.88)');
+    g.addColorStop(1.00, 'rgba(150,120,40,0.20)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 2048, 30);
+    // la pintura está vieja: se salta a trechos y deja ver el metal
+    for (let i = 0; i < 150; i++) {
+      ctx.fillStyle = `rgba(190,194,198,${0.10 + Math.random()*0.28})`;
+      ctx.fillRect(Math.random()*2048, Math.random()*26, 2 + Math.random()*16, 1 + Math.random()*5);
+    }
+  })();
 
   // --- semilla por tanque: evita que todos se vean clonados ---
   let semilla = 0;
@@ -6392,6 +6436,8 @@ function getTankSkinWithLogo(nombreTanque) {
   }
   const tex = new THREE.CanvasTexture(c);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  // con 256 nervaduras, de lejos hace muaré; el filtrado anisotrópico lo evita
+  tex.anisotropy = 8;
   if ('colorSpace' in tex) tex.colorSpace = THREE.SRGBColorSpace;
   else if ('encoding' in tex) tex.encoding = THREE.sRGBEncoding;
   window._tankTexPorNombre[clave] = tex;
@@ -6451,15 +6497,19 @@ function buildTank3D(scene, x, z, name, points, clickable, smokeList, tanques) {
   base.castShadow = true; base.receiveShadow = true;
   group.add(base);
 
+  /* El forro es lámina galvanizada mate. Con 0,82 de metal se comportaba
+     como cromo y parecía de juguete; pero al bajarlo a 0,28 se fue al otro
+     extremo y quedó un cilindro blanco y plano, sin un solo brillo que
+     dijera que es metal. El punto medio es lo que lee bien. */
   const bodyMat = new THREE.MeshStandardMaterial({
-    map: getTankSkinWithLogo(name), color: 0xf2f4f6, roughness: 0.52, metalness: 0.82
+    map: getTankSkinWithLogo(name), color: 0xdadde0, roughness: 0.66, metalness: 0.46
   });
   const body = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, height, 48), bodyMat);
   body.position.y = 0.16 + height/2;
   body.castShadow = true; body.receiveShadow = true;
   group.add(body);
 
-  const seamMat = new THREE.MeshStandardMaterial({ color: 0xb4b8bd, roughness: 0.55, metalness: 0.85 });
+  const seamMat = new THREE.MeshStandardMaterial({ color: 0xa9adb1, roughness: 0.74, metalness: 0.3 });
   for (let s = 1; s <= 3; s++) {
     const ring = new THREE.Mesh(new THREE.CylinderGeometry(radius*1.009, radius*1.009, 0.04, 48), seamMat);
     ring.position.y = 0.16 + height*(s/4);
@@ -6475,8 +6525,159 @@ function buildTank3D(scene, x, z, name, points, clickable, smokeList, tanques) {
     group.add(weld);
   }
 
+  /* ---------- lo que el tanque lleva por los lados ----------
+     El casco estaba pelado y por eso leía como un cilindro y no como un
+     tanque. En campo la pared lleva, de abajo arriba: el manhole redondo
+     empernado, las boquillas con brida, la tubería gruesa de salida con
+     su válvula, el juego de tubos delgados que sube pegado a la lámina,
+     el banco de válvulas con volantes al pie y la escalera de peldaños
+     soldada.
+
+     Cada conjunto se arma dentro de un grupo girado hacia su ángulo: así
+     se dibuja en coordenadas simples —la X local apunta hacia afuera del
+     tanque— y no hay que ir componiendo rotaciones a mano. */
+  (function () {
+    const acero = new THREE.MeshStandardMaterial({ color: 0xa7abb0, roughness: 0.6, metalness: 0.55 });
+    const oscuro = new THREE.MeshStandardMaterial({ color: 0x33373c, roughness: 0.78, metalness: 0.3 });
+    const amarillo = new THREE.MeshStandardMaterial({ color: 0xe0ad22, roughness: 0.62, metalness: 0.25 });
+    const yBase = 0.16;
+
+    // un grupo orientado: dentro, +X mira hacia afuera del tanque
+    const haciaFuera = (ang) => {
+      const g = new THREE.Group();
+      g.rotation.y = -ang;
+      group.add(g);
+      return g;
+    };
+
+    /* La escalera de caracol llega por el ángulo PI, así que todo lo demás
+       se reparte por el otro lado para no chocar con ella. */
+
+    // --- manhole del casco: tapa redonda empernada, abajo ---
+    {
+      const g = haciaFuera(0.62);
+      const tapa = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.05, 20), oscuro);
+      tapa.rotation.z = Math.PI/2;
+      tapa.position.set(radius*0.995, yBase + 0.34, 0);
+      tapa.castShadow = true;
+      g.add(tapa);
+      for (let b = 0; b < 10; b++) {
+        const a = (b/10) * Math.PI*2;
+        const perno = new THREE.Mesh(new THREE.SphereGeometry(0.014, 6, 6), acero);
+        perno.position.set(radius*1.02, yBase + 0.34 + Math.cos(a)*0.145, Math.sin(a)*0.145);
+        g.add(perno);
+      }
+    }
+
+    // --- salida principal: boquilla, válvula de volante y tubería al piso ---
+    {
+      const g = haciaFuera(0);
+      const yT = yBase + 0.26;
+      const brida = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.04, 18), acero);
+      brida.rotation.z = Math.PI/2;
+      brida.position.set(radius + 0.02, yT, 0);
+      g.add(brida);
+
+      const tubo = new THREE.Mesh(new THREE.CylinderGeometry(0.062, 0.062, 0.95, 16), acero);
+      tubo.rotation.z = Math.PI/2;
+      tubo.position.set(radius + 0.50, yT, 0);
+      tubo.castShadow = true;
+      g.add(tubo);
+
+      // válvula: cuerpo, vástago y volante, como la de la foto
+      const cuerpo = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.17, 0.17), oscuro);
+      cuerpo.position.set(radius + 0.46, yT, 0);
+      cuerpo.castShadow = true;
+      g.add(cuerpo);
+      const vastago = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.2, 8), acero);
+      vastago.position.set(radius + 0.46, yT + 0.16, 0);
+      g.add(vastago);
+      const volante = new THREE.Mesh(new THREE.TorusGeometry(0.075, 0.016, 6, 16), amarillo);
+      volante.rotation.x = Math.PI/2;
+      volante.position.set(radius + 0.46, yT + 0.26, 0);
+      g.add(volante);
+
+      // codo bajando al piso, donde la tubería sigue enterrada
+      const codo = new THREE.Mesh(new THREE.TorusGeometry(0.13, 0.062, 8, 12, Math.PI/2), acero);
+      codo.rotation.y = Math.PI/2;
+      codo.position.set(radius + 0.97, yT - 0.13, 0);
+      codo.castShadow = true;
+      g.add(codo);
+      const bajante = new THREE.Mesh(new THREE.CylinderGeometry(0.062, 0.062, yT - 0.13, 16), acero);
+      bajante.position.set(radius + 1.10, (yT - 0.13)/2, 0);
+      g.add(bajante);
+    }
+
+    // --- boquillas menores con brida, repartidas al pie ---
+    [-0.42, 0.3].forEach((ang, i) => {
+      const g = haciaFuera(ang);
+      const y = yBase + 0.17 + i*0.06;
+      const n = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.17, 12), acero);
+      n.rotation.z = Math.PI/2;
+      n.position.set(radius + 0.07, y, 0);
+      g.add(n);
+      const f = new THREE.Mesh(new THREE.CylinderGeometry(0.058, 0.058, 0.025, 14), acero);
+      f.rotation.z = Math.PI/2;
+      f.position.set(radius + 0.155, y, 0);
+      g.add(f);
+    });
+
+    // --- los tubos delgados que suben pegados a la lámina ---
+    {
+      const g = haciaFuera(-0.95);
+      const alto = height*0.72;
+      for (let k = 0; k < 3; k++) {
+        const t = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, alto, 8), acero);
+        t.position.set(radius + 0.05, yBase + alto/2, -0.07 + k*0.07);
+        g.add(t);
+      }
+      // las abrazaderas que los sujetan, cada tanto
+      for (let s = 0; s < 4; s++) {
+        const br = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.022, 0.24), acero);
+        br.position.set(radius + 0.035, yBase + 0.18 + s*(alto/4), 0);
+        g.add(br);
+      }
+    }
+
+    // --- banco de válvulas al pie: el de los volantes en hilera ---
+    {
+      const g = haciaFuera(-0.2);
+      const x = radius + 0.30;
+      const viga = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.05, 0.62), acero);
+      viga.position.set(x, yBase + 0.30, 0);
+      g.add(viga);
+      [-0.22, -0.07, 0.07, 0.22].forEach(dz => {
+        const sube = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.30, 8), acero);
+        sube.position.set(x, yBase + 0.15, dz);
+        g.add(sube);
+        const vol = new THREE.Mesh(new THREE.TorusGeometry(0.038, 0.009, 5, 12), acero);
+        vol.rotation.x = Math.PI/2;
+        vol.position.set(x, yBase + 0.33, dz);
+        g.add(vol);
+      });
+    }
+
+    // --- escalera de peldaños soldada al casco ---
+    {
+      const g = haciaFuera(2.35);
+      const alto = height*0.86;
+      [-0.085, 0.085].forEach(dz => {
+        const larg = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, alto, 8), acero);
+        larg.position.set(radius + 0.06, yBase + alto/2, dz);
+        g.add(larg);
+      });
+      const nPel = 10;
+      for (let k = 1; k <= nPel; k++) {
+        const pel = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.17, 6), acero);
+        pel.rotation.x = Math.PI/2;
+        pel.position.set(radius + 0.06, yBase + (alto/(nPel+1))*k, 0);
+        g.add(pel);
+      }
+    }
+  })();
+
   const roofH = height*0.12;
-  const roofMat = new THREE.MeshStandardMaterial({ color: 0xdfe2e5, roughness: 0.62, metalness: 0.7 });
+  const roofMat = new THREE.MeshStandardMaterial({ color: 0xd4d7d9, roughness: 0.8, metalness: 0.26 });
   const roof = new THREE.Mesh(new THREE.ConeGeometry(radius*1.04, roofH, 48), roofMat);
   roof.position.y = 0.16 + height + roofH/2 - 0.03;
   roof.castShadow = true; roof.receiveShadow = true;
@@ -6650,15 +6851,55 @@ function buildTankMap3D(canvasId, hintId, data, totalId) {
   const SKY_HEX = 0x8fb6d6;
   // cielo con degradado: mas claro en el horizonte, mas profundo en el cenit
   (function () {
+    /* El cielo era un degradado liso de 8 px de ancho. Medio encuadre es
+       cielo, y uno sin nubes se delata enseguida como render. Ahora el
+       lienzo es ancho y lleva cúmulos rotos, como los de las fotos:
+       manchas blandas, más apretadas y aplastadas cerca del horizonte,
+       sueltas y altas arriba. */
+    const SW = 1024, SH = 512;
     const sc = document.createElement('canvas');
-    sc.width = 8; sc.height = 256;
+    sc.width = SW; sc.height = SH;
     const g = sc.getContext('2d');
-    const gr = g.createLinearGradient(0, 0, 0, 256);
+    const gr = g.createLinearGradient(0, 0, 0, SH);
     gr.addColorStop(0.00, '#6f9ec6');
     gr.addColorStop(0.42, '#93bcdb');
     gr.addColorStop(0.72, '#bcd4e6');
     gr.addColorStop(1.00, '#d8e4ec');
-    g.fillStyle = gr; g.fillRect(0, 0, 8, 256);
+    g.fillStyle = gr; g.fillRect(0, 0, SW, SH);
+
+    // semilla fija: el cielo no debe cambiar cada vez que se abre el mapa
+    let sm = 20260731;
+    const rnd = () => { sm = (sm * 1103515245 + 12345) % 2147483648; return sm / 2147483648; };
+
+    const borron = (x, y, r, a, blanco) => {
+      const b = g.createRadialGradient(x, y, 0, x, y, r);
+      b.addColorStop(0, `rgba(255,255,255,${a})`);
+      b.addColorStop(0.45, `rgba(${blanco},${a * 0.6})`);
+      b.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = b;
+      g.beginPath(); g.ellipse(x, y, r, r * 0.62, 0, 0, Math.PI * 2); g.fill();
+    };
+    // cada nube son varios borrones juntos: uno solo queda como una pelota
+    for (let n = 0; n < 34; n++) {
+      const cy = SH * (0.06 + rnd() * 0.44);
+      const cx = rnd() * SW;
+      const esc = 0.5 + (cy / SH) * 1.5;          // las bajas se ven más grandes
+      const nB = 4 + ((rnd() * 5) | 0);
+      for (let b = 0; b < nB; b++) {
+        borron(cx + (rnd() - 0.5) * 150 * esc,
+               cy + (rnd() - 0.5) * 34 * esc,
+               (26 + rnd() * 54) * esc,
+               0.16 + rnd() * 0.22,
+               // la panza de la nube va algo más gris que el borde
+               b === 0 ? '214,222,232' : '236,242,248');
+      }
+    }
+    // banda de bruma sobre el horizonte, que junta cielo y terreno
+    const bruma = g.createLinearGradient(0, SH * 0.68, 0, SH);
+    bruma.addColorStop(0, 'rgba(226,236,244,0)');
+    bruma.addColorStop(1, 'rgba(226,236,244,0.55)');
+    g.fillStyle = bruma; g.fillRect(0, SH * 0.68, SW, SH * 0.32);
+
     const t = new THREE.CanvasTexture(sc);
     if ('colorSpace' in t) t.colorSpace = THREE.SRGBColorSpace;
     else if ('encoding' in t) t.encoding = THREE.sRGBEncoding;
@@ -6672,7 +6913,8 @@ function buildTankMap3D(canvasId, hintId, data, totalId) {
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.12;
+  // 1,12 quemaba los claros ahora que el piso es más luminoso
+  renderer.toneMappingExposure = 1.0;
   if ('outputColorSpace' in renderer) renderer.outputColorSpace = THREE.SRGBColorSpace;
   else if ('outputEncoding' in renderer) renderer.outputEncoding = THREE.sRGBEncoding;
 
@@ -6769,17 +7011,51 @@ function buildTankMap3D(canvasId, hintId, data, totalId) {
   const gC = document.createElement('canvas');
   gC.width = gC.height = 256;
   const gx = gC.getContext('2d');
-  gx.fillStyle = '#33383f'; gx.fillRect(0, 0, 256, 256);
+  /* El piso era gris azulado liso. El de campo es concreto beige, vaciado
+     en losas, con las juntas de dilatación marcadas en cuadrícula y las
+     huellas de los carros. Las juntas son lo que más se nota: dan medida
+     al piso, igual que el dique se la da al tanque. */
+  gx.fillStyle = '#6e6b64'; gx.fillRect(0, 0, 256, 256);
   for (let i = 0; i < 2600; i++) {
-    const v = 34 + Math.random()*26;
-    gx.fillStyle = `rgba(${v|0},${(v+3)|0},${(v+8)|0},${0.25 + Math.random()*0.5})`;
+    const v = 96 + Math.random()*40;
+    gx.fillStyle = `rgba(${v|0},${(v-3)|0},${(v-10)|0},${0.22 + Math.random()*0.45})`;
     gx.fillRect(Math.random()*256, Math.random()*256, 1 + Math.random()*3, 1 + Math.random()*3);
+  }
+  // manchones de humedad y desgaste, para que no quede una alfombra pareja
+  for (let i = 0; i < 26; i++) {
+    const x = Math.random()*256, y = Math.random()*256, r = 10 + Math.random()*38;
+    const g2 = gx.createRadialGradient(x, y, 0, x, y, r);
+    g2.addColorStop(0, `rgba(104,100,92,${0.08 + Math.random()*0.12})`);
+    g2.addColorStop(1, 'rgba(104,100,92,0)');
+    gx.fillStyle = g2;
+    gx.beginPath(); gx.arc(x, y, r, 0, Math.PI*2); gx.fill();
+  }
+  // juntas de dilatación: cuatro losas por lado en cada repetición
+  gx.strokeStyle = 'rgba(70,67,61,0.55)';
+  gx.lineWidth = 1.6;
+  for (let k = 0; k <= 4; k++) {
+    const p = (k / 4) * 256;
+    gx.beginPath(); gx.moveTo(p, 0); gx.lineTo(p, 256); gx.stroke();
+    gx.beginPath(); gx.moveTo(0, p); gx.lineTo(256, p); gx.stroke();
+  }
+  // y el filo claro del borde de la losa, que el sol levanta
+  gx.strokeStyle = 'rgba(214,208,196,0.30)';
+  gx.lineWidth = 1;
+  for (let k = 0; k <= 4; k++) {
+    const p = (k / 4) * 256 + 1.6;
+    gx.beginPath(); gx.moveTo(p, 0); gx.lineTo(p, 256); gx.stroke();
+    gx.beginPath(); gx.moveTo(0, p); gx.lineTo(256, p); gx.stroke();
   }
   const groundTex = new THREE.CanvasTexture(gC);
   groundTex.wrapS = groundTex.wrapT = THREE.RepeatWrapping;
+  groundTex.anisotropy = 8;
   const ground = new THREE.Mesh(
     new THREE.PlaneGeometry(1, 1),
-    new THREE.MeshStandardMaterial({ map: groundTex, color: 0x767c86, roughness: 0.97, metalness: 0.0 })
+    /* Subí a la vez el tono de la textura y el del material, y el aclarado
+       se multiplicó: la losa quedó casi blanca, del mismo valor que los
+       tanques, y el conjunto perdió todo el relieve. El concreto tiene que
+       ser claramente más oscuro que lo que se para encima. */
+    new THREE.MeshStandardMaterial({ map: groundTex, color: 0x938d83, roughness: 0.97, metalness: 0.0 })
   );
   ground.rotation.x = -Math.PI/2;
   ground.position.y = -0.02;
