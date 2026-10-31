@@ -3327,7 +3327,7 @@ THREE.OrbitControls = OrbitControls;
   </section>
   <section id="mapa3d">
     <div class="wrap">
-      <div class="section-head"><h2>Vista 3D de tanques</h2><div class="section-note">ARRASTRA: ROTAR · CLIC DER: MOVER · BARRA LATERAL: ZOOM</div></div>
+      <div class="section-head"><h2>Vista 3D de tanques</h2><div class="section-note"><span class="pista3d">TOCA EL MAPA PARA MOVERLO · DOBLE TOQUE: VOLVER A LA VISTA INICIAL · BARRA LATERAL: ZOOM</span></div></div>
       <div class="mapa3d-wrap"><canvas id="canvas3d1"></canvas><div class="zoom3d" id="zoom1"><button data-z="in" title="Acercar">+</button><input type="range" min="0" max="100" value="0" aria-label="Zoom"><button data-z="out" title="Alejar">&minus;</button></div><div class="total3d" id="total3d1"><div class="t3d-label">TOTAL FACILIDAD</div><div class="t3d-value">—</div><div class="t3d-sub">—</div></div><div class="mapa3d-hint" id="hint3d1"></div><div class="period3d-bar"><span class="p3d-label">ACUMULADO</span><button data-period="hora" class="active">Hora</button><button data-period="mes">Mes</button><button data-period="trim">Trimestre</button><button data-period="sem">Semestre</button><button data-period="anio">Año</button></div><div class="view3d-bar"><button data-view="iso">Isométrica</button><button data-view="top">Superior</button><button data-view="front">Frontal</button><button data-view="side">Lateral</button></div></div>
     </div>
   </section>
@@ -3358,7 +3358,7 @@ THREE.OrbitControls = OrbitControls;
   </section>
   <section id="mapa3d2">
     <div class="wrap">
-      <div class="section-head"><h2>Vista 3D de tanques</h2><div class="section-note">ARRASTRA: ROTAR · CLIC DER: MOVER · BARRA LATERAL: ZOOM</div></div>
+      <div class="section-head"><h2>Vista 3D de tanques</h2><div class="section-note"><span class="pista3d">TOCA EL MAPA PARA MOVERLO · DOBLE TOQUE: VOLVER A LA VISTA INICIAL · BARRA LATERAL: ZOOM</span></div></div>
       <div class="mapa3d-wrap"><canvas id="canvas3d2"></canvas><div class="zoom3d" id="zoom2"><button data-z="in" title="Acercar">+</button><input type="range" min="0" max="100" value="0" aria-label="Zoom"><button data-z="out" title="Alejar">&minus;</button></div><div class="total3d" id="total3d2"><div class="t3d-label">TOTAL FACILIDAD</div><div class="t3d-value">—</div><div class="t3d-sub">—</div></div><div class="mapa3d-hint" id="hint3d2"></div><div class="period3d-bar"><span class="p3d-label">ACUMULADO</span><button data-period="hora" class="active">Hora</button><button data-period="mes">Mes</button><button data-period="trim">Trimestre</button><button data-period="sem">Semestre</button><button data-period="anio">Año</button></div><div class="view3d-bar"><button data-view="iso">Isométrica</button><button data-view="top">Superior</button><button data-view="front">Frontal</button><button data-view="side">Lateral</button></div></div>
     </div>
   </section>
@@ -3401,7 +3401,7 @@ THREE.OrbitControls = OrbitControls;
       <div class="mapa-detail" id="mapaDetail3"></div>
 
       <div class="section-head" style="margin-top:34px"><h2>Vista 3D de tanques</h2>
-        <div class="section-note">ARRASTRA: ROTAR · CLIC DER: MOVER · BARRA LATERAL: ZOOM</div></div>
+        <div class="section-note"><span class="pista3d">TOCA EL MAPA PARA MOVERLO · DOBLE TOQUE: VOLVER A LA VISTA INICIAL · BARRA LATERAL: ZOOM</span></div></div>
       <div class="mapa3d-wrap">
         <canvas id="canvas3d3"></canvas>
         <div class="zoom3d" id="zoom3"><button data-z="in" title="Acercar">+</button><input type="range" min="0" max="100" value="0" aria-label="Zoom"><button data-z="out" title="Alejar">&minus;</button></div>
@@ -7313,7 +7313,6 @@ function buildTankMap3D(canvasId, hintId, data, totalId) {
     return Math.max(5, Math.min(58, d * 0.56));
   }
 
-  canvas.style.touchAction = 'none';
   // si el usuario ya movio la camara, no la reencuadramos por debajo de el
   let userMoved = false, zoomSync = null;
   const controls = new THREE.OrbitControls(camera, canvas);
@@ -7334,6 +7333,92 @@ function buildTankMap3D(canvasId, hintId, data, totalId) {
   controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
   controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
   controls.keyPanSpeed = 24;
+
+  /* ---------- el mapa no debe secuestrar el desplazamiento ----------
+     Con touch-action en «none» y un dedo rotando, cualquier deslizada
+     vertical sobre el mapa lo giraba en vez de bajar la página: en el
+     celular uno queda atrapado y tiene que esquivar el mapa por el
+     borde para seguir leyendo. Por eso se sentía tan incómodo.
+
+     Ahora el mapa arranca quieto —la página se desliza por encima— y se
+     despierta al tocarlo, como los mapas incrustados de cualquier sitio.
+     Con ratón despierta al apretar, para no estorbar en el escritorio.
+     Se suelta al tocar fuera, con Escape, o solo al salir de pantalla.
+
+     El deslizador de zoom y los botones de vista siguen funcionando
+     dormido: mueven la cámara por código, sin pasar por los gestos. */
+  const tactil = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+  /* El texto de ayuda decía «CLIC DER: MOVER» también en el celular, donde
+     no hay clic derecho. Habla según el aparato que se tenga en la mano. */
+  document.querySelectorAll('.pista3d').forEach(el => {
+    el.textContent = tactil
+      ? 'TOCA EL MAPA PARA MOVERLO · DOBLE TOQUE: VISTA INICIAL · BARRA LATERAL: ZOOM'
+      : 'ARRASTRA: ROTAR · CLIC DER: MOVER · DOBLE CLIC: VISTA INICIAL · RUEDA: ZOOM';
+  });
+  let mapaVivo = false;
+  controls.enabled = false;
+  canvas.style.touchAction = 'pan-y';
+  if (getComputedStyle(wrap).position === 'static') wrap.style.position = 'relative';
+
+  const pastilla = (txt) => {
+    const d = document.createElement('div');
+    d.textContent = txt;
+    Object.assign(d.style, {
+      /* Arriba, no abajo: abajo chocaba con el selector de periodo y le
+         tapaba «Trimestre», «Semestre» y «Año». */
+      position: 'absolute', left: '50%', top: '84px', transform: 'translateX(-50%)',
+      padding: '8px 15px', borderRadius: '999px', zIndex: '6',
+      background: 'rgba(14,18,24,0.76)', color: '#e9eef5',
+      font: '600 13px/1 "Space Grotesk", system-ui, sans-serif',
+      letterSpacing: '0.02em', whiteSpace: 'nowrap',
+      transition: 'opacity .22s ease', boxShadow: '0 2px 10px rgba(0,0,0,0.3)',
+    });
+    wrap.appendChild(d);
+    return d;
+  };
+
+  const aviso = pastilla(tactil ? 'Toca el mapa para moverlo' : 'Haz clic en el mapa para moverlo');
+  aviso.style.pointerEvents = 'none';
+
+  const salir = document.createElement('button');
+  salir.type = 'button';
+  salir.textContent = tactil ? 'Listo · soltar el mapa' : 'Listo';
+  Object.assign(salir.style, {
+    position: 'absolute', left: '50%', top: '84px', transform: 'translateX(-50%)',
+    padding: '8px 15px', borderRadius: '999px', zIndex: '7', display: 'none',
+    border: '1px solid rgba(63,169,245,0.6)', cursor: 'pointer',
+    background: 'rgba(14,18,24,0.86)', color: '#9fd4ff',
+    font: '600 13px/1 "Space Grotesk", system-ui, sans-serif', letterSpacing: '0.02em',
+  });
+  wrap.appendChild(salir);
+
+  function despertarMapa(v) {
+    if (mapaVivo === v) return;
+    mapaVivo = v;
+    controls.enabled = v;
+    canvas.style.touchAction = v ? 'none' : 'pan-y';
+    aviso.style.opacity = v ? '0' : '1';
+    salir.style.display = v ? 'block' : 'none';
+    // un filo azul deja claro que el mapa está tomando los gestos
+    canvas.style.outline = v ? '2px solid rgba(63,169,245,0.65)' : '';
+    canvas.style.outlineOffset = v ? '-2px' : '';
+  }
+
+  canvas.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'mouse') despertarMapa(true);
+  });
+  // en táctil despierta con el toque, y ese mismo toque sigue abriendo el punto
+  canvas.addEventListener('click', () => despertarMapa(true));
+  salir.addEventListener('click', e => { e.stopPropagation(); despertarMapa(false); });
+  document.addEventListener('pointerdown', e => {
+    if (mapaVivo && !wrap.contains(e.target)) despertarMapa(false);
+  }, true);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') despertarMapa(false); });
+  try {
+    new IntersectionObserver(ent => {
+      ent.forEach(x => { if (!x.isIntersecting) despertarMapa(false); });
+    }, { threshold: 0.1 }).observe(canvas);
+  } catch (e) {}
 
   function applyView(theta, phi, radius) {
     controls.target.copy(target);
@@ -7362,6 +7447,15 @@ function buildTankMap3D(canvasId, hintId, data, totalId) {
     if (e.buttons) movedWhileDown = Math.max(movedWhileDown, Math.hypot(e.clientX - downX, e.clientY - downY));
   });
   canvas.addEventListener('pointerleave', () => { mouseNDC.set(-10, -10); });
+  /* Doble toque para volver al encuadre de partida. Después de girar un
+     rato uno queda mirando el suelo desde un ángulo raro, y buscar el
+     botón de vista es más trabajo que el gesto que ya tienes en la mano. */
+  canvas.addEventListener('dblclick', () => {
+    userMoved = false;
+    updateCamera();
+    if (zoomSync) zoomSync();
+  });
+
   canvas.addEventListener('click', () => {
     if (movedWhileDown > 6) return;
     if (hovered) { openLightbox(hovered.userData.item); return; }
