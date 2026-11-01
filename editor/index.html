@@ -1922,10 +1922,28 @@ THREE.OrbitControls = OrbitControls;
     color: var(--mid); margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border);
   }
 
+  /* Las dos barras eran dos controles sueltos, uno encima de otro, y no se
+     veía que lo elegido en una recorta lo de la otra. Van dentro de un mismo
+     marco, con una línea abajo que dice en voz alta qué se está viendo. */
+  .filtros {
+    margin: 16px 0 6px; padding: 12px 14px 10px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  }
+  .filtros .period-global { margin: 0; }
+  .filtros .period-global + .period-global {
+    margin-top: 9px; padding-top: 9px; border-top: 1px solid var(--border);
+  }
+  .filtros-dice {
+    margin-top: 10px; padding-top: 9px; border-top: 1px solid var(--border);
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .03em;
+    color: var(--text-faint);
+  }
+  .filtros-dice b { color: var(--cool); font-weight: 700; }
   .period-global {
     display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
     margin: 16px 0 4px;
   }
+  .pg-label { min-width: 104px; }
   .pg-label {
     font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .09em;
     color: var(--text-faint); margin-right: 4px;
@@ -3267,6 +3285,7 @@ THREE.OrbitControls = OrbitControls;
 <header class="hero" id="resumen">
   <div class="wrap">
     <div class="eyebrow"><span class="dot"></span>INSPECCIÓN TERMOGRÁFICA (FLIR) · EMISIONES FUGITIVAS</div>
+    <div class="filtros">
     <div class="period-global" id="periodGlobal">
       <span class="pg-label">VER DATOS COMO</span>
       <button data-period="hora" class="active">Tasa medida</button>
@@ -3288,6 +3307,8 @@ THREE.OrbitControls = OrbitControls;
       <button data-campo="cpf1">CPF-1</button>
       <button data-campo="cpf2">CPF-2</button>
       <button data-campo="cs">Caño Sur</button>
+    </div>
+    <div class="filtros-dice" id="filtrosDice">—</div>
     </div>
     <!-- Las dos cifras iban pegadas en dos píldoras, una al lado de la otra,
          y no se entendía cuál era medida y cuál calculada. Van separadas, cada
@@ -4017,6 +4038,11 @@ function updateKPIs() {
     cs:   () => `<b>${DATACS.length} puntos</b> abiertos en <b>Caño Sur</b>, facilidad CENTAUROS`,
   };
   set('kpiMedSub', (REPARTO[CAMPO_GLOBAL] || REPARTO.todas)() + lect);
+
+  /* Dice en una línea lo que las dos barras deciden juntas. */
+  const NOMBRE = { todas: 'los dos campos', cpf1: 'CPF-1', cpf2: 'CPF-2', cs: 'Caño Sur' };
+  set('filtrosDice', `VIENDO <b>${NOMBRE[CAMPO_GLOBAL] || NOMBRE.todas}</b> · `
+    + (esTasa ? 'LECTURA DE LA CÁMARA' : `EQUIVALENTE <b>${PERIODOS[P].etiqueta.toUpperCase()}</b>`));
   // «esos ton» no concuerda: se nombra el gas y la cifra va entre paréntesis
   /* El equivalente siempre se calcula sobre la lectura de la cámara, nunca
      sobre la masa acumulada. Que lo diga la tarjeta, con el número delante. */
