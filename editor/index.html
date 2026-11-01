@@ -3280,6 +3280,15 @@ THREE.OrbitControls = OrbitControls;
          cifra es siempre g/Hr y el equivalente siempre toneladas, así que el
          selector no cambiaba nada que estuviera a la vista. Lo que queda de
          masa acumulada, en los paneles de abajo, va en automático. -->
+    <!-- Elegir campo: el encabezado y las tarjetas de facilidad se recortan
+         a lo elegido. «Todas» suma los dos campos, que es como arranca. -->
+    <div class="period-global" id="campoGlobal">
+      <span class="pg-label">CAMPO</span>
+      <button data-campo="todas" class="active">Todas</button>
+      <button data-campo="cpf1">CPF-1</button>
+      <button data-campo="cpf2">CPF-2</button>
+      <button data-campo="cs">Caño Sur</button>
+    </div>
     <!-- Las dos cifras iban pegadas en dos píldoras, una al lado de la otra,
          y no se entendía cuál era medida y cuál calculada. Van separadas, cada
          una con su rótulo, su número grande y la línea de qué es. -->
@@ -3602,6 +3611,9 @@ const PERIODOS = {
   sem:  { horas: 4380, etiqueta: 'al semestre',   co2: '/semestre' },
   anio: { horas: 8760, etiqueta: 'al año',        co2: '/año' },
 };
+
+/* Qué campo se está mirando: 'todas' | 'cpf1' | 'cpf2' | 'cs'. */
+let CAMPO_GLOBAL = 'todas';
 
 let CERRADAS1 = [];
 /* Caño Sur también cierra hallazgos. Va aquí arriba, con las otras dos, y no
@@ -3957,9 +3969,19 @@ function updateKPIs() {
      GOP-F-006. */
   const t1 = AGG1.total, t2 = AGG2.total, tRub = t1 + t2;
   const gcs = DATACS.reduce((a, d) => a + d.tasa, 0);
-  const tt = tRub + gcs;
   const co2rub = co2eqDe(DATA1, 'CPF-1') + co2eqDe(DATA2, 'CPF-2');   // cromatografía por área
-  const co2 = co2rub + co2eqDe(DATACS, 'CAÑO SUR');
+  const co2cs = co2eqDe(DATACS, 'CAÑO SUR');
+
+  /* El filtro de campo recorta el encabezado: cada opción trae su total y su
+     equivalente, y «todas» es la suma de los dos campos. */
+  const CAMPOS = {
+    todas: { tt: tRub + gcs, co2: co2rub + co2cs },
+    cpf1:  { tt: t1,  co2: co2eqDe(DATA1, 'CPF-1') },
+    cpf2:  { tt: t2,  co2: co2eqDe(DATA2, 'CPF-2') },
+    cs:    { tt: gcs, co2: co2cs },
+  };
+  const C = CAMPOS[CAMPO_GLOBAL] || CAMPOS.todas;
+  const tt = C.tt, co2 = C.co2;
   const set = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
   const P = PERIODO_GLOBAL, esTasa = (P === 'hora');
   const et = esTasa ? '' : ' ' + PERIODOS[P].etiqueta;
@@ -3984,11 +4006,17 @@ function updateKPIs() {
      de cada área. Tener las dos cifras juntas hacía pensar que una salía de la
      otra, y la masa acumulada además no existe en la ficha GOP-F-006. */
   const lect = '';
-  set('kpiMedSub', DATACS.length
-    ? `<b>${nRub + DATACS.length} puntos</b> abiertos · Rubiales <b>${vp(tRub)}</b> (${nRub})`
-      + ` + Caño Sur <b>${vp(gcs)}</b> (${DATACS.length})${lect}`
-    : `<b>${nRub} puntos</b> abiertos en Rubiales · `
-      + `CPF-1 <b>${vp(t1)}</b> (${AGG1.nPuntos}) + CPF-2 <b>${vp(t2)}</b> (${AGG2.nPuntos})${lect}`);
+  const REPARTO = {
+    todas: () => DATACS.length
+      ? `<b>${nRub + DATACS.length} puntos</b> abiertos · Rubiales <b>${vp(tRub)}</b> (${nRub})`
+        + ` + Caño Sur <b>${vp(gcs)}</b> (${DATACS.length})`
+      : `<b>${nRub} puntos</b> abiertos en Rubiales · `
+        + `CPF-1 <b>${vp(t1)}</b> (${AGG1.nPuntos}) + CPF-2 <b>${vp(t2)}</b> (${AGG2.nPuntos})`,
+    cpf1: () => `<b>${AGG1.nPuntos} puntos</b> abiertos en <b>CPF-1</b>`,
+    cpf2: () => `<b>${AGG2.nPuntos} puntos</b> abiertos en <b>CPF-2</b>`,
+    cs:   () => `<b>${DATACS.length} puntos</b> abiertos en <b>Caño Sur</b>, facilidad CENTAUROS`,
+  };
+  set('kpiMedSub', (REPARTO[CAMPO_GLOBAL] || REPARTO.todas)() + lect);
   // «esos ton» no concuerda: se nombra el gas y la cifra va entre paréntesis
   /* El equivalente siempre se calcula sobre la lectura de la cámara, nunca
      sobre la masa acumulada. Que lo diga la tarjeta, con el número delante. */
@@ -4022,6 +4050,28 @@ function updateKPIs() {
      campos. Le había quedado `tt` —la suma con Caño Sur— junto al conteo de
      puntos de Rubiales, y decía 7.262 g/Hr sobre 10 puntos que suman 3.089.
      Va `tRub`, que es lo que esos puntos miden. */
+  /* Las tarjetas de abajo enseñan sólo lo elegido. Con un campo suelto la de
+     «Total» sobra: la tarjeta propia de ese campo ya dice lo mismo. */
+  const verT = (sel, v) => { const e = document.querySelector(sel);
+    if (e) e.style.display = v ? '' : 'none'; };
+  const esCS = CAMPO_GLOBAL === 'cs';
+  verT('.fcard.total', CAMPO_GLOBAL === 'todas');
+  verT('.fcard.f1', CAMPO_GLOBAL === 'todas' || CAMPO_GLOBAL === 'cpf1' || esCS);
+  verT('.fcard.f2', CAMPO_GLOBAL === 'todas' || CAMPO_GLOBAL === 'cpf2');
+  if (esCS) {
+    // Caño Sur no tiene tarjeta propia en esta fila: se presta la de CPF-1
+    const t = document.querySelector('.fcard.f1');
+    if (t) {
+      t.querySelector('.fcard-label').textContent = 'CAÑO SUR';
+      const m = t.querySelector('.fcard-main');
+      if (m) m.innerHTML = `<span>${DATACS.length}</span> <small>puntos</small>`;
+      const sub = t.querySelector('.fcard-sub');
+      if (sub) sub.innerHTML = `${gcs.toLocaleString('es-CO')} g/Hr medidos`
+        + `<b class="fcard-co2">${nd2(co2cs)} ton CO₂eq/año</b>`;
+      const cr = t.querySelector('.fcard-crit'); if (cr) cr.innerHTML = '';
+    }
+  }
+
   set('kpiTotPuntos', nRub);
   /* El equivalente de Rubiales solo —el que va a su GOP-F-006— vivía en la
      línea «Sólo Rubiales» del encabezado. Al quitarla se quedaba sin sitio,
@@ -5912,6 +5962,16 @@ function repintarPorPeriodo() {
       btn.classList.add('active');
       PERIODO_GLOBAL = btn.dataset.period;
       verUnidades();
+      repintarPorPeriodo();
+    });
+  });
+
+  const barC = document.getElementById('campoGlobal');
+  if (barC) barC.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      barC.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      CAMPO_GLOBAL = btn.dataset.campo;
       repintarPorPeriodo();
     });
   });
