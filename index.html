@@ -3851,6 +3851,13 @@ function heroCanoSur() {
 function bloqueDosPasos(partes, tt, co2) {
   const cajaF = document.getElementById('kpiFormula');
   if (!cajaF) return;
+  /* El bloque «CÓMO SALE ESTE NÚMERO · DOS PASOS» se retira: el encabezado es
+     para leer de un vistazo y la cadena completa ya está en el informe. La
+     función se queda armada por si hay que devolverlo. */
+  cajaF.style.display = 'none';
+  cajaF.innerHTML = '';
+  return;
+  // eslint-disable-next-line no-unreachable
   const P = PERIODO_GLOBAL;
   if (P === 'hora') { cajaF.style.display = 'none'; return; }
 
