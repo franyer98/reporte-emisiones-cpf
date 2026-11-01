@@ -3931,9 +3931,14 @@ function updateKPIs() {
   // el reparto por facilidad va bajo la cifra medida, que es de donde sale
   const vp = v => esTasa ? v.toLocaleString('es-CO') + ' g/Hr' : masaAcumulada(v, P);
   const nRub = AGG1.nPuntos + AGG2.nPuntos;
+  /* Fuera de «Tasa medida» la tarjeta muestra masa acumulada, pero el número
+     que está en la ficha GOP-F-006 es la lectura en g/Hr. Si no se ve, no hay
+     con qué comparar. */
+  const lect = esTasa ? '' :
+    ` \u00b7 lectura <b>${tt.toLocaleString('es-CO')} g/Hr</b>`;
   set('kpiMedSub', DATACS.length
     ? `<b>${nRub + DATACS.length} puntos</b> abiertos · Rubiales <b>${vp(tRub)}</b> (${nRub})`
-      + ` + Caño Sur <b>${vp(gcs)}</b> (${DATACS.length})`
+      + ` + Caño Sur <b>${vp(gcs)}</b> (${DATACS.length})${lect}`
     : `<b>${nRub} puntos</b> abiertos en Rubiales · `
       + `CPF-1 <b>${vp(t1)}</b> (${AGG1.nPuntos}) + CPF-2 <b>${vp(t2)}</b> (${AGG2.nPuntos})`);
   // «esos ton» no concuerda: se nombra el gas y la cifra va entre paréntesis
@@ -5949,12 +5954,16 @@ function masaAcumulada(gramosPorHora, periodo) {
   // Sin minimumFractionDigits, el primero salía «33,55» y parecía otra escala.
   const n = (v, d) => v.toLocaleString('es-CO',
     { minimumFractionDigits: d, maximumFractionDigits: d });
-  if (UNIDAD_MASA === 'ton') return n(g / 1e6, 3) + ' ton';
+  /* Iban tres decimales y «63,615 ton» se leía como sesenta y tres mil.
+     Dos decimales: los mismos que usa el GOP-F-006 y los mismos que la
+     tarjeta de CO2eq justo debajo, así ninguna de las dos cifras parece
+     de otra escala. */
+  if (UNIDAD_MASA === 'ton') return n(g / 1e6, 2) + ' ton';
   if (UNIDAD_MASA === 'kg')  return n(g / 1000, 2) + ' kg';
   if (UNIDAD_MASA === 'g')   return Math.round(g).toLocaleString('es-CO') + ' g';
   // la vista automática daba menos decimales que la unidad fijada, y el mismo
   // dato se veía distinto según el botón. Van los mismos en los dos caminos.
-  if (g >= 1e6)  return n(g / 1e6, 3) + ' ton';
+  if (g >= 1e6)  return n(g / 1e6, 2) + ' ton';
   if (g >= 1000) return n(g / 1000, 2) + ' kg';
   return Math.round(g).toLocaleString('es-CO') + ' g';
 }
