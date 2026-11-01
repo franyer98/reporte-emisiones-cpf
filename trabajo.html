@@ -3995,20 +3995,23 @@ function updateKPIs() {
      campos con dos archivos, y confundirlos fue justamente lo que puso a
      pelear al tablero con el GOP-F-006. */
   const nd2 = v => v.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  /* Aquí iba «Sólo Rubiales · …». El encabezado muestra los dos campos y el
+     subtítulo ya los reparte; repetir Rubiales aparte sobraba. La cifra de
+     Rubiales sola vive en su tarjeta, «Total · CPF-1 + CPF-2». */
   const cons = document.getElementById('kpiConsolidado');
-  if (cons) {
-    cons.style.display = DATACS.length ? 'block' : 'none';
-    cons.innerHTML = `S\u00f3lo Rubiales \u00b7 <b>${vp(tRub)}</b> \u00b7 `
-      + `<b>${nd2(co2rub)} ton CO\u2082eq/a\u00f1o</b> \u00b7 ${nRub} puntos`;
-  }
+  if (cons) cons.style.display = 'none';
 
   /* Esta tarjeta se llama «Total · CPF-1 + CPF-2»: es Rubiales, no los dos
      campos. Le había quedado `tt` —la suma con Caño Sur— junto al conteo de
      puntos de Rubiales, y decía 7.262 g/Hr sobre 10 puntos que suman 3.089.
      Va `tRub`, que es lo que esos puntos miden. */
   set('kpiTotPuntos', nRub);
-  set('kpiTotSub', esTasa ? `${tRub.toLocaleString('es-CO')} g/Hr · ${nRub} puntos medidos`
-                          : `${masaAcumulada(tRub, P)}${et}`);
+  /* El equivalente de Rubiales solo —el que va a su GOP-F-006— vivía en la
+     línea «Sólo Rubiales» del encabezado. Al quitarla se quedaba sin sitio,
+     así que baja a su propia tarjeta, igual que hacen las de Caño Sur. */
+  set('kpiTotSub', (esTasa ? `${tRub.toLocaleString('es-CO')} g/Hr · ${nRub} puntos medidos`
+                           : `${masaAcumulada(tRub, P)}${et}`)
+    + `<b class="fcard-co2">${nd2(co2rub)} ton CO₂eq/año</b>`);
   set('kpiF1Puntos', AGG1.nPuntos);
   set('kpiF1Sub', esTasa ? `${t1.toLocaleString('es-CO')} g/Hr medidos` : `${masaAcumulada(t1, P)}${et}`);
   set('kpiF2Puntos', AGG2.nPuntos);
