@@ -3792,12 +3792,8 @@ function heroCanoSur() {
   set('kpiTotal', a.total.toLocaleString('es-CO') + ' g/Hr');   // tasa, nunca masa
   pintarCo2(co2eqDe(DATACS, 'CAÑO SUR'), P);
   set('kpiMedSub', `<b>${a.nPuntos} puntos</b> abiertos en <b>Caño Sur</b>, facilidad CENTAUROS`);
-  set('kpiRepSub', `calculado sobre los <b>${a.total.toLocaleString('es-CO')} g/Hr</b> medidos,`
-    + ` con la cromatografía de cada área`);
-  set('kpiSub', esTasa
-    ? `Es la lectura de la cámara en los puntos abiertos de Caño Sur.`
-    : `Proyección${et} de esa misma lectura: <b>${a.total.toLocaleString('es-CO')} g/Hr</b>`
-      + ` sostenidos durante ${PERIODOS[P].horas.toLocaleString('es-CO')} horas.`);
+  set('kpiRepSub', `de los <b>${a.total.toLocaleString('es-CO')} g/Hr</b> medidos`);
+  set('kpiSub', '');
   // antes este bloque se quedaba con las cuentas de Rubiales al pasar a Caño Sur
   bloqueDosPasos([['CAÑO SUR', DATACS]], a.total, co2eqDe(DATACS, 'CAÑO SUR'));
   // aquí la cifra de arriba YA es la de Caño Sur: el consolidado sobra y confunde
@@ -3981,15 +3977,13 @@ function updateKPIs() {
   // «esos ton» no concuerda: se nombra el gas y la cifra va entre paréntesis
   /* El equivalente siempre se calcula sobre la lectura de la cámara, nunca
      sobre la masa acumulada. Que lo diga la tarjeta, con el número delante. */
-  set('kpiRepSub', `calculado sobre los <b>${tt.toLocaleString('es-CO')} g/Hr</b> medidos,`
-    + ` con la cromatografía de cada área`
+  set('kpiRepSub', `de los <b>${tt.toLocaleString('es-CO')} g/Hr</b> medidos`
     + (esTasa || P === 'anio' ? ''
-       : ` · al año son <b>${co2.toLocaleString('es-CO',
+       : ` · al año, <b>${co2.toLocaleString('es-CO',
            { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ton</b>`));
-  set('kpiSub', esTasa
-    ? `Es la lectura de la cámara en los puntos abiertos de los dos campos, la misma que registra la ficha GOP-F-006 de cada uno.`
-    : `Proyección${et} de esa misma lectura: <b>${tt.toLocaleString('es-CO')} g/Hr</b> sostenidos`
-      + ` durante ${PERIODOS[P].horas.toLocaleString('es-CO')} horas.`);
+  /* Esta línea explicaba en prosa lo que las dos tarjetas ya dicen con
+     números. Fuera: el encabezado es para leer de un vistazo. */
+  set('kpiSub', '');
   /* La cadena completa, con los números de la pantalla y en las tres unidades.
      El jefe no tiene por qué fiarse del tablero: aquí puede rehacer la cuenta
      con una calculadora. */
@@ -4004,8 +3998,8 @@ function updateKPIs() {
   const cons = document.getElementById('kpiConsolidado');
   if (cons) {
     cons.style.display = DATACS.length ? 'block' : 'none';
-    cons.innerHTML = `De eso, <b>s\u00f3lo Rubiales</b>: ${vp(tRub)} \u00b7 <b>${nd2(co2rub)} ton CO\u2082eq/a\u00f1o</b>
-      en ${nRub} puntos. <i>Es la cifra que va al GOP-F-006 de Rubiales; Ca\u00f1o Sur tiene el suyo.</i>`;
+    cons.innerHTML = `S\u00f3lo Rubiales \u00b7 <b>${vp(tRub)}</b> \u00b7 `
+      + `<b>${nd2(co2rub)} ton CO\u2082eq/a\u00f1o</b> \u00b7 ${nRub} puntos`;
   }
 
   /* Esta tarjeta se llama «Total · CPF-1 + CPF-2»: es Rubiales, no los dos
