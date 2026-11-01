@@ -3907,8 +3907,19 @@ function updateKPIs() {
       main.innerHTML = `<span id="kpiF${i + 1}Puntos"></span> <small>puntos</small>`;
   });
 
-  const t1 = AGG1.total, t2 = AGG2.total, tt = t1 + t2;
-  const co2 = co2eqDe(DATA1, 'CPF-1') + co2eqDe(DATA2, 'CPF-2');   // cromatografía por área
+  /* Arriba va TODO lo que sigue activo en el tablero: Rubiales y Caño Sur.
+     Antes la cifra grande era sólo Rubiales y el total de los dos campos iba
+     en una línea pequeña debajo, y no se entendía cuál era cuál.
+
+     Las dos tarjetas de arriba cuentan lo mismo: si la medida fuera sólo de
+     Rubiales y el equivalente de los dos campos, estarían hablando de gases
+     distintos. Debajo queda la cifra de Rubiales sola, que es la que va a su
+     GOP-F-006. */
+  const t1 = AGG1.total, t2 = AGG2.total, tRub = t1 + t2;
+  const gcs = DATACS.reduce((a, d) => a + d.tasa, 0);
+  const tt = tRub + gcs;
+  const co2rub = co2eqDe(DATA1, 'CPF-1') + co2eqDe(DATA2, 'CPF-2');   // cromatografía por área
+  const co2 = co2rub + co2eqDe(DATACS, 'CAÑO SUR');
   const set = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
   const P = PERIODO_GLOBAL, esTasa = (P === 'hora');
   const et = esTasa ? '' : ' ' + PERIODOS[P].etiqueta;
@@ -3917,34 +3928,34 @@ function updateKPIs() {
   set('kpiCo2', co2.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
   // el reparto por facilidad va bajo la cifra medida, que es de donde sale
   const vp = v => esTasa ? v.toLocaleString('es-CO') + ' g/Hr' : masaAcumulada(v, P);
-  set('kpiMedSub', `<b>${AGG1.nPuntos + AGG2.nPuntos} puntos</b> abiertos en Rubiales · `
-    + `CPF-1 <b>${vp(t1)}</b> (${AGG1.nPuntos}) + CPF-2 <b>${vp(t2)}</b> (${AGG2.nPuntos})`);
+  const nRub = AGG1.nPuntos + AGG2.nPuntos;
+  set('kpiMedSub', DATACS.length
+    ? `<b>${nRub + DATACS.length} puntos</b> abiertos · Rubiales <b>${vp(tRub)}</b> (${nRub})`
+      + ` + Caño Sur <b>${vp(gcs)}</b> (${DATACS.length})`
+    : `<b>${nRub} puntos</b> abiertos en Rubiales · `
+      + `CPF-1 <b>${vp(t1)}</b> (${AGG1.nPuntos}) + CPF-2 <b>${vp(t2)}</b> (${AGG2.nPuntos})`);
   // «esos ton» no concuerda: se nombra el gas y la cifra va entre paréntesis
   set('kpiRepSub', 'lo que representa en efecto climático ese mismo gas');
   set('kpiSub', esTasa
-    ? `Es la lectura de la cámara en los puntos abiertos, la misma que registra la ficha GOP-F-006.`
+    ? `Es la lectura de la cámara en los puntos abiertos de los dos campos, la misma que registra la ficha GOP-F-006 de cada uno.`
     : `Proyección${et} de esa misma lectura: <b>${tt.toLocaleString('es-CO')} g/Hr</b> sostenidos`
       + ` durante ${PERIODOS[P].horas.toLocaleString('es-CO')} horas.`);
   /* La cadena completa, con los números de la pantalla y en las tres unidades.
      El jefe no tiene por qué fiarse del tablero: aquí puede rehacer la cuenta
      con una calculadora. */
-  bloqueDosPasos([['CPF-1', DATA1], ['CPF-2', DATA2]], tt, co2);
+  bloqueDosPasos([['CPF-1', DATA1], ['CPF-2', DATA2], ['CAÑO SUR', DATACS]], tt, co2);
 
   /* El consolidado de los dos campos. Se muestra aparte, con el reparto a la
      vista, para que nadie tenga que adivinar de qué está hecho: el reporte de
      compañía pide una sola cifra, pero Rubiales y Caño Sur siguen siendo dos
      campos con dos archivos, y confundirlos fue justamente lo que puso a
      pelear al tablero con el GOP-F-006. */
-  const listaCS = DATACS;
-  const co2cs = co2eqDe(listaCS, 'CAÑO SUR');
-  const gcs = listaCS.reduce((x, d) => x + d.tasa, 0);
   const nd2 = v => v.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const cons = document.getElementById('kpiConsolidado');
   if (cons) {
-    cons.style.display = listaCS.length ? 'block' : 'none';
-    cons.innerHTML = `Sumando Ca\u00f1o Sur \u2014 otro campo, ${listaCS.length} puntos,
-      ${gcs.toLocaleString('es-CO')} g/Hr \u2014 los dos juntos dan <b>${nd2(co2 + co2cs)} ton CO\u2082eq/a\u00f1o</b>.
-      <i>Cada campo tiene su propio GOP-F-006; esa suma s\u00f3lo sirve para el reporte de compa\u00f1\u00eda.</i>`;
+    cons.style.display = DATACS.length ? 'block' : 'none';
+    cons.innerHTML = `De eso, <b>s\u00f3lo Rubiales</b>: ${vp(tRub)} \u00b7 <b>${nd2(co2rub)} ton CO\u2082eq/a\u00f1o</b>
+      en ${nRub} puntos. <i>Es la cifra que va al GOP-F-006 de Rubiales; Ca\u00f1o Sur tiene el suyo.</i>`;
   }
 
   set('kpiTotPuntos', AGG1.nPuntos + AGG2.nPuntos);
