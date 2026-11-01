@@ -3763,10 +3763,9 @@ function heroCanoSur() {
   document.documentElement.classList.remove('sin-co2');
   set('kpiTotal', a.total.toLocaleString('es-CO') + ' g/Hr');   // tasa, nunca masa
   set('kpiCo2', co2eqDe(DATACS, 'CAÑO SUR').toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-  set('kpiMedSub', `<b>${a.nPuntos} puntos</b> abiertos en <b>Caño Sur</b>, facilidad CENTAUROS`
-    + (esTasa ? '' : ` \u00b7 sostenido ${PERIODOS[P].etiqueta}, <b>${masaAcumulada(a.total, P)}</b> de gas`));
-  set('kpiRepSub', `lo que representa en efecto climático ese gas `
-    + `(<b>${a.total.toLocaleString('es-CO')} g/Hr</b>)`);
+  set('kpiMedSub', `<b>${a.nPuntos} puntos</b> abiertos en <b>Caño Sur</b>, facilidad CENTAUROS`);
+  set('kpiRepSub', `calculado sobre los <b>${a.total.toLocaleString('es-CO')} g/Hr</b> medidos,`
+    + ` con la cromatografía de cada área`);
   set('kpiSub', esTasa
     ? `Es la lectura de la cámara en los puntos abiertos de Caño Sur.`
     : `Proyección${et} de esa misma lectura: <b>${a.total.toLocaleString('es-CO')} g/Hr</b>`
@@ -3941,15 +3940,21 @@ function updateKPIs() {
   /* Fuera de «Tasa medida» la tarjeta muestra masa acumulada, pero el número
      que está en la ficha GOP-F-006 es la lectura en g/Hr. Si no se ve, no hay
      con qué comparar. */
-  const lect = esTasa ? '' :
-    ` \u00b7 sostenido ${PERIODOS[P].etiqueta}, <b>${masaAcumulada(tt, P)}</b> de gas`;
+  /* Aquí iba «sostenido al año, 561,45 ton de gas». Fuera: el equivalente de
+     abajo NO sale de esa masa, sale de la lectura en g/Hr por la cromatografía
+     de cada área. Tener las dos cifras juntas hacía pensar que una salía de la
+     otra, y la masa acumulada además no existe en la ficha GOP-F-006. */
+  const lect = '';
   set('kpiMedSub', DATACS.length
     ? `<b>${nRub + DATACS.length} puntos</b> abiertos · Rubiales <b>${vp(tRub)}</b> (${nRub})`
       + ` + Caño Sur <b>${vp(gcs)}</b> (${DATACS.length})${lect}`
     : `<b>${nRub} puntos</b> abiertos en Rubiales · `
       + `CPF-1 <b>${vp(t1)}</b> (${AGG1.nPuntos}) + CPF-2 <b>${vp(t2)}</b> (${AGG2.nPuntos})${lect}`);
   // «esos ton» no concuerda: se nombra el gas y la cifra va entre paréntesis
-  set('kpiRepSub', 'lo que representa en efecto climático ese mismo gas');
+  /* El equivalente siempre se calcula sobre la lectura de la cámara, nunca
+     sobre la masa acumulada. Que lo diga la tarjeta, con el número delante. */
+  set('kpiRepSub', `calculado sobre los <b>${tt.toLocaleString('es-CO')} g/Hr</b> medidos,`
+    + ` con la cromatografía de cada área`);
   set('kpiSub', esTasa
     ? `Es la lectura de la cámara en los puntos abiertos de los dos campos, la misma que registra la ficha GOP-F-006 de cada uno.`
     : `Proyección${et} de esa misma lectura: <b>${tt.toLocaleString('es-CO')} g/Hr</b> sostenidos`
