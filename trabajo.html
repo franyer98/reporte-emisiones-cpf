@@ -1606,16 +1606,13 @@ THREE.OrbitControls = OrbitControls;
     font-family: 'Inter', sans-serif; font-style: normal; opacity: .65; cursor: help;
     margin-left: 2px; font-size: 12px;
   }
-  .hero-cons { margin-top: 16px; max-width: 680px; padding: 12px 14px;
-    border: 1px solid var(--border); border-left: 3px solid #00b828; border-radius: 10px;
-    background: rgba(0,184,40,0.045); }
-  .hero-cons .hc-k { font-size: 9.5px; letter-spacing: .11em; color: var(--text-dim);
-    font-weight: 700; display: block; margin-bottom: 5px; }
-  .hero-cons .hc-n { font-family: 'Space Grotesk', sans-serif; font-weight: 700;
-    font-size: clamp(20px,3.4vw,26px); color: #00b828; line-height: 1.1; }
-  .hero-cons .hc-n small { font-size: .42em; font-weight: 600; letter-spacing: 0; color: var(--text-dim); }
-  .hero-cons .hc-d { font-size: 12.5px; color: var(--text-dim); margin-top: 6px; line-height: 1.5; }
-  .hero-cons .hc-d b { color: var(--text); font-weight: 600; }
+  /* Una línea, no un recuadro. Con número grande y borde verde competía con
+     las dos cifras del encabezado, y en pantalla el 3.089 llegó a salir
+     cuatro veces. Es una cifra secundaria: tiene que leerse como tal. */
+  .hero-cons { margin-top: 14px; max-width: 680px; font-size: 13px;
+    color: var(--text-dim); line-height: 1.55; }
+  .hero-cons b { color: #00b828; font-weight: 700; font-family: 'Space Grotesk', sans-serif; }
+  .hero-cons i { font-style: normal; color: var(--text-dim); opacity: .8; }
   .hero-sub { font-size: clamp(15px,2.2vw,18px); color: var(--text-dim); max-width: 680px; margin-top: 14px; }
   .hero-sub b { color: var(--text); font-weight: 600; }
   .hero-formula{margin-top:14px;max-width:680px;border-left:3px solid var(--border);
@@ -3914,7 +3911,7 @@ function updateKPIs() {
   set('kpiMedSub', `<b>${AGG1.nPuntos + AGG2.nPuntos} puntos</b> abiertos en Rubiales · `
     + `CPF-1 <b>${vp(t1)}</b> (${AGG1.nPuntos}) + CPF-2 <b>${vp(t2)}</b> (${AGG2.nPuntos})`);
   // «esos ton» no concuerda: se nombra el gas y la cifra va entre paréntesis
-  set('kpiRepSub', `lo que representa en efecto climático ese gas (<b>${vp(tt)}</b>)`);
+  set('kpiRepSub', 'lo que representa en efecto climático ese mismo gas');
   set('kpiSub', esTasa
     ? `Es la lectura de la cámara en los puntos abiertos, la misma que registra la ficha GOP-F-006.`
     : `Proyección${et} de esa misma lectura: <b>${tt.toLocaleString('es-CO')} g/Hr</b> sostenidos`
@@ -3942,11 +3939,9 @@ function updateKPIs() {
   const cons = document.getElementById('kpiConsolidado');
   if (cons) {
     cons.style.display = listaCS.length ? 'block' : 'none';
-    cons.innerHTML = `<span class="hc-k">LOS DOS CAMPOS JUNTOS \u00b7 S\u00d3LO PARA EL REPORTE DE COMPA\u00d1\u00cdA</span>
-      <div class="hc-n">${nd2(co2 + co2cs)} <small>ton CO\u2082eq/a\u00f1o</small></div>
-      <div class="hc-d">Rubiales <b>${nd2(co2)}</b> (${AGG1.nPuntos + AGG2.nPuntos} puntos, ${tt.toLocaleString('es-CO')} g/Hr)
-        + Ca\u00f1o Sur <b>${nd2(co2cs)}</b> (${listaCS.length} puntos, ${gcs.toLocaleString('es-CO')} g/Hr).
-        Son campos distintos, cada uno con su propio GOP-F-006: esta suma no se reporta como Rubiales ni como Ca\u00f1o Sur.</div>`;
+    cons.innerHTML = `Sumando Ca\u00f1o Sur \u2014 otro campo, ${listaCS.length} puntos,
+      ${gcs.toLocaleString('es-CO')} g/Hr \u2014 los dos juntos dan <b>${nd2(co2 + co2cs)} ton CO\u2082eq/a\u00f1o</b>.
+      <i>Cada campo tiene su propio GOP-F-006; esa suma s\u00f3lo sirve para el reporte de compa\u00f1\u00eda.</i>`;
   }
 
   set('kpiTotPuntos', AGG1.nPuntos + AGG2.nPuntos);
