@@ -3276,7 +3276,7 @@ THREE.OrbitControls = OrbitControls;
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><path d="M8 12h8M12 8v8"/></svg>
           EQUIVALENTE EN CO₂ <span class="hero-tag-mini">CALCULADO</span>
         </div>
-        <div class="hero-num co2"><span id="kpiCo2">14,447</span> <small>ton CO₂eq/año</small></div>
+        <div class="hero-num co2"><span id="kpiCo2">14,447</span> <small id="kpiCo2U">ton CO₂eq/año</small></div>
         <div class="hd-s" id="kpiRepSub">el mismo gas, medido por su efecto climático</div>
       </section>
     </div>
@@ -3569,6 +3569,17 @@ let DATA2 = [{"id": 2, "campo": "RUBIALES", "area": "FWKOS", "equipo": "300-TK-0
 
 // Hallazgos ya intervenidos. Quedan como evidencia del trabajo hecho:
 // no suman a las emisiones ni al ranking, solo se muestran al final del detalle.
+/* PERIODOS iba mucho más abajo. La tarjeta de CO2eq lo consulta en el primer
+   render, antes de que esa línea se ejecute, y la zona muerta del `const`
+   mataba el script entero. Va aquí arriba, con las otras listas. */
+const PERIODOS = {
+  hora: { horas: 1,    etiqueta: 'por hora',      co2: '/año' },
+  mes:  { horas: 730,  etiqueta: 'al mes',        co2: '/mes' },      // 365*24/12
+  trim: { horas: 2190, etiqueta: 'al trimestre',  co2: '/trimestre' },
+  sem:  { horas: 4380, etiqueta: 'al semestre',   co2: '/semestre' },
+  anio: { horas: 8760, etiqueta: 'al año',        co2: '/año' },
+};
+
 let CERRADAS1 = [];
 /* Caño Sur también cierra hallazgos. Va aquí arriba, con las otras dos, y no
    junto a DATACS: allá abajo el encabezado ya se pintó y quedaría en zona
@@ -3762,7 +3773,7 @@ function heroCanoSur() {
 
   document.documentElement.classList.remove('sin-co2');
   set('kpiTotal', a.total.toLocaleString('es-CO') + ' g/Hr');   // tasa, nunca masa
-  set('kpiCo2', co2eqDe(DATACS, 'CAÑO SUR').toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+  pintarCo2(co2eqDe(DATACS, 'CAÑO SUR'), P);
   set('kpiMedSub', `<b>${a.nPuntos} puntos</b> abiertos en <b>Caño Sur</b>, facilidad CENTAUROS`);
   set('kpiRepSub', `calculado sobre los <b>${a.total.toLocaleString('es-CO')} g/Hr</b> medidos,`
     + ` con la cromatografía de cada área`);
@@ -3932,7 +3943,7 @@ function updateKPIs() {
      El renglón grande se queda en g/Hr siempre; la proyección baja a la línea
      de abajo, dicha como proyección. */
   set('kpiTotal', tt.toLocaleString('es-CO') + ' g/Hr');
-  set('kpiCo2', co2.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+  pintarCo2(co2, P);
   // el reparto por facilidad va bajo la cifra medida, que es de donde sale
   // el reparto suma al renglón grande, así que va en las mismas unidades
   const vp = v => v.toLocaleString('es-CO') + ' g/Hr';
@@ -3954,7 +3965,10 @@ function updateKPIs() {
   /* El equivalente siempre se calcula sobre la lectura de la cámara, nunca
      sobre la masa acumulada. Que lo diga la tarjeta, con el número delante. */
   set('kpiRepSub', `calculado sobre los <b>${tt.toLocaleString('es-CO')} g/Hr</b> medidos,`
-    + ` con la cromatografía de cada área`);
+    + ` con la cromatografía de cada área`
+    + (esTasa || P === 'anio' ? ''
+       : ` · al año son <b>${co2.toLocaleString('es-CO',
+           { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ton</b>`));
   set('kpiSub', esTasa
     ? `Es la lectura de la cámara en los puntos abiertos de los dos campos, la misma que registra la ficha GOP-F-006 de cada uno.`
     : `Proyección${et} de esa misma lectura: <b>${tt.toLocaleString('es-CO')} g/Hr</b> sostenidos`
@@ -5148,18 +5162,26 @@ pintarMapasArea();
 const TIER_HEX = { alto: 0xe81400, medio: 0xffc400, bajo: 0x00b828 };
 
 // ---------- Periodos: proyeccion de la tasa medida en el tiempo ----------
-const PERIODOS = {
-  hora: { horas: 1,    etiqueta: 'por hora' },
-  mes:  { horas: 730,  etiqueta: 'al mes' },      // 365*24/12
-  trim: { horas: 2190, etiqueta: 'al trimestre' },
-  sem:  { horas: 4380, etiqueta: 'al semestre' },
-  anio: { horas: 8760, etiqueta: 'al año' },
-};
 
 /* Convierte g/Hr al acumulado del periodo. Por defecto escoge la unidad más
    legible, pero se puede fijar: quien revisa suele querer todo en la misma
    unidad para sumar de un vistazo, aunque alguna cifra quede en 0,28 ton. */
 let UNIDAD_MASA = 'auto';
+
+/* El equivalente se calcula SIEMPRE anual, que es como lo reporta la ficha:
+   g/Hr x factor de la cromatografía = ton CO2eq/año. Para verlo al mes, al
+   trimestre o al semestre se reparte ese anual por horas; al año queda intacto.
+   En «Tasa medida» no hay periodo que repartir, así que se muestra el anual,
+   que es la cifra comparable con el GOP-F-006. */
+function pintarCo2(tonAnio, periodo) {
+  const p = PERIODOS[periodo];
+  const v = (periodo === 'hora') ? tonAnio : tonAnio * p.horas / 8760;
+  const el = document.getElementById('kpiCo2');
+  if (el) el.textContent = v.toLocaleString('es-CO',
+    { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const u = document.getElementById('kpiCo2U');
+  if (u) u.textContent = 'ton CO₂eq' + p.co2;
+}
 
 function masaAcumulada(gramosPorHora, periodo) {
   const g = gramosPorHora * PERIODOS[periodo].horas;
