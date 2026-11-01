@@ -3798,7 +3798,9 @@ function heroCanoSur() {
   set('kpiTotal', a.total.toLocaleString('es-CO') + ' g/Hr');   // tasa, nunca masa
   pintarCo2(co2eqDe(DATACS, 'CAÑO SUR'), P);
   set('kpiMedSub', `<b>${a.nPuntos} puntos</b> abiertos en <b>Caño Sur</b>, facilidad CENTAUROS`);
-  set('kpiRepSub', `de los <b>${a.total.toLocaleString('es-CO')} g/Hr</b> medidos`);
+  set('kpiRepSub', (esTasa || P === 'anio') ? ''
+    : `al año, <b>${co2eqDe(DATACS, 'CAÑO SUR').toLocaleString('es-CO',
+        { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ton</b>`);
   set('kpiSub', '');
   // antes este bloque se quedaba con las cuentas de Rubiales al pasar a Caño Sur
   bloqueDosPasos([['CAÑO SUR', DATACS]], a.total, co2eqDe(DATACS, 'CAÑO SUR'));
@@ -3990,10 +3992,12 @@ function updateKPIs() {
   // «esos ton» no concuerda: se nombra el gas y la cifra va entre paréntesis
   /* El equivalente siempre se calcula sobre la lectura de la cámara, nunca
      sobre la masa acumulada. Que lo diga la tarjeta, con el número delante. */
-  set('kpiRepSub', `de los <b>${tt.toLocaleString('es-CO')} g/Hr</b> medidos`
-    + (esTasa || P === 'anio' ? ''
-       : ` · al año, <b>${co2.toLocaleString('es-CO',
-           { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ton</b>`));
+  /* El origen ya está en la tarjeta de al lado, con el mismo número. Sólo se
+     dice algo cuando la cifra es parcial, para que no se confunda con la anual
+     del GOP-F-006. */
+  set('kpiRepSub', (esTasa || P === 'anio') ? ''
+    : `al año, <b>${co2.toLocaleString('es-CO',
+        { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ton</b>`);
   /* Esta línea explicaba en prosa lo que las dos tarjetas ya dicen con
      números. Fuera: el encabezado es para leer de un vistazo. */
   set('kpiSub', '');
