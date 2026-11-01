@@ -3250,15 +3250,11 @@ THREE.OrbitControls = OrbitControls;
       <button data-period="sem">Al semestre</button>
       <button data-period="anio">Al año</button>
     </div>
-    <!-- La unidad se elige aparte del periodo: hay quien necesita el número
-         siempre en toneladas, aunque quede en 0,28. -->
-    <div class="period-global" id="unidadGlobal" style="display:none">
-      <span class="pg-label">UNIDAD</span>
-      <button data-unidad="auto" class="active">Automática</button>
-      <button data-unidad="ton">Toneladas</button>
-      <button data-unidad="kg">Kilogramos</button>
-      <button data-unidad="g">Gramos</button>
-    </div>
+    <!-- Aquí iba el selector de UNIDAD (Automática/Toneladas/Kilogramos/
+         Gramos). Existía para fijar la unidad de la cifra grande; ahora esa
+         cifra es siempre g/Hr y el equivalente siempre toneladas, así que el
+         selector no cambiaba nada que estuviera a la vista. Lo que queda de
+         masa acumulada, en los paneles de abajo, va en automático. -->
     <!-- Las dos cifras iban pegadas en dos píldoras, una al lado de la otra,
          y no se entendía cuál era medida y cuál calculada. Van separadas, cada
          una con su rótulo, su número grande y la línea de qué es. -->
@@ -5870,7 +5866,7 @@ function repintarPorPeriodo() {
 
   // con la tasa medida todo va en g/Hr: ahí elegir unidad no significa nada
   const verUnidades = () => {
-    if (barU) barU.style.display = PERIODO_GLOBAL === 'hora' ? 'none' : 'flex';
+    if (barU) barU.style.display = 'none';   // retirado: ya no hay qué elegir
   };
 
   bar.querySelectorAll('button').forEach(btn => {
