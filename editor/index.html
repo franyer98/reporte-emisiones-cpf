@@ -2971,7 +2971,7 @@ THREE.OrbitControls = OrbitControls;
   /* Se queda arriba a la derecha mientras se baja la guía: quien ya la leyó
      no tiene que recorrerla entera para encontrar la puerta. */
   .intro-saltar {
-    position: fixed; top: 66px; right: 18px; z-index: 40;
+    position: fixed; top: 66px; right: 18px; z-index: 110;
     background: var(--surface); border: 1px solid var(--border); color: var(--text-dim);
     border-radius: 999px; padding: 8px 16px; cursor: pointer;
     font-family: 'JetBrains Mono', monospace; font-size: 11.5px; letter-spacing: .02em;
@@ -2984,6 +2984,12 @@ THREE.OrbitControls = OrbitControls;
   .intro-saltar:active { transform: scale(.985); background: var(--cpf2-dim); }
   .intro-saltar:hover { color: var(--text); border-color: var(--cool); background: var(--cpf2-dim); }
   .intro-saltar:focus-visible { outline: 2px solid var(--cool); outline-offset: 2px; }
+  /* Los controles del vídeo los pinta el navegador por encima de la página:
+     en Android ningún z-index los gana, y mientras el vídeo pasaba por detrás
+     de la franja el toque se lo quedaba él. La franja se aparta sola. */
+  .intro-saltar.oculto { opacity: 0; pointer-events: none; transform: translateY(-8px); }
+  .intro-saltar { transition: color .15s ease, border-color .15s ease,
+    background .15s ease, opacity .2s ease, transform .2s ease; }
   /* Iba fijo abajo, a 14px del borde. Esa franja es del sistema: en Android el
      primer toque lo consume la barra de navegación, o la barra de Chrome que
      estaba escondida y reaparece, y había que tocar dos veces. Arriba no hay
@@ -7979,6 +7985,18 @@ try { initCharts(); } catch (e) {}
   // el atajo de arriba hace lo mismo y desaparece con la guía
   const saltar = document.getElementById('introSaltar');
   if (saltar) saltar.addEventListener('click', abrirDashboard);
+
+  /* Mientras un vídeo esté a la vista, la franja se esconde: sus controles son
+     del navegador, se pintan encima de todo y se quedaban con el toque. */
+  const medios = document.querySelectorAll('#pageIntro video, #pageIntro iframe');
+  if (saltar && medios.length && 'IntersectionObserver' in window) {
+    const visibles = new Set();
+    const obs = new IntersectionObserver(es => {
+      es.forEach(e => e.isIntersecting ? visibles.add(e.target) : visibles.delete(e.target));
+      saltar.classList.toggle('oculto', visibles.size > 0);
+    }, { rootMargin: '-48px 0px -55% 0px' });   // sólo la franja de arriba cuenta
+    medios.forEach(m => obs.observe(m));
+  }
 })();
 </script>
 
