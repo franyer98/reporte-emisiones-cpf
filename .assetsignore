@@ -1,8 +1,33 @@
-# material pesado que no hace falta servir desde la web
-Emisiones-CPF1-CPF2-Organizado.xlsx
-Reporte-Emisiones-CPF1-CPF2.pdf
-README.md
-wrangler.jsonc
-src
+# Qué NO se publica como parte del sitio.
+#
+# «assets.directory» es la raíz del repositorio, así que sin este archivo todo
+# lo que esté aquí queda colgado en internet, no sólo el tablero. Mismo formato
+# que .gitignore.
+
+# ── Lo importante ────────────────────────────────────────────────────────────
+# trabajo.html es el tablero CON edición: lleva dentro el código que escribe
+# datos y el hash de la clave. Esa es justamente la línea que construir.py se
+# encarga de quitar de index.html, así que publicarlo al lado deja el trabajo
+# sin efecto. El tablero con edición se sirve sólo desde /editor/, que está
+# detrás de Cloudflare Access.
 trabajo.html
 construir.py
+*.py
+
+# ── Archivos de trabajo, no del sitio ────────────────────────────────────────
+*.xlsx
+*.pdf
+LEEME.md
+README.md
+
+# ── Versiones viejas del tablero, anteriores a la actual ─────────────────────
+Dashboard-Emisiones-CPF1-CPF2.html
+Introduccion-y-Dashboard-CPF1-CPF2.html
+reporte-v2.html
+reporte-v3.html
+generador.html
+
+# Lo que sí se publica y no hay que tocar: index.html, editor/, guia/, icono/,
+# lib/, plantilla/GOP-F-006.xlsx (el molde del GOP, que el tablero descarga),
+# sw.js y manifest.webmanifest.
+!plantilla/GOP-F-006.xlsx
