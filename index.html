@@ -3775,18 +3775,28 @@ const MUESTRAS_2027 = [
   { fila: 19, etiqueta: 'EFCS-CEN-010', fac: 'CAÑO SUR', equipo: 'ETK-1161-B SKIM', punto: 'Empaque', lect: 660, gei: 81.9173287227 },
   { fila: 20, etiqueta: 'EFCS-CEN-011', fac: 'CAÑO SUR', equipo: 'ETK-1101-C FWKO', punto: 'Empaque', lect: 13, gei: 2.94192122411 }
 ];
-const K_2027 = {}, M2027 = {};
+const K_2027 = {}, M2027 = {}, M2027_COD = {};
 MUESTRAS_2027.forEach(m => {
   m.k = m.gei / m.lect;
   const e = normEquipo(m.equipo);
   if (K_2027[e] === undefined) { K_2027[e] = m.k; M2027[e] = m; }
+  M2027_COD[normCodigo(m.etiqueta)] = m;
 });
+
+/* El código del punto es lo único que no se escribe de dos maneras: la
+   etiqueta del libro «EFRB-CPF-2-016» y el punto del tablero «CPF-2-016» son
+   el mismo renglón. Emparejar por ahí —y no por el nombre del equipo— es lo
+   que hace que cada punto tome exactamente la fila que le corresponde,
+   aunque el tanque esté escrito distinto en cada archivo. */
+function normCodigo(v) {
+  return String(v || '').toUpperCase().replace(/^EF(RB|CS)-?/, '').replace(/[^A-Z0-9]/g, '');
+}
 
 /* De dónde sale el factor de un punto, para poder señalarlo con el dedo en el
    libro: primero su propia muestra de META 2027; si ese equipo no tiene
    análisis, la del área en la hoja de 2026, que es el respaldo. */
-function origenK(fac, area, equipo) {
-  const m = M2027[normEquipo(equipo)];
+function origenK(fac, area, equipo, punto) {
+  const m = M2027_COD[normCodigo(punto)] || M2027[normEquipo(equipo)];
   if (m) {
     return { hoja: HOJA_2027, fila: m.fila, etiqueta: m.etiqueta, equipo: m.equipo,
              gei: m.gei, lect: m.lect, k: m.k, propio: true };
@@ -3797,13 +3807,15 @@ function origenK(fac, area, equipo) {
            gei: o.gei, lect: o.lect, k: o.gei / o.lect, propio: false };
 }
 
-function kDe(fac, area, equipo) {
+function kDe(fac, area, equipo, punto) {
+  const fila = M2027_COD[normCodigo(punto)];
+  if (fila) return fila.k;                          // su propia fila del libro
   const propio = K_2027[normEquipo(equipo)];
-  if (propio !== undefined) return propio;          // la muestra de ese punto
+  if (propio !== undefined) return propio;          // la muestra de ese equipo
   return K_AREA[fac + '|' + area] ?? K_FALLBACK[fac === 'CPF-1' ? 1 : 2];
 }
 function co2eqDe(lista, fac) {
-  return lista.reduce((acc, r) => acc + r.tasa * kDe(fac, r.area, r.equipo), 0);
+  return lista.reduce((acc, r) => acc + r.tasa * kDe(fac, r.area, r.equipo, r.punto), 0);
 }
 const K_CO2EQ = { 1: 0.24760223983966112, 2: 0.24698816042558724 };
 
@@ -3981,7 +3993,7 @@ function heroCanoSur() {
     const crit = [...pts].sort((x, y) => y.tasa - x.tasa).slice(0, 2);
     tarjeta.querySelector('.fcard-label').textContent = area;
     tarjeta.querySelector('.fcard-main').innerHTML = `<span>${pts.length}</span> <small>puntos</small>`;
-    const areaCo2 = pts.reduce((x, d) => x + d.tasa * kDe('CAÑO SUR', d.area, d.equipo), 0);
+    const areaCo2 = pts.reduce((x, d) => x + d.tasa * kDe('CAÑO SUR', d.area, d.equipo, d.punto), 0);
     tarjeta.querySelector('.fcard-sub').innerHTML = (esTasa
       ? `${tot.toLocaleString('es-CO')} g/Hr medidos` : `${masaAcumulada(tot, P)}${et}`)
       + `<b class="fcard-co2">${areaCo2.toLocaleString('es-CO',
@@ -4042,7 +4054,7 @@ function bloqueDosPasos(partes, tt, co2) {
          juntos, que es como se puede comprobar en el Excel. */
       const grupos = new Map();
       lista.filter(d => d.area === area).forEach(d => {
-        const K = kDe(fac, area, d.equipo);
+        const K = kDe(fac, area, d.equipo, d.punto);
         const cl = K.toFixed(9);
         if (!grupos.has(cl)) grupos.set(cl, { fac, area, K, gArea: 0, ton: 0, equipo: d.equipo, n: 0 });
         const gr = grupos.get(cl);
@@ -4766,7 +4778,7 @@ function pintarCurva() {
   if (rotulo) rotulo.textContent = 'CÓMO HA BAJADO · CADA ESCALÓN ES UNA REPARACIÓN · ' + curvaAmbTexto();
 
   const esCo2 = curvaUni === 'co2';
-  const valorDe = (r, fac) => (esCo2 ? r.tasa * kDe(fac, r.area, r.equipo) : r.tasa);
+  const valorDe = (r, fac) => (esCo2 ? r.tasa * kDe(fac, r.area, r.equipo, r.punto) : r.tasa);
 
   let baseV = 0, nuevosN = 0, nuevosV = 0;
   const cerrados = [], sinFecha = [];
@@ -5148,9 +5160,9 @@ function renderProgreso() {
   const hoyCo2 = co2eqDe(DATA1, 'CPF-1') + co2eqDe(DATA2, 'CPF-2') + co2eqDe(DATACS, 'CAÑO SUR');
 
   const elimG = [...CERRADAS1, ...CERRADAS2, ...CERRADASCS].reduce((a, d) => a + d.tasa, 0);
-  const elimCo2 = CERRADAS1.reduce((a, d) => a + d.tasa * kDe('CPF-1', d.area, d.equipo), 0)
-                + CERRADAS2.reduce((a, d) => a + d.tasa * kDe('CPF-2', d.area, d.equipo), 0)
-                + CERRADASCS.reduce((a, d) => a + d.tasa * kDe('CAÑO SUR', d.area, d.equipo), 0);
+  const elimCo2 = CERRADAS1.reduce((a, d) => a + d.tasa * kDe('CPF-1', d.area, d.equipo, d.punto), 0)
+                + CERRADAS2.reduce((a, d) => a + d.tasa * kDe('CPF-2', d.area, d.equipo, d.punto), 0)
+                + CERRADASCS.reduce((a, d) => a + d.tasa * kDe('CAÑO SUR', d.area, d.equipo, d.punto), 0);
   const pct = baseG ? elimG / baseG * 100 : 0;
 
   set('pgCampana', campanaBase());
@@ -5195,9 +5207,9 @@ function renderCierres() {
 
   const gTot = [...CERRADAS1, ...CERRADAS2, ...CERRADASCS].reduce((a, d) => a + d.tasa, 0);
   // lo evitado se calcula con la cromatografía del área, igual que la emisión activa
-  const cTot = CERRADAS1.reduce((a, d) => a + d.tasa * kDe('CPF-1', d.area, d.equipo), 0)
-             + CERRADAS2.reduce((a, d) => a + d.tasa * kDe('CPF-2', d.area, d.equipo), 0)
-             + CERRADASCS.reduce((a, d) => a + d.tasa * kDe('CAÑO SUR', d.area, d.equipo), 0);
+  const cTot = CERRADAS1.reduce((a, d) => a + d.tasa * kDe('CPF-1', d.area, d.equipo, d.punto), 0)
+             + CERRADAS2.reduce((a, d) => a + d.tasa * kDe('CPF-2', d.area, d.equipo, d.punto), 0)
+             + CERRADASCS.reduce((a, d) => a + d.tasa * kDe('CAÑO SUR', d.area, d.equipo, d.punto), 0);
 
   const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
   set('ciN', total);
@@ -7527,7 +7539,7 @@ try { initCharts(); } catch (e) {}
         <td>${d.area}</td>
         <td>${d.punto}${d.elemento ? ' · ' + d.elemento : ''}</td>
         <td class="inf-num">${n0(d.tasa)}</td>
-        <td class="inf-num">${nTon(d.tasa * kDe(fac, d.area, d.equipo))}</td>
+        <td class="inf-num">${nTon(d.tasa * kDe(fac, d.area, d.equipo, d.punto))}</td>
         <td class="inf-num inf-ac">${Math.round(acum / total * 100)}%</td>
       </tr>`;
     }).join('');
@@ -7555,9 +7567,9 @@ try { initCharts(); } catch (e) {}
       + actCS.length + CERRADASCS.length;
     const hoyG = [...DATA1, ...DATA2, ...DATACS].reduce((a, d) => a + d.tasa, 0);
     const elimG = cer.reduce((a, d) => a + d.tasa, 0);
-    const elimCo2 = CERRADAS1.reduce((a, d) => a + d.tasa * kDe('CPF-1', d.area, d.equipo), 0)
-                  + CERRADAS2.reduce((a, d) => a + d.tasa * kDe('CPF-2', d.area, d.equipo), 0)
-                  + CERRADASCS.reduce((a, d) => a + d.tasa * kDe('CAÑO SUR', d.area, d.equipo), 0);
+    const elimCo2 = CERRADAS1.reduce((a, d) => a + d.tasa * kDe('CPF-1', d.area, d.equipo, d.punto), 0)
+                  + CERRADAS2.reduce((a, d) => a + d.tasa * kDe('CPF-2', d.area, d.equipo, d.punto), 0)
+                  + CERRADASCS.reduce((a, d) => a + d.tasa * kDe('CAÑO SUR', d.area, d.equipo, d.punto), 0);
     const pct = baseG ? (elimG / baseG * 100).toFixed(1).replace('.', ',') : '0';
     return `
       <h3 class="inf-h3">Avance desde la medición inicial <span>${pct}% de la fuga eliminada</span></h3>
@@ -7596,11 +7608,11 @@ try { initCharts(); } catch (e) {}
         <td>${d.area}</td>
         <td>${d.punto}${d.elemento ? ' · ' + d.elemento : ''}</td>
         <td class="inf-num">${n0(d.tasa)}</td>
-        <td class="inf-num">${nTon(d.tasa * kDe('CAÑO SUR', d.area, d.equipo))}</td>
+        <td class="inf-num">${nTon(d.tasa * kDe('CAÑO SUR', d.area, d.equipo, d.punto))}</td>
         <td class="inf-num inf-ac">${Math.round(acum / total * 100)}%</td>
       </tr>`;
     }).join('');
-    const co2cs = DATACS.reduce((a, d) => a + d.tasa * kDe('CAÑO SUR', d.area, d.equipo), 0);
+    const co2cs = DATACS.reduce((a, d) => a + d.tasa * kDe('CAÑO SUR', d.area, d.equipo, d.punto), 0);
     return `
       <h3 class="inf-h3">CAÑO SUR · CENTAUROS <span>${DATACS.length} puntos · ${n0(total)} g/Hr
         · ${n0(co2cs)} ton CO2eq/año</span></h3>
@@ -7618,7 +7630,7 @@ try { initCharts(); } catch (e) {}
            tiene la suya. Se arma mirando punto por punto qué muestra aplica. */
         const propios = [], prestados = [];
         DATACS.forEach(d => {
-          const o = origenK('CAÑO SUR', d.area, d.equipo);
+          const o = origenK('CAÑO SUR', d.area, d.equipo, d.punto);
           const donde = o && o.propio ? propios : prestados;
           if (donde.indexOf(d.equipo) < 0) donde.push(d.equipo);
         });
@@ -7638,7 +7650,7 @@ try { initCharts(); } catch (e) {}
       .flatMap(([fac, l]) => l.map(d => ({ ...d, fac })));
     if (!todos.length) return '';
     const g = todos.reduce((a, d) => a + d.tasa, 0);
-    const c = todos.reduce((a, d) => a + d.tasa * kDe(d.fac, d.area, d.equipo), 0);
+    const c = todos.reduce((a, d) => a + d.tasa * kDe(d.fac, d.area, d.equipo, d.punto), 0);
     const filas = todos.sort((a, b) => b.tasa - a.tasa).map(d => `
       <tr>
         <td><b>${d.equipo}</b></td>
@@ -7667,9 +7679,9 @@ try { initCharts(); } catch (e) {}
     const tasa = activos.reduce((a, d) => a + d.tasa, 0);
     const co2 = co2eqDe(DATA1, 'CPF-1') + co2eqDe(DATA2, 'CPF-2');
     const nCer = CERRADAS1.length + CERRADAS2.length + CERRADASCS.length;
-    const cEvit = CERRADAS1.reduce((a, d) => a + d.tasa * kDe('CPF-1', d.area, d.equipo), 0)
-                + CERRADAS2.reduce((a, d) => a + d.tasa * kDe('CPF-2', d.area, d.equipo), 0)
-                + CERRADASCS.reduce((a, d) => a + d.tasa * kDe('CAÑO SUR', d.area, d.equipo), 0);
+    const cEvit = CERRADAS1.reduce((a, d) => a + d.tasa * kDe('CPF-1', d.area, d.equipo, d.punto), 0)
+                + CERRADAS2.reduce((a, d) => a + d.tasa * kDe('CPF-2', d.area, d.equipo, d.punto), 0)
+                + CERRADASCS.reduce((a, d) => a + d.tasa * kDe('CAÑO SUR', d.area, d.equipo, d.punto), 0);
 
     const kpi = (v, et) => `<div class="inf-kpi"><div class="inf-kv">${v}</div><div class="inf-ke">${et}</div></div>`;
 
@@ -7902,7 +7914,7 @@ ${cssInforme()}
     const fac = lista[0].fac;
     const areas = [...new Set(lista.map(x => x.d.area))].join(' · ');
     const total = lista.reduce((a, x) => a + x.d.tasa, 0);
-    const co2 = lista.reduce((a, x) => a + x.d.tasa * kDe(x.fac, x.d.area, x.d.equipo), 0);
+    const co2 = lista.reduce((a, x) => a + x.d.tasa * kDe(x.fac, x.d.area, x.d.equipo, x.d.punto), 0);
     const n0 = v => Math.round(v).toLocaleString('es-CO');
 
     const puntos = lista.map((x, i) => {
@@ -8126,7 +8138,7 @@ ${cssInforme()}
         if (vistos.has(clave)) return;
         vistos.add(clave);
         areas.push({ tipo: 'punto', clave, fac, area: d.area, equipo: d.equipo,
-                     k: kDe(fac, d.area, d.equipo),
+                     k: kDe(fac, d.area, d.equipo, d.punto),
                      etiqueta: fac + ' · ' + d.equipo + ' · ' + d.area });
       }));
     areas.sort((a, b) => a.etiqueta.localeCompare(b.etiqueta, 'es'));
@@ -8330,7 +8342,7 @@ ${cssInforme()}
     const { partes } = memPartes(clave);
     let totCo2 = 0, n = 0;
     partes.forEach(([fac, lista]) => {
-      lista.forEach(d => { totCo2 += d.tasa * kDe(fac, d.area, d.equipo); n++; });
+      lista.forEach(d => { totCo2 += d.tasa * kDe(fac, d.area, d.equipo, d.punto); n++; });
     });
     return { totCo2, n };
   }
@@ -9497,9 +9509,9 @@ ${cssInforme()}
       if (!mejor || d.tasa > mejor.d.tasa) mejor = { d, fac };
     }));
     if (!mejor) return '';
-    const K = kDe(mejor.fac, mejor.d.area, mejor.d.equipo);
+    const K = kDe(mejor.fac, mejor.d.area, mejor.d.equipo, mejor.d.punto);
     const co2 = mejor.d.tasa * K;
-    const m = fichaMuestra(mejor.fac, mejor.d.area, mejor.d.equipo);
+    const m = fichaMuestra(mejor.fac, mejor.d.area, mejor.d.equipo, mejor.d.punto);
     const gei = m ? m.gei : null;
     const lect = m ? m.lectura : null;
 
@@ -9680,8 +9692,8 @@ ${cssInforme()}
      trazabilidad y el lado a lado se retiraron, pero esto sigue haciendo
      falta: la memoria de cálculo lo usa para decir, en cada área, cuál fila
      del libro es la que manda. Se busca por el factor, no escrita a mano. */
-  function fichaMuestra(fac, area, equipo) {
-    const o = origenK(fac, area, equipo);
+  function fichaMuestra(fac, area, equipo, punto) {
+    const o = origenK(fac, area, equipo, punto);
     if (!o) return null;
     return { K: o.k, n: o.fila, hoja: o.hoja, etiqueta: o.etiqueta,
              equipo: o.equipo, lectura: o.lect, gei: o.gei, propio: o.propio };
