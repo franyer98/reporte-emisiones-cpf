@@ -1696,11 +1696,40 @@ THREE.OrbitControls = OrbitControls;
   }
   .fr-eq b { font-weight: 600; color: var(--text-dim); }
   .fr-bar {
-    flex: 0 0 34px; height: 3px; border-radius: 2px; background: rgba(255,255,255,.1);
+    flex: 0 0 52px; height: 5px; border-radius: 99px; background: rgba(255,255,255,.1);
     overflow: hidden;
   }
-  .fr-bar span { display: block; height: 100%; background: var(--text-faint); border-radius: 2px; }
+  .fr-bar span { display: block; height: 100%; background: var(--text-faint); border-radius: 99px;
+    min-width: 2px; }
   .fr-pct { font-family: 'JetBrains Mono', monospace; color: var(--text-faint); font-size: 10.5px; }
+
+  /* El reparto de la tarjeta Total. La barra iba contra el campo mayor y el
+     número decía «% del total»: dos escalas en la misma línea, y encima en 34
+     píxeles de alto 3, donde un 5% no se veía. Ahora la barra es el mismo
+     porcentaje que el número, ocupa el ancho de la tarjeta y lleva el color
+     de su campo. */
+  .tr-share { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+  .tr-bar {
+    flex: 1 1 auto; height: 9px; border-radius: 99px; overflow: hidden;
+    background: rgba(255,255,255,.07); box-shadow: inset 0 0 0 1px rgba(255,255,255,.05);
+  }
+  .tr-bar > span {
+    display: block; height: 100%; border-radius: 99px; min-width: 4px;
+    background: var(--text-faint);
+  }
+  .tr-bar.c1 > span { background: linear-gradient(90deg, #ff6b78, var(--hot)); }
+  .tr-bar.c2 > span { background: linear-gradient(90deg, #f0a86f, var(--cpf2)); }
+  .tr-bar.c3 > span { background: linear-gradient(90deg, #6fe3f5, var(--cool)); }
+  .tr-eq {
+    flex: 0 1 auto; max-width: 44%; font-size: 12.5px; font-weight: 600; color: var(--text-dim);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .tr-pct {
+    flex: 0 0 46px; text-align: right; font-family: 'JetBrains Mono', monospace;
+    font-size: 15px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .fcard-crit-label span { font-weight: 400; letter-spacing: 0; text-transform: none; }
   @media (max-width: 760px) { .facility-row { grid-template-columns: 1fr; } }
 
   /* ---------- FACILITY TABS ---------- */
@@ -3354,7 +3383,7 @@ THREE.OrbitControls = OrbitControls;
         <div class="fcard-label">Total · CPF-1 + CPF-2</div>
         <div class="fcard-main"><span id="kpiTotPuntos">25</span> <small>puntos</small></div>
         <div class="fcard-sub" id="kpiTotSub">58.059 g/Hr · 22 puntos medidos</div>
-        <div class="fcard-crit-label">POR FACILIDAD</div>
+        <div class="fcard-crit-label">POR FACILIDAD <span>· reparto del CO₂eq</span></div>
         <div id="kpiTotReparto"></div>
       </div>
       <div class="fcard f1">
@@ -3882,6 +3911,10 @@ const n2 = (v, d) => v.toFixed(d);
    total de la facilidad—, a la derecha el equipo que más aporta dentro de
    ella, con su parte. El equipo de la derecha NO es un punto suelto: puede
    agrupar varios del mismo tanque, y nunca es la lista completa del área. */
+/* El color de cada campo, el mismo en la tarjeta Total y en las de área, para
+   que la barra se lea sin tener que buscar a cuál pertenece. */
+const COLOR_FAC = { 'CPF-1': 'c1', 'CPF-2': 'c2', 'CAÑO SUR': 'c3' };
+
 function critRowsHTML(crit, fac) {
   const P = PERIODO_GLOBAL;
   const fmt = v => (P === 'hora') ? v.toLocaleString('es-CO') + ' g/Hr' : masaAcumulada(v, P);
@@ -3897,8 +3930,10 @@ function critRowsHTML(crit, fac) {
     + `<span class="pts">${c.nPuntos} ${c.nPuntos === 1 ? 'punto' : 'puntos'}</span></div>`
     + `<div class="fr-cifras"><span class="fr-gh">${fmt(c.areaTotal)}</span>`
     + `<span class="fcard-co2">${co2(co2eqDe(c.pts || [], fac))} ton CO₂eq/año</span></div>`
-    + `<div class="fr-eq"><span class="fr-bar"><span style="width:${c.pct}%"></span></span>`
-    + `<b>${c.equipo}</b><span class="fr-pct">${c.pct}% · ${fmt(c.tasa)}</span></div>`
+    + `<div class="tr-share"><b class="tr-eq" title="${c.equipo}">${c.equipo}</b>`
+    + `<span class="tr-bar ${COLOR_FAC[fac] || ''}">`
+    + `<span style="width:${c.pct}%"></span></span>`
+    + `<b class="tr-pct">${c.pct}%</b></div>`
     + `</div>`).join('');
 }
 
@@ -4216,15 +4251,27 @@ function updateKPIs() {
     ['CPF-2', t2, AGG2.nPuntos, co2eqDe(DATA2, 'CPF-2')],
     ['CAÑO SUR', gcs, DATACS.length, co2cs],
   ].filter(f => f[2] > 0);
-  const gMax = Math.max(1, ...repartoHTML_.map(f => f[1]));
-  const repartoHTML = repartoHTML_.map(([nom, g, n, c]) =>
+  /* Los porcentajes se redondean de modo que sumen 100: 5 + 37 + 57 daba 99 y
+     puestos uno debajo del otro parece un error. El resto se ajusta en el
+     campo mayor, como en el reparto de las toneladas. */
+  const pcts = repartoHTML_.map(f => f[3] / Math.max(1e-9, cTodo) * 100);
+  const pctR = pcts.map(v => Math.round(v));
+  if (pctR.length) {
+    const sobra = pctR.reduce((a, b) => a + b, 0) - 100;
+    const mayor = pcts.indexOf(Math.max(...pcts));
+    pctR[mayor] -= sobra;
+  }
+  const COLOR_CAMPO = COLOR_FAC;
+  const repartoHTML = repartoHTML_.map(([nom, g, n, c], i) =>
     `<div class="fcard-row">`
     + `<div class="fr-cab"><span>${nom}</span>`
     + `<span class="pts">${n} ${n === 1 ? 'punto' : 'puntos'}</span></div>`
     + `<div class="fr-cifras"><span class="fr-gh">${vp2(g)}</span>`
     + `<span class="fcard-co2">${nd2(c)} ton CO₂eq/año</span></div>`
-    + `<div class="fr-eq"><span class="fr-bar"><span style="width:${Math.round(g / gMax * 100)}%"></span></span>`
-    + `<span class="fr-pct">${Math.round(g / Math.max(1, gTodo) * 100)}% del total</span></div>`
+    + `<div class="tr-share">`
+    + `<span class="tr-bar ${COLOR_CAMPO[nom] || ''}">`
+    + `<span style="width:${pctR[i]}%"></span></span>`
+    + `<b class="tr-pct">${pctR[i]}%</b></div>`
     + `</div>`).join('');
   set('kpiTotReparto', repartoHTML);
   set('kpiF1Puntos', AGG1.nPuntos);
