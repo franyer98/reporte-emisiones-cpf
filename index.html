@@ -3710,20 +3710,6 @@ const K_FALLBACK = { 1: 0.24760223983966112, 2: 0.24698816042558724 };
    Dos quedan pendientes de que el laboratorio confirme la muestra: TK-902
    (0,0217 contra 0,2470 de 2026, con 97 % de aire en el vial) y ETK-1161-B
    (0,1241, con 96 % de aire). Si alguna sale mal tomada, se cambia aquí. */
-const K_2027 = {
-  '300TK1': 0.2211001,
-  '300TK101': 0.2360923,
-  '300TK103': 0.2226457,
-  '300TK201': 0.2360923,
-  '300TK401': 0.2360923,
-  'ETK1101B': 0.2263016,
-  'ETK1101C': 0.2263016,
-  'ETK1161B': 0.1241172,
-  'TK902': 0.0217342,
-  'TK904': 0.1539232,
-  'TK906B': 0.1539232
-};
-
 /* Los nombres del mismo equipo se escriben distinto en cada archivo:
    «300-TK-0103», «300 TK- 0103 ALMACENAMIENTO» y «300TK103» son el mismo
    tanque. Se comparan sin guiones, sin espacios, sin ceros de relleno y sin
@@ -3734,6 +3720,52 @@ function normEquipo(nombre) {
     ?.filter(p => !EQ_SOBRA.has(p))
     .map(p => /^\d+$/.test(p) ? (p.replace(/^0+/, '') || '0') : p)
     .join('') || '';
+}
+
+/* Las catorce muestras de la hoja «Calculos CO2 META 2027» del GOP-F-006:
+   una por cada punto medido, ya con el anclaje corregido ($K$6 en vez de la
+   propia fila). De aquí sale TODO lo que el tablero dice del CO2 equivalente:
+   el factor de cada punto y la fila del libro donde se puede comprobar.
+     K = GEI (columna AJ) ÷ lectura de la cámara (columna F)
+   No se escribe el factor a mano: se divide, igual que en el Excel. */
+const HOJA_2027 = 'Calculos CO2 META 2027';
+const CROMA_HOJA = 'Calculos CO2 2026';
+const MUESTRAS_2027 = [
+  { fila:  7, etiqueta: 'EFRB-CPF-1-022', fac: 'CPF-1', equipo: 'TK-904', punto: 'Escotilla', lect: 240, gei: 36.9415661233 },
+  { fila:  8, etiqueta: 'EFRB-CPF-1-023', fac: 'CPF-1', equipo: 'TK-906B', punto: 'Empaque', lect: 67, gei: 10.3128538761 },
+  { fila:  9, etiqueta: 'EFRB-CPF-1-024', fac: 'CPF-1', equipo: 'TK-902', punto: 'Empaque', lect: 53, gei: 1.15191370848 },
+  { fila: 10, etiqueta: 'EFRB-CPF-1-025', fac: 'CPF-1', equipo: 'TK-902', punto: 'Empaque', lect: 19, gei: 0.41295019738 },
+  { fila: 11, etiqueta: 'EFRB-CPF-2-016', fac: 'CPF-2', equipo: '300-TK-0201', punto: 'Empaque', lect: 1100, gei: 259.701521216 },
+  { fila: 12, etiqueta: 'EFRB-CPF-2-017', fac: 'CPF-2', equipo: '300TK0101', punto: 'Empaque', lect: 510, gei: 120.407068927 },
+  { fila: 13, etiqueta: 'EFRB-CPF-2-018', fac: 'CPF-2', equipo: '300TK0101', punto: 'Empaque', lect: 300, gei: 70.8276876043 },
+  { fila: 14, etiqueta: 'EFRB-CPF-2-019', fac: 'CPF-2', equipo: '300TK0401', punto: 'Empaque', lect: 280, gei: 66.1058417641 },
+  { fila: 15, etiqueta: 'EFRB-CPF-2-020', fac: 'CPF-2', equipo: '300TK103', punto: 'Empaque', lect: 270, gei: 60.1143519905 },
+  { fila: 16, etiqueta: 'EFRB-CPF-2-021', fac: 'CPF-2', equipo: '300TK0001', punto: 'Empaque', lect: 250, gei: 55.2750254649 },
+  { fila: 17, etiqueta: 'EFCS-CEN-008', fac: 'CAÑO SUR', equipo: 'ETK-1161-B SKIM', punto: 'Empaque', lect: 2400, gei: 297.881195355 },
+  { fila: 18, etiqueta: 'EFCS-CEN-009', fac: 'CAÑO SUR', equipo: 'ETK-1101-B FWKO', punto: 'Empaque', lect: 1100, gei: 248.931795887 },
+  { fila: 19, etiqueta: 'EFCS-CEN-010', fac: 'CAÑO SUR', equipo: 'ETK-1161-B SKIM', punto: 'Empaque', lect: 660, gei: 81.9173287227 },
+  { fila: 20, etiqueta: 'EFCS-CEN-011', fac: 'CAÑO SUR', equipo: 'ETK-1101-C FWKO', punto: 'Empaque', lect: 13, gei: 2.94192122411 }
+];
+const K_2027 = {}, M2027 = {};
+MUESTRAS_2027.forEach(m => {
+  m.k = m.gei / m.lect;
+  const e = normEquipo(m.equipo);
+  if (K_2027[e] === undefined) { K_2027[e] = m.k; M2027[e] = m; }
+});
+
+/* De dónde sale el factor de un punto, para poder señalarlo con el dedo en el
+   libro: primero su propia muestra de META 2027; si ese equipo no tiene
+   análisis, la del área en la hoja de 2026, que es el respaldo. */
+function origenK(fac, area, equipo) {
+  const m = M2027[normEquipo(equipo)];
+  if (m) {
+    return { hoja: HOJA_2027, fila: m.fila, etiqueta: m.etiqueta, equipo: m.equipo,
+             gei: m.gei, lect: m.lect, k: m.k, propio: true };
+  }
+  const o = K_ORIGEN[fac + '|' + area];
+  if (!o) return null;
+  return { hoja: CROMA_HOJA, fila: o.fila, etiqueta: '', equipo: o.equipo,
+           gei: o.gei, lect: o.lect, k: o.gei / o.lect, propio: false };
 }
 
 function kDe(fac, area, equipo) {
@@ -3968,14 +4000,20 @@ function bloqueDosPasos(partes, tt, co2) {
   const filas = [];
   partes.forEach(([fac, lista]) => {
     [...new Set(lista.map(d => d.area))].forEach(area => {
-      const pts = lista.filter(d => d.area === area);
-      const gArea = pts.reduce((a, d) => a + d.tasa, 0);
-      if (!gArea) return;
-      // El área puede llevar varias cromatografías, una por punto: el CO2eq se
-      // suma punto por punto y el K que se muestra es el promedio ponderado.
-      const ton = co2eqDe(pts, fac);
-      const K = ton / gArea;
-      filas.push({ fac, area, gArea, K, ton });
+      /* Una línea por cromatografía, no por área: dentro de una misma área
+         puede haber varias muestras —cada punto tiene la suya en META 2027—
+         y mostrar un solo factor promedio obligaría a citar una fila del
+         libro que no es la que manda. Los puntos que comparten factor van
+         juntos, que es como se puede comprobar en el Excel. */
+      const grupos = new Map();
+      lista.filter(d => d.area === area).forEach(d => {
+        const K = kDe(fac, area, d.equipo);
+        const cl = K.toFixed(9);
+        if (!grupos.has(cl)) grupos.set(cl, { fac, area, K, gArea: 0, ton: 0, equipo: d.equipo, n: 0 });
+        const gr = grupos.get(cl);
+        gr.gArea += d.tasa; gr.ton += d.tasa * K; gr.n++;
+      });
+      grupos.forEach(gr => { if (gr.gArea) filas.push(gr); });
     });
   });
   filas.sort((a, b) => b.ton - a.ton);
@@ -3995,13 +4033,16 @@ function bloqueDosPasos(partes, tt, co2) {
 
   const lineas = filas.map(f => {
     // el factor no puede aparecer de la nada: debajo va la división del libro
-    const o = K_ORIGEN[f.fac + '|' + f.area];
+    const o = origenK(f.fac, f.area, f.equipo);
     const origen = o
       ? `<div class="hf-o">${n(f.K, 7)} = GEI ÷ lectura de la muestra`
-        + ` <b>${esc(o.equipo)}</b>, fila ${o.fila} del libro:`
-        + ` ${n(o.gei, 6)} ÷ ${n(o.lect, 0)}</div>`
+        + ` <b>${esc(o.equipo)}</b>, fila ${o.fila} de «${esc(o.hoja)}»:`
+        + ` ${n(o.gei, 6)} ÷ ${n(o.lect, 0)}`
+        + (o.propio ? '' : ' · ese equipo no tiene análisis propio, aplica el del área')
+        + `</div>`
       : '';
-    return `<div class="hf-l"><span>${esc(f.fac)} · ${esc(f.area)}</span>`
+    const cuantos = f.n > 1 ? ` <i>(${f.n} puntos)</i>` : '';
+    return `<div class="hf-l"><span>${esc(f.fac)} · ${esc(f.area)} · ${esc(f.equipo)}${cuantos}</span>`
       + `<span><b>${n(f.gArea, 0)}</b> g/Hr × <b>${n(f.K, 7)}</b> =`
       + ` <b>${n(f.ton, 2)}</b> ton CO₂eq/año</span></div>` + origen;
   }).join('');
@@ -4012,7 +4053,7 @@ function bloqueDosPasos(partes, tt, co2) {
     + `<span class="hf-p">1 · EL GAS QUE SE FUGA <i>— masa real, la que marcaría una báscula</i></span>`
     + `<b>${n(tt, 0)} g/Hr</b> × <b>${n(h, 0)} h</b> (${PERIODOS[P].etiqueta})`
     + ` = <b>${n(g, 0)} g</b> = <b>${n(g / 1000, 2)} kg</b> = <b>${n(tonToc, 3)} ton de TOC</b><br>`
-    + `<span class="hf-p">2 · EL EQUIVALENTE EN CO₂ <i>— cada área con la cromatografía que le toca</i></span>`
+    + `<span class="hf-p">2 · EL EQUIVALENTE EN CO₂ <i>— cada punto con su propia cromatografía</i></span>`
     + lineas
     + `<div class="hf-l hf-suma"><span>TOTAL</span><span><em>${n(co2, 2)} ton CO₂eq/año</em>`
     + ` — la cifra verde de arriba</span></div>`
@@ -7420,6 +7461,12 @@ try { initCharts(); } catch (e) {}
   const hoy = () => new Date().toLocaleDateString('es-CO',
     { day: '2-digit', month: 'long', year: 'numeric' });
   const n0 = v => Math.round(v).toLocaleString('es-CO');
+  /* Las toneladas van en números enteros, pero un punto pequeño daba «0» y
+     parecía un error del informe: por debajo de una tonelada se muestran dos
+     decimales. */
+  const nTon = v => (v > 0 && v < 1)
+    ? v.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : Math.round(v).toLocaleString('es-CO');
 
   function tablaPuntos(data, fac) {
     if (!data.length) return '';
@@ -7433,7 +7480,7 @@ try { initCharts(); } catch (e) {}
         <td>${d.area}</td>
         <td>${d.punto}${d.elemento ? ' · ' + d.elemento : ''}</td>
         <td class="inf-num">${n0(d.tasa)}</td>
-        <td class="inf-num">${n0(d.tasa * kDe(fac, d.area, d.equipo))}</td>
+        <td class="inf-num">${nTon(d.tasa * kDe(fac, d.area, d.equipo))}</td>
         <td class="inf-num inf-ac">${Math.round(acum / total * 100)}%</td>
       </tr>`;
     }).join('');
@@ -7474,11 +7521,11 @@ try { initCharts(); } catch (e) {}
           <tr><td>Hallazgos ya intervenidos</td>
               <td class="inf-num">${cer.length} puntos</td><td class="inf-num">− ${n0(elimG)} g/Hr</td></tr>
           <tr><td><b>Emisión activa hoy</b></td>
-              <td class="inf-num"><b>${DATA1.length + DATA2.length} puntos</b></td>
+              <td class="inf-num"><b>${DATA1.length + DATA2.length + DATACS.length} puntos</b></td>
               <td class="inf-num"><b>${n0(hoyG)} g/Hr</b></td></tr>
           ${(() => {
             const dc = cer.map(diasAbierto).filter(n => n != null);
-            const da = [...DATA1, ...DATA2].map(diasAbierto).filter(n => n != null);
+            const da = [...DATA1, ...DATA2, ...DATACS].map(diasAbierto).filter(n => n != null);
             const pr = a => Math.round(a.reduce((x, y) => x + y, 0) / a.length);
             const fs = [];
             if (dc.length) fs.push(`<tr><td>Tiempo promedio de reparación</td><td></td><td class="inf-num">${pr(dc)} días</td></tr>`);
@@ -7502,7 +7549,7 @@ try { initCharts(); } catch (e) {}
         <td>${d.area}</td>
         <td>${d.punto}${d.elemento ? ' · ' + d.elemento : ''}</td>
         <td class="inf-num">${n0(d.tasa)}</td>
-        <td class="inf-num">${n0(d.tasa * kDe('CAÑO SUR', d.area, d.equipo))}</td>
+        <td class="inf-num">${nTon(d.tasa * kDe('CAÑO SUR', d.area, d.equipo))}</td>
         <td class="inf-num inf-ac">${Math.round(acum / total * 100)}%</td>
       </tr>`;
     }).join('');
@@ -7518,8 +7565,25 @@ try { initCharts(); } catch (e) {}
         </tr></thead>
         <tbody>${filas}</tbody>
       </table>
-      <p class="inf-nota-ok">El CO2 equivalente de los FWKO usa la cromatografía del propio
-      campo (ETK-1101); los de SKIM TANK, sin análisis de Caño Sur, el del SKIM TANK de CPF-1.</p>`;
+      ${(() => {
+        /* La nota no puede estar escrita a mano: decía que el SKIM TANK tomaba
+           prestada la cromatografía de CPF-1, y desde META 2027 el ETK-1161-B
+           tiene la suya. Se arma mirando punto por punto qué muestra aplica. */
+        const propios = [], prestados = [];
+        DATACS.forEach(d => {
+          const o = origenK('CAÑO SUR', d.area, d.equipo);
+          const donde = o && o.propio ? propios : prestados;
+          if (donde.indexOf(d.equipo) < 0) donde.push(d.equipo);
+        });
+        const fr = [];
+        if (propios.length) fr.push(`<b>${propios.join(', ')}</b> con su propio análisis de la`
+          + ` hoja «${HOJA_2027}»`);
+        if (prestados.length) fr.push(`<b>${prestados.join(', ')}</b> con el del área, por no`
+          + ` tener análisis propio`);
+        return fr.length
+          ? `<p class="inf-nota-ok">El CO2 equivalente se calcula punto por punto: ${fr.join('; ')}.</p>`
+          : '';
+      })()}`;
   }
 
   function tablaCierres() {
@@ -9331,7 +9395,8 @@ ${cssInforme()}
          <span>${act} activas · ${cer} cerradas · Caño Sur ${DATACS.length}</span>`
       : `<span>ORIGEN <b>${memEsc(CROMA.archivo)}</b></span>
          <span>HOJA <b>${memEsc(CROMA.hoja)}</b></span>
-         <span>${CROMA.filas.length} muestras</span>`;
+         <span>${CROMA.filas.length} muestras</span>
+         <span>FACTORES EN USO <b>${memEsc(HOJA_2027)}</b></span>`;
     /* Debajo de la hoja iba un párrafo explicando las pestañas, las columnas
        y el SUMIF. La hoja ya lo enseña sola: las pestañas se ven, la fórmula
        sale arriba al tocar la celda y el subtotal se lee. Explicarlo además
@@ -9364,7 +9429,7 @@ ${cssInforme()}
            + `<td>${memG(totG)} g/Hr</td><td></td><td>${memN(totCo2, 2)} ton</td></tr>`;
     return `<div class="mem-tabla-caja"><table class="mem-t">
       <thead><tr><th class="izq">Facilidad · área</th><th>Puntos</th><th>Tasa g/Hr</th>
-        <th>Factor K</th><th>ton CO₂eq/año</th></tr></thead>
+        <th>Factor K <small>prom.</small></th><th>ton CO₂eq/año</th></tr></thead>
       <tbody>${filas}</tbody></table></div>`;
   }
 
@@ -9388,28 +9453,30 @@ ${cssInforme()}
     const K = kDe(mejor.fac, mejor.d.area, mejor.d.equipo);
     const co2 = mejor.d.tasa * K;
     const m = fichaMuestra(mejor.fac, mejor.d.area, mejor.d.equipo);
-    const gei = m ? parseFloat(m.fila[m.fila.length - 1]) : null;
-    const lect = m ? parseFloat(m.fila[4]) : null;
+    const gei = m ? m.gei : null;
+    const lect = m ? m.lectura : null;
 
     return `<div class="mem-demo">
       <div class="mem-demo-k">COMPRUÉBALO EN UNA LÍNEA</div>
       <div class="mem-demo-l">${memG(mejor.d.tasa)} g/Hr × ${memN(K, 7)} =
         <b>${memN(co2, 2)} ton CO₂eq/año</b></div>
       <p class="mem-demo-p">Eso es todo lo que hace el tablero con cada punto: <b>multiplicar la
-      lectura de la cámara por el factor del gas de esa área</b>. El ejemplo es
+      lectura de la cámara por el factor del gas de ese punto</b>. El ejemplo es
       <b>${memEsc(mejor.d.equipo)}</b> (${memEsc(mejor.fac)} · ${memEsc(mejor.d.area)}), que es el
       punto de mayor lectura ${ALCANCE_TXT[clave] || ''}; con cualquier otro la cuenta es la misma.</p>
       ${m ? `<p class="mem-demo-p" style="margin-top:14px"><b>Y el factor está en el Excel</b>, en
-        dos celdas de la hoja «${memEsc(CROMA.hoja)}»:</p>
-      <div class="mem-paso"><i>1</i><span>Busca la muestra
-        <b>${memEsc(m.fila[0])}</b> (${memEsc(m.fila[2])}), que es la cromatografía de
-        <b>${memEsc(mejor.d.area)}</b> en ${memEsc(mejor.fac)}${
-          String(m.fila[2]).indexOf(String(mejor.d.equipo)) < 0
-            ? ': el análisis se tomó en ese equipo y aplica a toda el área' : ''}.</span></div>
-      <div class="mem-paso"><i>2</i><span>Divide su columna <b>GEI ton CO₂eq/año</b> entre su
-        <b>lectura</b>: ${memN(gei, 6)} ÷ ${memG(lect)} = <b>${memN(gei / lect, 7)}</b>.</span></div>
+        dos celdas de la fila ${m.n} de la hoja «${memEsc(m.hoja)}»:</p>
+      <div class="mem-paso"><i>1</i><span>Busca la fila <b>${m.n}</b>${
+          m.etiqueta ? `, la muestra <b>${memEsc(m.etiqueta)}</b>` : ''} (${memEsc(m.equipo)}),
+        que es ${m.propio
+          ? `la cromatografía de <b>ese mismo equipo</b>`
+          : `la cromatografía de <b>${memEsc(mejor.d.area)}</b> en ${memEsc(mejor.fac)}: ese equipo
+             no tiene análisis propio, así que aplica el del área`}.</span></div>
+      <div class="mem-paso"><i>2</i><span>Divide su columna <b>GEI ton CO₂eq/año</b> (AJ${m.n})
+        entre su <b>lectura</b> (F${m.n}): ${memN(gei, 6)} ÷ ${memG(lect)} =
+        <b>${memN(gei / lect, 7)}</b>.</span></div>
       <div class="mem-paso"><i>3</i><span>Ese número es el factor de arriba. Multiplícalo por
-        cualquier lectura del tablero y sale la tonelada que muestra.</span></div>`
+        la lectura de ese punto y sale la tonelada que muestra el tablero.</span></div>`
       : ''}
     </div>`;
   }
@@ -9567,19 +9634,10 @@ ${cssInforme()}
      falta: la memoria de cálculo lo usa para decir, en cada área, cuál fila
      del libro es la que manda. Se busca por el factor, no escrita a mano. */
   function fichaMuestra(fac, area, equipo) {
-    const K = kDe(fac, area, equipo);
-    const i = (CROMA.filas || []).findIndex(fila => {
-      const k = memKdeFila(fila);
-      return k && Math.abs(k - K) < 5e-7;
-    });
-    if (i < 0) return null;
-    const f = CROMA.filas[i];
-    /* n es el número de fila que esa muestra tiene en el libro: las 18
-       empiezan en la 7 de la hoja «Calculos CO2 2026». Sirve para poder
-       señalarla con el dedo en el archivo. */
-    return { fila: f, K, n: 7 + i, equipo: String(f[2]).trim(),
-             lectura: parseFloat(String(f[4]).replace(',', '.')),
-             gei: parseFloat(String(f[f.length - 1]).replace(',', '.')) };
+    const o = origenK(fac, area, equipo);
+    if (!o) return null;
+    return { K: o.k, n: o.fila, hoja: o.hoja, etiqueta: o.etiqueta,
+             equipo: o.equipo, lectura: o.lect, gei: o.gei, propio: o.propio };
   }
 
   const ot = document.getElementById('navOrden');
