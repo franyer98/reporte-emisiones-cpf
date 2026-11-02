@@ -3699,11 +3699,52 @@ const K_ORIGEN = {
 };
 
 const K_FALLBACK = { 1: 0.24760223983966112, 2: 0.24698816042558724 };
-function kDe(fac, area) {
+
+/* ---------- CROMATOGRAFÍA POR PUNTO · META 2027 ----------
+   Hasta ahora el factor salía del área (SKIM TANK, PROCESOS…), que es lo que
+   había cuando sólo existía el libro de 2026. Pero a estos catorce hallazgos
+   el laboratorio les tomó su propia muestra, y están en la hoja «Calculos CO2
+   META 2027»: filas 7 a 20, una por punto.
+
+   Estos factores salen de esas muestras con el anclaje bien puesto ($K$6, el
+   peso molecular del metano). Son ton CO2eq al año por cada g/Hr.
+
+   Dos quedan pendientes de que el laboratorio confirme la muestra: TK-902
+   (0,0217 contra 0,2470 de 2026, con 97 % de aire en el vial) y ETK-1161-B
+   (0,1241, con 96 % de aire). Si alguna sale mal tomada, se cambia aquí. */
+const K_2027 = {
+  '300TK1': 0.2211001,
+  '300TK101': 0.2360923,
+  '300TK103': 0.2226457,
+  '300TK201': 0.2360923,
+  '300TK401': 0.2360923,
+  'ETK1101B': 0.2263016,
+  'ETK1101C': 0.2263016,
+  'ETK1161B': 0.1241172,
+  'TK902': 0.0217342,
+  'TK904': 0.1539232,
+  'TK906B': 0.1539232
+};
+
+/* Los nombres del mismo equipo se escriben distinto en cada archivo:
+   «300-TK-0103», «300 TK- 0103 ALMACENAMIENTO» y «300TK103» son el mismo
+   tanque. Se comparan sin guiones, sin espacios, sin ceros de relleno y sin
+   las palabras del área. */
+const EQ_SOBRA = new Set(['SKIM','TANK','FWKO','FWKOS','PROCESOS','ALMACENAMIENTO','HEAD']);
+function normEquipo(nombre) {
+  return String(nombre || '').toUpperCase().match(/[A-Z]+|\d+/g)
+    ?.filter(p => !EQ_SOBRA.has(p))
+    .map(p => /^\d+$/.test(p) ? (p.replace(/^0+/, '') || '0') : p)
+    .join('') || '';
+}
+
+function kDe(fac, area, equipo) {
+  const propio = K_2027[normEquipo(equipo)];
+  if (propio !== undefined) return propio;          // la muestra de ese punto
   return K_AREA[fac + '|' + area] ?? K_FALLBACK[fac === 'CPF-1' ? 1 : 2];
 }
 function co2eqDe(lista, fac) {
-  return lista.reduce((acc, r) => acc + r.tasa * kDe(fac, r.area), 0);
+  return lista.reduce((acc, r) => acc + r.tasa * kDe(fac, r.area, r.equipo), 0);
 }
 const K_CO2EQ = { 1: 0.24760223983966112, 2: 0.24698816042558724 };
 
@@ -3777,7 +3818,11 @@ function aggregate(data) {
     const areaTotal = entries.reduce((s, e) => s + e[1], 0);
     // areaTotal y nPuntos para que las áreas se puedan sumar a ojo y den el
     // total de la facilidad: sin eso, el bloque parecía la lista de puntos
+    // pts: los puntos del área. Hacen falta porque el factor K ya no es uno
+    // por área sino uno por punto, así que el CO2eq del área se suma punto
+    // por punto; multiplicar el total del área por un solo K daría distinto.
     return { area, equipo: entries[0][0], tasa: entries[0][1], areaTotal,
+             pts: data.filter(x => x.area === area),
              nPuntos: data.filter(x => x.area === area).length,
              pct: Math.round(entries[0][1] / Math.max(1, areaTotal) * 100) };
   });
@@ -3819,7 +3864,7 @@ function critRowsHTML(crit, fac) {
     + `<div class="fr-cab"><span>${c.area}</span>`
     + `<span class="pts">${c.nPuntos} ${c.nPuntos === 1 ? 'punto' : 'puntos'}</span></div>`
     + `<div class="fr-cifras"><span class="fr-gh">${fmt(c.areaTotal)}</span>`
-    + `<span class="fcard-co2">${co2(c.areaTotal * kDe(fac, c.area))} ton CO₂eq/año</span></div>`
+    + `<span class="fcard-co2">${co2(co2eqDe(c.pts || [], fac))} ton CO₂eq/año</span></div>`
     + `<div class="fr-eq"><span class="fr-bar"><span style="width:${c.pct}%"></span></span>`
     + `<b>${c.equipo}</b><span class="fr-pct">${c.pct}% · ${fmt(c.tasa)}</span></div>`
     + `</div>`).join('');
@@ -3871,7 +3916,7 @@ function heroCanoSur() {
     const crit = [...pts].sort((x, y) => y.tasa - x.tasa).slice(0, 2);
     tarjeta.querySelector('.fcard-label').textContent = area;
     tarjeta.querySelector('.fcard-main').innerHTML = `<span>${pts.length}</span> <small>puntos</small>`;
-    const areaCo2 = pts.reduce((x, d) => x + d.tasa * kDe('CAÑO SUR', d.area), 0);
+    const areaCo2 = pts.reduce((x, d) => x + d.tasa * kDe('CAÑO SUR', d.area, d.equipo), 0);
     tarjeta.querySelector('.fcard-sub').innerHTML = (esTasa
       ? `${tot.toLocaleString('es-CO')} g/Hr medidos` : `${masaAcumulada(tot, P)}${et}`)
       + `<b class="fcard-co2">${areaCo2.toLocaleString('es-CO',
@@ -3925,10 +3970,14 @@ function bloqueDosPasos(partes, tt, co2) {
   const filas = [];
   partes.forEach(([fac, lista]) => {
     [...new Set(lista.map(d => d.area))].forEach(area => {
-      const gArea = lista.filter(d => d.area === area).reduce((a, d) => a + d.tasa, 0);
+      const pts = lista.filter(d => d.area === area);
+      const gArea = pts.reduce((a, d) => a + d.tasa, 0);
       if (!gArea) return;
-      const K = kDe(fac, area);
-      filas.push({ fac, area, gArea, K, ton: gArea * K });
+      // El área puede llevar varias cromatografías, una por punto: el CO2eq se
+      // suma punto por punto y el K que se muestra es el promedio ponderado.
+      const ton = co2eqDe(pts, fac);
+      const K = ton / gArea;
+      filas.push({ fac, area, gArea, K, ton });
     });
   });
   filas.sort((a, b) => b.ton - a.ton);
@@ -4665,7 +4714,7 @@ function pintarCurva() {
   if (rotulo) rotulo.textContent = 'CÓMO HA BAJADO · CADA ESCALÓN ES UNA REPARACIÓN · ' + curvaAmbTexto();
 
   const esCo2 = curvaUni === 'co2';
-  const valorDe = (r, fac) => (esCo2 ? r.tasa * kDe(fac, r.area) : r.tasa);
+  const valorDe = (r, fac) => (esCo2 ? r.tasa * kDe(fac, r.area, r.equipo) : r.tasa);
 
   let baseV = 0, nuevosN = 0, nuevosV = 0;
   const cerrados = [], sinFecha = [];
@@ -5047,9 +5096,9 @@ function renderProgreso() {
   const hoyCo2 = co2eqDe(DATA1, 'CPF-1') + co2eqDe(DATA2, 'CPF-2') + co2eqDe(DATACS, 'CAÑO SUR');
 
   const elimG = [...CERRADAS1, ...CERRADAS2, ...CERRADASCS].reduce((a, d) => a + d.tasa, 0);
-  const elimCo2 = CERRADAS1.reduce((a, d) => a + d.tasa * kDe('CPF-1', d.area), 0)
-                + CERRADAS2.reduce((a, d) => a + d.tasa * kDe('CPF-2', d.area), 0)
-                + CERRADASCS.reduce((a, d) => a + d.tasa * kDe('CAÑO SUR', d.area), 0);
+  const elimCo2 = CERRADAS1.reduce((a, d) => a + d.tasa * kDe('CPF-1', d.area, d.equipo), 0)
+                + CERRADAS2.reduce((a, d) => a + d.tasa * kDe('CPF-2', d.area, d.equipo), 0)
+                + CERRADASCS.reduce((a, d) => a + d.tasa * kDe('CAÑO SUR', d.area, d.equipo), 0);
   const pct = baseG ? elimG / baseG * 100 : 0;
 
   set('pgCampana', campanaBase());
@@ -5094,9 +5143,9 @@ function renderCierres() {
 
   const gTot = [...CERRADAS1, ...CERRADAS2, ...CERRADASCS].reduce((a, d) => a + d.tasa, 0);
   // lo evitado se calcula con la cromatografía del área, igual que la emisión activa
-  const cTot = CERRADAS1.reduce((a, d) => a + d.tasa * kDe('CPF-1', d.area), 0)
-             + CERRADAS2.reduce((a, d) => a + d.tasa * kDe('CPF-2', d.area), 0)
-             + CERRADASCS.reduce((a, d) => a + d.tasa * kDe('CAÑO SUR', d.area), 0);
+  const cTot = CERRADAS1.reduce((a, d) => a + d.tasa * kDe('CPF-1', d.area, d.equipo), 0)
+             + CERRADAS2.reduce((a, d) => a + d.tasa * kDe('CPF-2', d.area, d.equipo), 0)
+             + CERRADASCS.reduce((a, d) => a + d.tasa * kDe('CAÑO SUR', d.area, d.equipo), 0);
 
   const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
   set('ciN', total);
@@ -8185,7 +8234,7 @@ try { initCharts(); } catch (e) {}
         <td>${d.area}</td>
         <td>${d.punto}${d.elemento ? ' · ' + d.elemento : ''}</td>
         <td class="inf-num">${n0(d.tasa)}</td>
-        <td class="inf-num">${n0(d.tasa * kDe(fac, d.area))}</td>
+        <td class="inf-num">${n0(d.tasa * kDe(fac, d.area, d.equipo))}</td>
         <td class="inf-num inf-ac">${Math.round(acum / total * 100)}%</td>
       </tr>`;
     }).join('');
@@ -8213,9 +8262,9 @@ try { initCharts(); } catch (e) {}
       + actCS.length + CERRADASCS.length;
     const hoyG = [...DATA1, ...DATA2, ...DATACS].reduce((a, d) => a + d.tasa, 0);
     const elimG = cer.reduce((a, d) => a + d.tasa, 0);
-    const elimCo2 = CERRADAS1.reduce((a, d) => a + d.tasa * kDe('CPF-1', d.area), 0)
-                  + CERRADAS2.reduce((a, d) => a + d.tasa * kDe('CPF-2', d.area), 0)
-                  + CERRADASCS.reduce((a, d) => a + d.tasa * kDe('CAÑO SUR', d.area), 0);
+    const elimCo2 = CERRADAS1.reduce((a, d) => a + d.tasa * kDe('CPF-1', d.area, d.equipo), 0)
+                  + CERRADAS2.reduce((a, d) => a + d.tasa * kDe('CPF-2', d.area, d.equipo), 0)
+                  + CERRADASCS.reduce((a, d) => a + d.tasa * kDe('CAÑO SUR', d.area, d.equipo), 0);
     const pct = baseG ? (elimG / baseG * 100).toFixed(1).replace('.', ',') : '0';
     return `
       <h3 class="inf-h3">Avance desde la medición inicial <span>${pct}% de la fuga eliminada</span></h3>
@@ -8254,11 +8303,11 @@ try { initCharts(); } catch (e) {}
         <td>${d.area}</td>
         <td>${d.punto}${d.elemento ? ' · ' + d.elemento : ''}</td>
         <td class="inf-num">${n0(d.tasa)}</td>
-        <td class="inf-num">${n0(d.tasa * kDe('CAÑO SUR', d.area))}</td>
+        <td class="inf-num">${n0(d.tasa * kDe('CAÑO SUR', d.area, d.equipo))}</td>
         <td class="inf-num inf-ac">${Math.round(acum / total * 100)}%</td>
       </tr>`;
     }).join('');
-    const co2cs = DATACS.reduce((a, d) => a + d.tasa * kDe('CAÑO SUR', d.area), 0);
+    const co2cs = DATACS.reduce((a, d) => a + d.tasa * kDe('CAÑO SUR', d.area, d.equipo), 0);
     return `
       <h3 class="inf-h3">CAÑO SUR · CENTAUROS <span>${DATACS.length} puntos · ${n0(total)} g/Hr
         · ${n0(co2cs)} ton CO2eq/año</span></h3>
@@ -8279,7 +8328,7 @@ try { initCharts(); } catch (e) {}
       .flatMap(([fac, l]) => l.map(d => ({ ...d, fac })));
     if (!todos.length) return '';
     const g = todos.reduce((a, d) => a + d.tasa, 0);
-    const c = todos.reduce((a, d) => a + d.tasa * kDe(d.fac, d.area), 0);
+    const c = todos.reduce((a, d) => a + d.tasa * kDe(d.fac, d.area, d.equipo), 0);
     const filas = todos.sort((a, b) => b.tasa - a.tasa).map(d => `
       <tr>
         <td><b>${d.equipo}</b></td>
@@ -8308,9 +8357,9 @@ try { initCharts(); } catch (e) {}
     const tasa = activos.reduce((a, d) => a + d.tasa, 0);
     const co2 = co2eqDe(DATA1, 'CPF-1') + co2eqDe(DATA2, 'CPF-2');
     const nCer = CERRADAS1.length + CERRADAS2.length + CERRADASCS.length;
-    const cEvit = CERRADAS1.reduce((a, d) => a + d.tasa * kDe('CPF-1', d.area), 0)
-                + CERRADAS2.reduce((a, d) => a + d.tasa * kDe('CPF-2', d.area), 0)
-                + CERRADASCS.reduce((a, d) => a + d.tasa * kDe('CAÑO SUR', d.area), 0);
+    const cEvit = CERRADAS1.reduce((a, d) => a + d.tasa * kDe('CPF-1', d.area, d.equipo), 0)
+                + CERRADAS2.reduce((a, d) => a + d.tasa * kDe('CPF-2', d.area, d.equipo), 0)
+                + CERRADASCS.reduce((a, d) => a + d.tasa * kDe('CAÑO SUR', d.area, d.equipo), 0);
 
     const kpi = (v, et) => `<div class="inf-kpi"><div class="inf-kv">${v}</div><div class="inf-ke">${et}</div></div>`;
 
@@ -8543,7 +8592,7 @@ ${cssInforme()}
     const fac = lista[0].fac;
     const areas = [...new Set(lista.map(x => x.d.area))].join(' · ');
     const total = lista.reduce((a, x) => a + x.d.tasa, 0);
-    const co2 = lista.reduce((a, x) => a + x.d.tasa * kDe(x.fac, x.d.area), 0);
+    const co2 = lista.reduce((a, x) => a + x.d.tasa * kDe(x.fac, x.d.area, x.d.equipo), 0);
     const n0 = v => Math.round(v).toLocaleString('es-CO');
 
     const puntos = lista.map((x, i) => {
@@ -8745,23 +8794,32 @@ ${cssInforme()}
         ton de TOC  ×  F  =  ton CO2eq al año
 
      donde F = %mCH4/%mTOC × 28 + %mCO2/%mTOC sale de la cromatografía del
-     área. El tablero guarda ese mismo cálculo condensado en K (ton CO2eq
+     punto. El tablero guarda ese mismo cálculo condensado en K (ton CO2eq
      por cada g/Hr), así que al final se comprueba que las dos cuentas den
      lo mismo: si alguna vez dejan de coincidir, el simulador lo dice.
      ============================================================ */
   const HORAS_ANIO = 8760;
 
-  /* Dos grupos en el selector. Arriba, los seis factores que el tablero
-     aplica por área: son los que hay que usar para reportar. Abajo, las
-     dieciocho muestras del libro, cada una con su fila, para poder
-     reproducir cualquier renglón del Excel sin tener que buscar un área
-     parecida. */
+  /* Dos grupos en el selector. Arriba, el factor que el tablero aplica a cada
+     punto —la cromatografía de su propio equipo cuando la hay, la del área
+     cuando no—: son los que hay que usar para reportar. Abajo, las muestras
+     del libro, cada una con su fila, para poder reproducir cualquier renglón
+     del Excel sin tener que buscar un punto parecido. */
   function simOpciones() {
-    const areas = Object.keys(K_AREA).map(clave => {
-      const [fac, area] = clave.split('|');
-      return { tipo: 'area', clave, fac, area, k: K_AREA[clave],
-               etiqueta: fac + ' · ' + area };
-    });
+    const vistos = new Set();
+    const areas = [];
+    [['CPF-1', typeof DATA1 !== 'undefined' ? DATA1 : []],
+     ['CPF-2', typeof DATA2 !== 'undefined' ? DATA2 : []],
+     ['CAÑO SUR', typeof DATACS !== 'undefined' ? DATACS : []]]
+      .forEach(([fac, lista]) => lista.forEach(d => {
+        const clave = fac + '|' + d.area + '|' + d.equipo;
+        if (vistos.has(clave)) return;
+        vistos.add(clave);
+        areas.push({ tipo: 'punto', clave, fac, area: d.area, equipo: d.equipo,
+                     k: kDe(fac, d.area, d.equipo),
+                     etiqueta: fac + ' · ' + d.equipo + ' · ' + d.area });
+      }));
+    areas.sort((a, b) => a.etiqueta.localeCompare(b.etiqueta, 'es'));
     const muestras = MUESTRAS_GOP.map(m => ({
       tipo: 'muestra', fila: m.fila, fac: m.fac, equipo: m.equipo,
       lectura: m.lectura, gei: m.gei, k: m.k,
@@ -8796,7 +8854,7 @@ ${cssInforme()}
           <label>Cromatografía
             <select id="simCrom" style="text-overflow:ellipsis">
               <optgroup label="Factores que aplica el tablero">
-                ${ops.map((o, i) => o.tipo === 'area'
+                ${ops.map((o, i) => o.tipo === 'punto'
                     ? `<option value="${i}">${o.etiqueta}</option>` : '').join('')}
               </optgroup>
               <optgroup label="Muestras del libro · hoja Calculos CO2 2026">
@@ -8859,7 +8917,7 @@ ${cssInforme()}
 
       // La comprobación: el tablero multiplica la tasa por K. Con las horas
       // del método (8.760) las dos cuentas tienen que dar lo mismo.
-      const kTablero = o.tipo === 'area' ? kDe(o.fac, o.area) : o.k;
+      const kTablero = o.k;
       const delTablero = tasa * kTablero;
       const mismasHoras = Math.abs(horas - HORAS_ANIO) < 1e-9;
       const cuadra = mismasHoras && Math.abs(co2 - delTablero) < 1e-9;
@@ -8868,10 +8926,10 @@ ${cssInforme()}
       ok.innerHTML = mismasHoras
         ? `<span class="pico">${cuadra ? '✓' : '!'}</span><span>`
           + (cuadra
-              ? (o.tipo === 'area'
+              ? (o.tipo === 'punto'
                   ? `Coincide con el tablero: ${simDecimales(tasa, 0)} g/Hr × ${simDecimales(kTablero, 7)}`
                     + ` = <b>${simDecimales(delTablero, 2)} ton CO₂eq/año</b>. Es la misma cuenta,`
-                    + ` condensada en el factor K del área.`
+                    + ` condensada en el factor K de ese punto.`
                   : (Math.abs(tasa - o.lectura) < 1e-9
                       ? `Es la fila ${o.fila} del libro tal cual: su lectura F${o.fila} son`
                         + ` ${simDecimales(o.lectura, 0)} g/Hr y su GEI AJ${o.fila} son`
@@ -8880,7 +8938,7 @@ ${cssInforme()}
                         + ` lectura. En el libro esa fila va con ${simDecimales(o.lectura, 0)} g/Hr`
                         + ` y da ${simDecimales(o.gei, 3)} ton CO₂eq/año.`))
               : `No coincide con el tablero (${simDecimales(delTablero, 2)} ton). Revisa el factor`
-                + ` del área antes de usar este número.`)
+                + ` del punto antes de usar este número.`)
           + '</span>'
         : `<span class="pico">✓</span><span>Con ${simDecimales(horas, 0)} horas en vez de las`
           + ` ${simDecimales(HORAS_ANIO, 0)} del método, el resultado ya no es comparable con el`
@@ -8893,9 +8951,12 @@ ${cssInforme()}
           + ` K = AJ${o.fila} / F${o.fila} = ${simDecimales(o.gei, 6)} / ${simDecimales(o.lectura, 0)}`
           + ` = <b>${simDecimales(o.k, 7)}</b> ton CO₂eq por cada g/Hr.`;
       } else {
-        nota.innerHTML = o.clave === 'CAÑO SUR|SKIM TANK'
-          ? 'El SKIM TANK de Caño Sur no tiene análisis propio: se aplica el del SKIM TANK de CPF-1.'
-          : `Factor del área · K = ${simDecimales(o.k, 7)} ton CO₂eq por cada g/Hr.`;
+        const propia = K_2027[normEquipo(o.equipo)] !== undefined;
+        nota.innerHTML = propia
+          ? `Cromatografía del propio ${o.equipo} · META 2027 · K =`
+            + ` <b>${simDecimales(o.k, 7)}</b> ton CO₂eq por cada g/Hr.`
+          : `${o.equipo} no tiene análisis propio: se aplica el del área (${o.area}).`
+            + ` K = <b>${simDecimales(o.k, 7)}</b> ton CO₂eq por cada g/Hr.`;
       }
     }
 
@@ -8959,7 +9020,7 @@ ${cssInforme()}
     const { partes } = memPartes(clave);
     let totCo2 = 0, n = 0;
     partes.forEach(([fac, lista]) => {
-      lista.forEach(d => { totCo2 += d.tasa * kDe(fac, d.area); n++; });
+      lista.forEach(d => { totCo2 += d.tasa * kDe(fac, d.area, d.equipo); n++; });
     });
     return { totCo2, n };
   }
@@ -10089,9 +10150,9 @@ ${cssInforme()}
     partes.forEach(([fac, lista]) => {
       [...new Set(lista.map(d => d.area))].sort().forEach(area => {
         const pts = lista.filter(d => d.area === area);
-        const K = kDe(fac, area);
         const g = pts.reduce((a, d) => a + d.tasa, 0);
-        const co2 = g * K;
+        const co2 = co2eqDe(pts, fac);        // punto por punto, cada uno su K
+        const K = g ? co2 / g : 0;
         totG += g; totCo2 += co2; totN += pts.length;
         filas += `<tr class="mem-resumen"><td class="ar">${memEsc(fac)} · ${memEsc(area)}</td>`
                + `<td>${pts.length}</td><td>${memG(g)}</td><td><small>× ${memN(K, 7)}</small></td>`
@@ -10125,9 +10186,9 @@ ${cssInforme()}
       if (!mejor || d.tasa > mejor.d.tasa) mejor = { d, fac };
     }));
     if (!mejor) return '';
-    const K = kDe(mejor.fac, mejor.d.area);
+    const K = kDe(mejor.fac, mejor.d.area, mejor.d.equipo);
     const co2 = mejor.d.tasa * K;
-    const m = fichaMuestra(mejor.fac, mejor.d.area);
+    const m = fichaMuestra(mejor.fac, mejor.d.area, mejor.d.equipo);
     const gei = m ? parseFloat(m.fila[m.fila.length - 1]) : null;
     const lect = m ? parseFloat(m.fila[4]) : null;
 
@@ -10306,8 +10367,8 @@ ${cssInforme()}
      trazabilidad y el lado a lado se retiraron, pero esto sigue haciendo
      falta: la memoria de cálculo lo usa para decir, en cada área, cuál fila
      del libro es la que manda. Se busca por el factor, no escrita a mano. */
-  function fichaMuestra(fac, area) {
-    const K = kDe(fac, area);
+  function fichaMuestra(fac, area, equipo) {
+    const K = kDe(fac, area, equipo);
     const i = (CROMA.filas || []).findIndex(fila => {
       const k = memKdeFila(fila);
       return k && Math.abs(k - K) < 5e-7;
