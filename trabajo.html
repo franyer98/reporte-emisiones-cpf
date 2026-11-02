@@ -2006,29 +2006,8 @@ THREE.OrbitControls = OrbitControls;
     .t3d-label { font-size: 8px; }
   }
 
-  .period3d-bar {
-    position: absolute; bottom: 12px; left: 12px; z-index: 6;
-    display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
-    background: rgba(18,21,26,.86); border: 1px solid var(--border);
-    border-radius: 9px; padding: 6px 8px; backdrop-filter: blur(6px);
-    max-width: calc(100% - 24px);
-  }
-  .p3d-label {
-    font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: .08em;
-    color: var(--text-faint); margin-right: 2px;
-  }
-  .period3d-bar button {
-    background: transparent; color: var(--text-dim); border: 1px solid transparent;
-    border-radius: 6px; padding: 5px 9px; font-family: 'JetBrains Mono', monospace;
-    font-size: 10.5px; cursor: pointer; transition: all .15s ease;
-  }
-  .period3d-bar button:hover { color: var(--text); border-color: var(--border); }
-  .period3d-bar button.active { background: var(--cool); color: #1b232d; font-weight: 700; border-color: var(--cool); }
-  @media (max-width: 620px) {
-    .period3d-bar { bottom: 8px; left: 8px; padding: 5px 6px; gap: 3px; }
-    .period3d-bar button { padding: 4px 7px; font-size: 9.5px; }
-    .p3d-label { display: none; }
-  }
+  /* Aquí iba la barra ACUMULADO de dentro del mapa (Hora/Mes/Trimestre/…).
+     Repetía el selector de periodo de arriba, que ya mueve los tres mapas. */
 
   /* ---------- HALLAZGOS CERRADOS ---------- */
   /* comparación antes / después */
@@ -3420,7 +3399,7 @@ THREE.OrbitControls = OrbitControls;
   <section id="mapa3d">
     <div class="wrap">
       <div class="section-head"><h2>Vista 3D de tanques</h2><div class="section-note"><span class="pista3d">TOCA EL MAPA PARA MOVERLO · DOBLE TOQUE: VOLVER A LA VISTA INICIAL · BARRA LATERAL: ZOOM</span></div></div>
-      <div class="mapa3d-wrap"><canvas id="canvas3d1"></canvas><div class="zoom3d" id="zoom1"><button data-z="in" title="Acercar">+</button><input type="range" min="0" max="100" value="0" aria-label="Zoom"><button data-z="out" title="Alejar">&minus;</button></div><div class="total3d" id="total3d1"><div class="t3d-label">TOTAL FACILIDAD</div><div class="t3d-value">—</div><div class="t3d-sub">—</div></div><div class="mapa3d-hint" id="hint3d1"></div><div class="period3d-bar"><span class="p3d-label">ACUMULADO</span><button data-period="hora" class="active">Hora</button><button data-period="mes">Mes</button><button data-period="trim">Trimestre</button><button data-period="sem">Semestre</button><button data-period="anio">Año</button></div><div class="view3d-bar"><button data-view="iso">Isométrica</button><button data-view="top">Superior</button><button data-view="front">Frontal</button><button data-view="side">Lateral</button></div></div>
+      <div class="mapa3d-wrap"><canvas id="canvas3d1"></canvas><div class="zoom3d" id="zoom1"><button data-z="in" title="Acercar">+</button><input type="range" min="0" max="100" value="0" aria-label="Zoom"><button data-z="out" title="Alejar">&minus;</button></div><div class="total3d" id="total3d1"><div class="t3d-label">TOTAL FACILIDAD</div><div class="t3d-value">—</div><div class="t3d-sub">—</div></div><div class="mapa3d-hint" id="hint3d1"></div><div class="view3d-bar"><button data-view="iso">Isométrica</button><button data-view="top">Superior</button><button data-view="front">Frontal</button><button data-view="side">Lateral</button></div></div>
     </div>
   </section>
   <section id="ranking">
@@ -3451,7 +3430,7 @@ THREE.OrbitControls = OrbitControls;
   <section id="mapa3d2">
     <div class="wrap">
       <div class="section-head"><h2>Vista 3D de tanques</h2><div class="section-note"><span class="pista3d">TOCA EL MAPA PARA MOVERLO · DOBLE TOQUE: VOLVER A LA VISTA INICIAL · BARRA LATERAL: ZOOM</span></div></div>
-      <div class="mapa3d-wrap"><canvas id="canvas3d2"></canvas><div class="zoom3d" id="zoom2"><button data-z="in" title="Acercar">+</button><input type="range" min="0" max="100" value="0" aria-label="Zoom"><button data-z="out" title="Alejar">&minus;</button></div><div class="total3d" id="total3d2"><div class="t3d-label">TOTAL FACILIDAD</div><div class="t3d-value">—</div><div class="t3d-sub">—</div></div><div class="mapa3d-hint" id="hint3d2"></div><div class="period3d-bar"><span class="p3d-label">ACUMULADO</span><button data-period="hora" class="active">Hora</button><button data-period="mes">Mes</button><button data-period="trim">Trimestre</button><button data-period="sem">Semestre</button><button data-period="anio">Año</button></div><div class="view3d-bar"><button data-view="iso">Isométrica</button><button data-view="top">Superior</button><button data-view="front">Frontal</button><button data-view="side">Lateral</button></div></div>
+      <div class="mapa3d-wrap"><canvas id="canvas3d2"></canvas><div class="zoom3d" id="zoom2"><button data-z="in" title="Acercar">+</button><input type="range" min="0" max="100" value="0" aria-label="Zoom"><button data-z="out" title="Alejar">&minus;</button></div><div class="total3d" id="total3d2"><div class="t3d-label">TOTAL FACILIDAD</div><div class="t3d-value">—</div><div class="t3d-sub">—</div></div><div class="mapa3d-hint" id="hint3d2"></div><div class="view3d-bar"><button data-view="iso">Isométrica</button><button data-view="top">Superior</button><button data-view="front">Frontal</button><button data-view="side">Lateral</button></div></div>
     </div>
   </section>
   <section id="ranking2">
@@ -3499,7 +3478,6 @@ THREE.OrbitControls = OrbitControls;
         <div class="zoom3d" id="zoom3"><button data-z="in" title="Acercar">+</button><input type="range" min="0" max="100" value="0" aria-label="Zoom"><button data-z="out" title="Alejar">&minus;</button></div>
         <div class="total3d" id="total3d3"><div class="t3d-label">TOTAL FACILIDAD</div><div class="t3d-value">—</div><div class="t3d-sub">—</div></div>
         <div class="mapa3d-hint" id="hint3d3"></div>
-        <div class="period3d-bar"><span class="p3d-label">ACUMULADO</span><button data-period="hora" class="active">Hora</button><button data-period="mes">Mes</button><button data-period="trim">Trimestre</button><button data-period="sem">Semestre</button><button data-period="anio">Año</button></div>
         <div class="view3d-bar"><button data-view="iso">Isométrica</button><button data-view="top">Superior</button><button data-view="front">Frontal</button><button data-view="side">Lateral</button></div>
       </div>
 
@@ -6031,7 +6009,7 @@ function repintarPorPeriodo() {
   updateKPIs();
   renderGrid1(); renderGrid2();
   // los mapas 3D siguen el mismo periodo
-  [map3d1, map3d2].forEach(m => { if (m && m.setPeriodo) m.setPeriodo(PERIODO_GLOBAL); });
+  [map3d1, map3d2, map3d3].forEach(m => { if (m && m.setPeriodo) m.setPeriodo(PERIODO_GLOBAL); });
 }
 
 (function() {
