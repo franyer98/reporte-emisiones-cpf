@@ -1730,6 +1730,12 @@ THREE.OrbitControls = OrbitControls;
     line-height: 1;
   }
   .fcard-crit-label span { font-weight: 400; letter-spacing: 0; text-transform: none; }
+  .nav-sello {
+    margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,.07);
+    font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: .04em;
+    color: var(--text-faint);
+  }
+  .nav-sello b { color: var(--text-dim); font-weight: 600; }
   @media (max-width: 760px) { .facility-row { grid-template-columns: 1fr; } }
 
   /* ---------- FACILITY TABS ---------- */
@@ -3199,7 +3205,22 @@ THREE.OrbitControls = OrbitControls;
              aquí lo que hace falta es consultarlo, no guardarlo. -->
         <a href="guia/columnas.html" target="_blank" rel="noopener"
            class="nav-link" id="navGuiaCol">Guía de columnas · qué significa cada fórmula</a>
+        <!-- Qué versión se está viendo. Sin esto, cuando algo se publica y el
+             teléfono sigue mostrando lo de antes, no hay manera de saber si
+             falta el despliegue o si es la copia guardada del navegador. La
+             rellena construir.py al armar la página. -->
+        <div class="nav-sello" id="navSello">versión <b>__SELLO__</b></div>
       </div>
+      <script>
+        /* Si alguien abre el archivo fuente sin pasar por construir.py, el
+           hueco sigue sin rellenar: mejor decirlo que mostrar un __SELLO__. */
+        (function () {
+          var e = document.getElementById('navSello');
+          if (e && e.textContent.indexOf('__SEL' + 'LO__') >= 0) {
+            e.innerHTML = 'versión <b>de trabajo, sin publicar</b>';
+          }
+        })();
+      </script>
 
       <!-- Aquí había un grupo por facilidad con sus cuatro secciones. Navegar
            entre facilidades es lo que hace el menú principal de arriba, y
