@@ -1716,13 +1716,8 @@ THREE.OrbitControls = OrbitControls;
   .tabs::-webkit-scrollbar { display: none; }
   .tab { white-space: nowrap; }
   .tab.active.todas { box-shadow: inset 0 -2px 0 var(--cool); }
-  /* Con «Todas» no hay un mapa que junte las facilidades: en su lugar va una
-     línea que invita a elegir una. */
-  .sin-panel {
-    display: none; text-align: center; color: var(--text-faint);
-    font-size: 13.5px; padding: 54px 0 70px;
-  }
-  .sin-panel.on { display: block; }
+  /* Con «Todas» no se muestra ningún panel: el resumen de arriba se basta y
+     el menú ya dice dónde está cada facilidad. */
   .tabs { display:flex; gap: 4px; padding: 9px 0; }
   .tab {
     font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 14px;
@@ -3424,11 +3419,6 @@ THREE.OrbitControls = OrbitControls;
   </div>
 </header>
 
-<div class="wrap"><div class="sin-panel on" id="sinPanel">
-  Arriba está el resumen de los dos campos. Elige <b>CPF-1</b>, <b>CPF-2</b> o
-  <b>Caño Sur</b> en el menú para ver su mapa, su ranking y el detalle de cada punto.
-</div></div>
-
 <!-- ============ PANEL CPF-1 ============ -->
 <div class="panel t1" id="panel-t1">
   <section id="mapa">
@@ -4206,8 +4196,6 @@ function abrirPestana(id) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   tab.classList.add('active');
   if (panel) panel.classList.add('active');
-  const aviso = document.getElementById('sinPanel');
-  if (aviso) aviso.classList.toggle('on', !panel);
   // el encabezado sigue a la pestaña: Caño Sur tiene sus propios totales
   HERO_CS = (id === 't3');
   CAMPO_GLOBAL = CAMPO_DE_TAB[id] || CAMPO_GLOBAL;
