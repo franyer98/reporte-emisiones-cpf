@@ -3923,6 +3923,18 @@ const n2 = (v, d) => v.toFixed(d);
    total de la facilidad—, a la derecha el equipo que más aporta dentro de
    ella, con su parte. El equipo de la derecha NO es un punto suelto: puede
    agrupar varios del mismo tanque, y nunca es la lista completa del área. */
+/* Las toneladas se muestran enteras. La cámara cuantifica con una
+   incertidumbre del orden del 20 %, así que dos decimales son precisión que el
+   dato no tiene: «1.313 ton» dice lo mismo y no promete lo que no hay. Donde el
+   número sí se cuadra contra una celda del libro —la memoria de cálculo, el
+   simulador y el avance— van completos, que ahí ese es el oficio. Por debajo de
+   una tonelada se muestran dos decimales: si no, un punto chico sale como 0. */
+function tonFmt(v) {
+  return (v > 0 && v < 1)
+    ? v.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : Math.round(v).toLocaleString('es-CO');
+}
+
 /* El color de cada campo, el mismo en la tarjeta Total y en las de área, para
    que la barra se lea sin tener que buscar a cuál pertenece. */
 const COLOR_FAC = { 'CPF-1': 'c1', 'CPF-2': 'c2', 'CAÑO SUR': 'c3' };
@@ -3934,8 +3946,7 @@ function critRowsHTML(crit, fac) {
      cambie o no el periodo de arriba: la lectura se proyecta, el equivalente
      no, y mezclarlos sería la confusión de siempre. Por eso lleva el «/año»
      escrito al lado. */
-  const co2 = v => v.toLocaleString('es-CO',
-    { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const co2 = tonFmt;
   return crit.map(c =>
     `<div class="fcard-row">`
     + `<div class="fr-cab"><span>${c.area}</span>`
@@ -3967,8 +3978,7 @@ function heroCanoSur() {
   pintarCo2(co2eqDe(DATACS, 'CAÑO SUR'), P);
   set('kpiMedSub', `<b>${a.nPuntos} puntos</b> abiertos en <b>Caño Sur</b>, facilidad CENTAUROS`);
   set('kpiRepSub', (esTasa || P === 'anio') ? ''
-    : `al año, <b>${co2eqDe(DATACS, 'CAÑO SUR').toLocaleString('es-CO',
-        { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ton</b>`);
+    : `al año, <b>${tonFmt(co2eqDe(DATACS, 'CAÑO SUR'))} ton</b>`);
   set('kpiSub', '');
   // antes este bloque se quedaba con las cuentas de Rubiales al pasar a Caño Sur
   bloqueDosPasos([['CAÑO SUR', DATACS]], a.total, co2eqDe(DATACS, 'CAÑO SUR'));
@@ -3998,8 +4008,7 @@ function heroCanoSur() {
     const areaCo2 = pts.reduce((x, d) => x + d.tasa * kDe('CAÑO SUR', d.area, d.equipo, d.punto), 0);
     tarjeta.querySelector('.fcard-sub').innerHTML = (esTasa
       ? `${tot.toLocaleString('es-CO')} g/Hr medidos` : `${masaAcumulada(tot, P)}${et}`)
-      + `<b class="fcard-co2">${areaCo2.toLocaleString('es-CO',
-          { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ton CO₂eq/año</b>`;
+      + `<b class="fcard-co2">${tonFmt(areaCo2)} ton CO₂eq/año</b>`;
     const lbl = tarjeta.querySelector('.fcard-crit-label');
     if (lbl) lbl.textContent = 'PUNTOS DE MAYOR TASA';
     const cont = document.getElementById('kpiF' + (i + 1) + 'Crit');
@@ -4158,7 +4167,7 @@ function updateKPIs() {
   const et = esTasa ? '' : ' ' + PERIODOS[P].etiqueta;
   /* Arriba del todo: la usan varias líneas de abajo y declararla a mitad
      dejaba a las de antes en la zona muerta. */
-  const nd2 = v => v.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const nd2 = tonFmt;
 
   /* La cámara mide una TASA. Antes, al elegir un periodo, el renglón grande
      se volvía masa acumulada —«63,62 ton»— debajo del rótulo «LO QUE MIDE LA
@@ -4781,9 +4790,7 @@ function curvaConjuntos() {
    son los que hay que poder cuadrar contra el libro. Sólo las marcas del eje
    se redondean, que ahí los decimales no caben y nadie los lee. */
 function curvaFmt(v) {
-  return curvaUni === 'co2'
-    ? v.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    : Math.round(v).toLocaleString('es-CO');
+  return curvaUni === 'co2' ? tonFmt(v) : Math.round(v).toLocaleString('es-CO');
 }
 function curvaTick(v) {
   return curvaUni === 'co2'
@@ -5250,7 +5257,7 @@ function renderCierres() {
   const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
   set('ciN', total);
   set('ciG', gTot.toLocaleString('es-CO'));
-  set('ciC', cTot.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+  set('ciC', tonFmt(cTot));
 
   const vacio = document.getElementById('ciVacio');
   const cuerpo = document.getElementById('ciCuerpo');
@@ -6276,8 +6283,7 @@ function pintarCo2(tonAnio, periodo) {
   const p = PERIODOS[periodo];
   const v = (periodo === 'hora') ? tonAnio : tonAnio * p.horas / 8760;
   const el = document.getElementById('kpiCo2');
-  if (el) el.textContent = v.toLocaleString('es-CO',
-    { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (el) el.textContent = tonFmt(v);
   const u = document.getElementById('kpiCo2U');
   if (u) u.textContent = 'ton CO₂eq' + p.co2;
 }
@@ -7964,8 +7970,7 @@ function buildTankMap3D(canvasId, hintId, data, totalId) {
     const co2 = (typeof co2eqDe === 'function')
       ? co2eqDe(data, facDeMapa())
       : sumaGh * 0.2470244;
-    valEl.textContent = co2.toLocaleString('es-CO',
-      { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ton CO₂eq';
+    valEl.textContent = tonFmt(co2) + ' ton CO₂eq';
     subEl.textContent = data.length + ' puntos · al año · '
       + sumaGh.toLocaleString('es-CO') + ' g/Hr';
   }
