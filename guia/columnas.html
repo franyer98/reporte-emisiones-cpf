@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guía de columnas · GOP-F-006</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #1b232d; --surface: #263141; --surface-2: #313e4e; --border: #475463;
+    --text: #f1f4f7; --text-dim: #b4c0cd; --text-faint: #8c98a6;
+    --cool: #2dd4ee; --mid: #ffb238; --hot: #ff4757; --ok: #3ddc84;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif; line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    padding: 0 max(16px, env(safe-area-inset-left, 0px)) 60px
+             max(16px, env(safe-area-inset-right, 0px));
+  }
+  .wrap { max-width: 980px; margin: 0 auto; }
+
+  header.top { padding-block: 34px 10px; }
+  .volver {
+    display: inline-block; margin-bottom: 20px; color: var(--cool);
+    text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 12px;
+  }
+  .volver:hover { text-decoration: underline; }
+  h1 { font-size: clamp(22px, 5vw, 31px); line-height: 1.2; letter-spacing: -.02em; }
+  .lede { color: var(--text-dim); margin-top: 10px; max-width: 62ch; font-size: 14.5px; }
+
+  h2 {
+    font-size: 15px; letter-spacing: .1em; font-family: 'JetBrains Mono', monospace;
+    color: var(--cool); margin: 42px 0 12px; text-transform: uppercase;
+  }
+  h3 { font-size: 16px; margin: 26px 0 8px; }
+  p { color: var(--text-dim); margin-bottom: 12px; font-size: 14.5px; max-width: 70ch; }
+  b, strong { color: var(--text); font-weight: 600; }
+  code {
+    font-family: 'JetBrains Mono', monospace; font-size: 12.5px;
+    background: var(--surface-2); padding: 2px 6px; border-radius: 5px;
+    color: var(--text); white-space: nowrap;
+  }
+
+  .tabla { overflow-x: auto; margin: 14px 0 6px; border-radius: 10px; border: 1px solid var(--border); }
+  table { border-collapse: collapse; width: 100%; min-width: 520px; font-size: 13.5px; }
+  th {
+    background: var(--surface-2); text-align: left; padding: 10px 12px;
+    font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: .08em;
+    color: var(--text-faint); text-transform: uppercase; white-space: nowrap;
+  }
+  td { padding: 10px 12px; border-top: 1px solid var(--border); vertical-align: top; color: var(--text-dim); }
+  tbody tr:nth-child(odd) td { background: rgba(255,255,255,.015); }
+  td.col {
+    font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--mid);
+    white-space: nowrap; width: 1%;
+  }
+  td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td code { white-space: pre-wrap; word-break: break-word; }
+
+  .nota {
+    border-left: 2px solid var(--cool); padding: 2px 0 2px 14px;
+    margin: 14px 0; color: var(--text-faint); font-size: 13.5px; max-width: 70ch;
+  }
+  .aviso {
+    background: rgba(255,71,87,.08); border: 1px solid rgba(255,71,87,.35);
+    border-radius: 10px; padding: 16px 18px; margin: 16px 0;
+  }
+  .aviso p:last-child { margin-bottom: 0; }
+  .mal { color: var(--hot); font-family: 'JetBrains Mono', monospace; }
+  .bien { color: var(--ok); font-family: 'JetBrains Mono', monospace; }
+  .pie {
+    margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--border);
+    color: var(--text-faint); font-size: 12.5px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <a class="volver" href="../">← Volver al tablero</a>
+  <h1>Guía de columnas · hoja «Calculos CO2»</h1>
+  <p class="lede">
+    Formato GOP-F-006 · Identificación de Emisiones Fugitivas VAO · Campo Rubiales
+    y Caño Sur. Qué significa cada columna, de la A a la AM, y la fórmula que lleva.
+  </p>
+</header>
+
+<h2>Cómo está organizada</h2>
+<p>
+  Cada fila es un punto de fuga. Las columnas van en cadena: primero lo que identifica
+  el punto, luego lo que mide la cámara, luego la composición del gas que entrega el
+  laboratorio, y de ahí en adelante todo se calcula.
+</p>
+<p>
+  <b>La fila 6 es especial.</b> No tiene datos de ningún punto: son los
+  <b>pesos moleculares</b> de cada componente, rotulados en F6 como «Peso Molecular Mwi».
+  Son constantes de tabla periódica, iguales para todas las filas. Las fórmulas de las
+  columnas Z, AA, AB y AD deben anclarse a esa fila.
+</p>
+
+<h2>1 · Identificación del punto</h2>
+<div class="tabla"><table>
+<thead><tr><th>Col</th><th>Rótulo</th><th>Qué es</th></tr></thead>
+<tbody>
+<tr><td class="col">A</td><td>Etiqueta No</td><td>Código del hallazgo. EFRB = Rubiales, EFCS = Caño Sur</td></tr>
+<tr><td class="col">B</td><td>Nombre facilidad</td><td>CPF-1, CPF-2 o EP-1 (Caño Sur / CENTAUROS)</td></tr>
+<tr><td class="col">C</td><td>Equipo</td><td>Tanque o equipo inspeccionado</td></tr>
+<tr><td class="col">D</td><td>Punto detectado</td><td>Dónde fuga: manhole, brida, válvula, sello</td></tr>
+<tr><td class="col">E</td><td>Tipo</td><td>Imagen térmica del hallazgo (foto OGI/FLIR)</td></tr>
+</tbody></table></div>
+
+<h2>2 · La medición</h2>
+<div class="tabla"><table>
+<thead><tr><th>Col</th><th>Rótulo</th><th>Qué es</th></tr></thead>
+<tbody>
+<tr><td class="col">F</td><td>Lectura Cámara g/h</td>
+<td><b>El único dato medido en campo.</b> Caudal de fuga en gramos por hora que entrega
+la cámara OGI/FLIR. Todo lo demás se calcula a partir de esta cifra y de la cromatografía.
+La cámara cuantifica hidrocarburos (TOCs), no la mezcla completa.</td></tr>
+</tbody></table></div>
+
+<h2>3 · Cromatografía de laboratorio</h2>
+<p>Composición molar del gas, en % mol. La fila 6 lleva el peso molecular de cada componente.</p>
+<div class="tabla"><table>
+<thead><tr><th>Col</th><th>Símbolo</th><th>Componente</th><th>Peso molec. (fila 6)</th></tr></thead>
+<tbody>
+<tr><td class="col">G</td><td>H2</td><td>Hidrógeno</td><td class="num">2,01600</td></tr>
+<tr><td class="col">H</td><td>O2</td><td>Oxígeno</td><td class="num">31,99880</td></tr>
+<tr><td class="col">I</td><td>N2</td><td>Nitrógeno</td><td class="num">28,01340</td></tr>
+<tr><td class="col">J</td><td>CO2</td><td>Dióxido de carbono</td><td class="num">44,00980</td></tr>
+<tr><td class="col">K</td><td>C1</td><td>Metano</td><td class="num">16,04276</td></tr>
+<tr><td class="col">L</td><td>C2</td><td>Etano</td><td class="num">30,06964</td></tr>
+<tr><td class="col">M</td><td>C3</td><td>Propano</td><td class="num">44,09652</td></tr>
+<tr><td class="col">N</td><td>iC4</td><td>Isobutano</td><td class="num">58,12340</td></tr>
+<tr><td class="col">O</td><td>nC4</td><td>n-Butano</td><td class="num">58,12340</td></tr>
+<tr><td class="col">P</td><td>iC5</td><td>Isopentano</td><td class="num">72,15028</td></tr>
+<tr><td class="col">Q</td><td>nC5</td><td>n-Pentano</td><td class="num">72,15028</td></tr>
+<tr><td class="col">R</td><td>C6</td><td>Hexano</td><td class="num">86,17716</td></tr>
+<tr><td class="col">S</td><td>C7</td><td>Heptano</td><td class="num">100,20404</td></tr>
+<tr><td class="col">T</td><td>C8</td><td>Octano</td><td class="num">114,23092</td></tr>
+<tr><td class="col">U</td><td>C9</td><td>Nonano</td><td class="num">128,25780</td></tr>
+<tr><td class="col">V</td><td>C10</td><td>Decano</td><td class="num">142,28468</td></tr>
+<tr><td class="col">W</td><td>C11</td><td>Undecano</td><td class="num">156,31156</td></tr>
+<tr><td class="col">X</td><td>C12</td><td>Dodecano</td><td class="num">170,33844</td></tr>
+</tbody></table></div>
+<p class="nota">
+  O2 y N2 juntos son aire. Una muestra con 90 % de aire está muy diluida: el gas se
+  mezcló con atmósfera al tomarla. No invalida el cálculo, porque las fracciones se
+  toman sobre la masa de hidrocarburos, pero conviene saberlo al comparar muestras.
+</p>
+
+<h2>4 · Fracciones másicas</h2>
+<p>Aquí se pasa de «cuántas moléculas hay» a «cuánto pesa cada cosa».</p>
+<div class="tabla"><table>
+<thead><tr><th>Col</th><th>Rótulo</th><th>Qué significa</th><th>Fórmula</th></tr></thead>
+<tbody>
+<tr><td class="col">Y</td><td>Peso Molecular Gas</td><td>Peso molecular de la mezcla completa. Dato de laboratorio.</td><td><code>(dato)</code></td></tr>
+<tr><td class="col">Z</td><td>%m CH4</td><td>Qué porcentaje de la masa total del gas es metano.</td><td><code>=K7*$K$6/Y7</code></td></tr>
+<tr><td class="col">AA</td><td>%m CO2</td><td>Qué porcentaje de la masa total es CO2.</td><td><code>=J7*$J$6/Y7</code></td></tr>
+<tr><td class="col">AB</td><td>% Fracción Másica TOCs</td><td>Qué porcentaje de la masa total son hidrocarburos (C1 a C12). Es lo que la cámara cuantifica.</td><td><code>=SUMAPRODUCTO(K7:X7;$K$6:$X$6)/Y7</code></td></tr>
+<tr><td class="col">AC</td><td>% Fracción Másica CH4 en TOCs</td><td>Del peso de los hidrocarburos, qué parte es metano. Convierte la lectura de la cámara en metano.</td><td><code>=Z7*100/AB7</code></td></tr>
+</tbody></table></div>
+<p class="nota">
+  Las tres primeras multiplican un % molar por un peso molecular de la fila 6 y dividen
+  por el peso molecular de la mezcla. El resultado es un porcentaje y
+  <b>nunca puede pasar de 100</b>.
+</p>
+
+<h2>5 · Caudales</h2>
+<div class="tabla"><table>
+<thead><tr><th>Col</th><th>Rótulo</th><th>Qué significa</th><th>Fórmula</th></tr></thead>
+<tbody>
+<tr><td class="col">AD</td><td>m3/dia CH4</td><td>Metano en volumen por día, a 15 °C y 1 atm. Ley de los gases ideales.</td><td><code>=(F7*(AB7/100*AC7/100)/1000)*(8,314472*288,15)/(101,325*$K$6)*24</code></td></tr>
+<tr><td class="col">AE</td><td>CH4 [g/h]</td><td>Gramos de metano por hora: la lectura por la fracción de metano en los hidrocarburos.</td><td><code>=F7*AC7/100</code></td></tr>
+<tr><td class="col">AF</td><td>CO2 [g/h]</td><td>Gramos de CO2 por hora. Lleva la lectura a gas completo y toma la parte de CO2.</td><td><code>=F7/AB7*100*AA7/100</code></td></tr>
+</tbody></table></div>
+
+<h2>6 · Toneladas al año</h2>
+<div class="tabla"><table>
+<thead><tr><th>Col</th><th>Rótulo</th><th>Qué significa</th><th>Fórmula</th></tr></thead>
+<tbody>
+<tr><td class="col">AG</td><td>Ton. CH4 dia</td><td>Metano en toneladas por día.</td><td><code>=AE7*24/1000/1000</code></td></tr>
+<tr><td class="col">AH</td><td>Ton. CH4 Año</td><td>Metano en toneladas al año.</td><td><code>=AG7*365</code></td></tr>
+<tr><td class="col">AI</td><td>Ton. CO2 Año</td><td>CO2 en toneladas al año.</td><td><code>=AF7*24*365/1000/1000</code></td></tr>
+<tr><td class="col">AJ</td><td>GEI Ton. CO2eq. Año</td><td><b>El resultado final.</b> CO2 directo más el metano convertido con GWP 28.</td><td><code>=SI(AH7="";"";AI7+(AH7*28))</code></td></tr>
+</tbody></table></div>
+<p class="nota">
+  GWP 28 significa que una tonelada de metano calienta como 28 de CO2 en un horizonte
+  de 100 años (IPCC AR5).
+</p>
+
+<h2>7 · Volumen al año</h2>
+<div class="tabla"><table>
+<thead><tr><th>Col</th><th>Rótulo</th><th>Qué significa</th><th>Fórmula</th></tr></thead>
+<tbody>
+<tr><td class="col">AK</td><td>m3 CH4/Año</td><td>Metano en metros cúbicos al año.</td><td><code>=AD7*365</code></td></tr>
+<tr><td class="col">AL</td><td>Kpc CH4/Año</td><td>Lo mismo en miles de pies cúbicos.</td><td><code>=(AK7/0,0283168)</code></td></tr>
+<tr><td class="col">AM</td><td>Observaciones</td><td>Texto libre.</td><td><code>(dato)</code></td></tr>
+</tbody></table></div>
+
+<h2>La cadena completa, sobre un punto real</h2>
+<p>Fila 9 del archivo de octubre: EFRB-CPF-1-016, TK-905, CPF-1.</p>
+<div class="tabla"><table>
+<thead><tr><th>Paso</th><th>Celda</th><th>Cuenta</th><th>Resultado</th></tr></thead>
+<tbody>
+<tr><td>Mide la cámara</td><td class="col">F9</td><td><code>dato de campo</code></td><td class="num"><b>160 g/h</b></td></tr>
+<tr><td>Metano en la masa</td><td class="col">Z9</td><td><code>8,378 × 16,04276 / 30,48</code></td><td class="num">4,41 %</td></tr>
+<tr><td>CO2 en la masa</td><td class="col">AA9</td><td><code>1,064 × 44,0098 / 30,48</code></td><td class="num">1,54 %</td></tr>
+<tr><td>Hidrocarburos en la masa</td><td class="col">AB9</td><td><code>suma de C1..C12 por su peso</code></td><td class="num">7,11 %</td></tr>
+<tr><td>Metano dentro de ellos</td><td class="col">AC9</td><td><code>4,41 × 100 / 7,11</code></td><td class="num">61,98 %</td></tr>
+<tr><td>Metano por hora</td><td class="col">AE9</td><td><code>160 × 61,98 / 100</code></td><td class="num">99,17 g/h</td></tr>
+<tr><td>Metano al año</td><td class="col">AH9</td><td><code>99,17 × 24 × 365 / 1e6</code></td><td class="num">0,869 ton</td></tr>
+<tr><td>CO2 al año</td><td class="col">AI9</td><td><code>34,55 × 24 × 365 / 1e6</code></td><td class="num">0,303 ton</td></tr>
+<tr><td><b>Equivalente final</b></td><td class="col">AJ9</td><td><code>0,303 + (0,869 × 28)</code></td><td class="num"><b>24,63 ton CO₂eq/año</b></td></tr>
+</tbody></table></div>
+
+<h2>Aviso · el anclaje en META 2027</h2>
+<div class="aviso">
+<p>
+  En el archivo «Meta 2027 GOP-F-0006 Gestión Emisiones Fugitivas 2027», hoja
+  «Calculos CO2 META 2027», <b>cuatro columnas</b> no apuntan a la fila 6 sino a la
+  fila de datos de cada renglón.
+</p>
+<div class="tabla"><table>
+<thead><tr><th>Col</th><th>Correcto</th><th>Como está en META 2027</th></tr></thead>
+<tbody>
+<tr><td class="col">Z</td><td><code class="bien">K7*$K$6/Y7</code></td><td><code class="mal">K7*$K$7/Y7</code></td></tr>
+<tr><td class="col">AA</td><td><code class="bien">J7*$J$6/Y7</code></td><td><code class="mal">J7*$J$7/Y7</code></td></tr>
+<tr><td class="col">AB</td><td><code class="bien">…;$K$6:$X$6)/Y7</code></td><td><code class="mal">…;$K$7:$X$7)/Y7</code></td></tr>
+<tr><td class="col">AD</td><td><code class="bien">…*$K$6)*24</code></td><td><code class="mal">…*$K$7)*24</code></td></tr>
+</tbody></table></div>
+<p>
+  En lugar de multiplicar por el peso molecular, multiplica el % molar por sí mismo.
+  <b>Seis de las catorce filas dan fracciones másicas por encima de 100 %</b>, hasta
+  279,19 %, lo cual es imposible.
+</p>
+<p>
+  La hoja hermana del mismo archivo, «Calculos CO2 Proyección Fin2026», sí ancla a la
+  fila 6 y ninguna de sus filas pasa de 100 %. Corregido el anclaje, el subtotal de la
+  fila 21 baja de <b>1.769,48</b> a <b>1.312,92</b> ton CO₂eq/año.
+</p>
+</div>
+
+<p class="pie">
+  Las lecturas de la cámara no cambian: la celda F21 sigue en 7.262 g/Hr y coincide
+  punto por punto con este tablero. · Actualizado el 1 de noviembre de 2026.
+</p>
+
+</div>
+</body>
+</html>
