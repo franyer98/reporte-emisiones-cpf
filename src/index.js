@@ -100,6 +100,17 @@ export default {
       return texto('restaurado');
     }
 
-    return env.ASSETS.fetch(request);
+    /* Las páginas no se guardan en el navegador. Sin esto, el teléfono puede
+       seguir mostrando la versión de antes aunque ya esté publicada: el
+       navegador la tiene en disco y ni pregunta. Con «no-cache» sí pregunta
+       siempre, y si nada cambió el servidor responde 304 —unos bytes— así que
+       no se vuelve a bajar nada. Los iconos y las librerías no llevan esto:
+       no cambian y conviene que se queden guardados. */
+    const resp = await env.ASSETS.fetch(request);
+    const tipo = resp.headers.get('content-type') || '';
+    if (!tipo.startsWith('text/html')) return resp;
+    const copia = new Response(resp.body, resp);
+    copia.headers.set('cache-control', 'no-cache');
+    return copia;
   },
 };
