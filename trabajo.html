@@ -1662,18 +1662,45 @@ THREE.OrbitControls = OrbitControls;
   .fcard-main { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 30px; line-height: 1; margin-bottom: 4px; }
   .fcard-main small { font-size: 14px; color: var(--text-dim); font-weight: 500; }
   .fcard-sub { font-size: 12.5px; color: var(--text-dim); margin-bottom: 14px; }
+  /* En la cabecera de la tarjeta el equivalente sí va en su propio renglón:
+     pegado al de los gramos se leían como una sola frase. */
+  .fcard-sub .fcard-co2 { display: block; margin-top: 5px; font-size: 11.5px; }
   .fcard-crit-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .08em; color: var(--text-faint); border-top: 1px solid var(--border); padding-top: 12px; margin-bottom: 4px; }
-  .fcard-row { display: flex; justify-content: space-between; align-items: baseline; padding: 6px 0; }
-  .fcard.total .fcard-row { border-top: 1px solid var(--border); padding-top: 12px; margin-top: 2px; }
-  .fcard-row .k { font-size: 11px; color: var(--text-faint); font-family: 'JetBrains Mono', monospace; text-transform: uppercase; }
-  .fcard-row .k i { display:block; font-style:normal; text-transform:none; font-size:11px;
-    color:var(--text); font-weight:600; margin-top:2px; }
-  /* El equivalente en CO2 del área: es el número que se reporta, así que va
-     en verde y en su propia línea, no escondido en la de los gramos. */
-  .fcard-co2 { display:block; font-family:'JetBrains Mono',monospace; font-size:11px;
-    font-weight:700; color:#00b828; margin-top:3px; letter-spacing:0; }
-  .fcard-row .v { font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 14px; }
-  .fcard-row .v small { color: var(--text-dim); font-weight: 400; font-size: 11px; }
+  /* La fila por área eran dos columnas peleando por el ancho: el nombre del
+     equipo se montaba sobre el total y el porcentaje caía al renglón de abajo
+     suelto. Ahora cada área es un bloque apilado, con una jerarquía clara:
+     nombre, cifra medida, equivalente, y quién aporta. */
+  .fcard-row { padding: 11px 0; border-top: 1px solid rgba(255,255,255,.055); }
+  .fcard-row:first-child { border-top: 0; padding-top: 7px; }
+  .fcard.total .fcard-row:first-child { padding-top: 11px; }
+  .fr-cab {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 10px;
+    font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .07em;
+    color: var(--text-faint); text-transform: uppercase; margin-bottom: 5px;
+  }
+  .fr-cab .pts { white-space: nowrap; }
+  .fr-cifras { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; }
+  .fr-gh {
+    font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 16px;
+    color: var(--text); font-variant-numeric: tabular-nums; line-height: 1.15;
+  }
+  /* El equivalente ya no va en verde neón en cada línea: era lo único que se
+     veía. Verde apagado, del mismo tamaño que el resto. */
+  .fcard-co2 {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 400;
+    color: #6ddc9a; white-space: nowrap;
+  }
+  .fr-eq {
+    display: flex; align-items: center; gap: 7px; margin-top: 6px;
+    font-size: 11.5px; color: var(--text-dim);
+  }
+  .fr-eq b { font-weight: 600; color: var(--text-dim); }
+  .fr-bar {
+    flex: 0 0 34px; height: 3px; border-radius: 2px; background: rgba(255,255,255,.1);
+    overflow: hidden;
+  }
+  .fr-bar span { display: block; height: 100%; background: var(--text-faint); border-radius: 2px; }
+  .fr-pct { font-family: 'JetBrains Mono', monospace; color: var(--text-faint); font-size: 10.5px; }
   @media (max-width: 760px) { .facility-row { grid-template-columns: 1fr; } }
 
   /* ---------- FACILITY TABS ---------- */
@@ -3827,10 +3854,14 @@ function critRowsHTML(crit, fac) {
   const co2 = v => v.toLocaleString('es-CO',
     { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   return crit.map(c =>
-    `<div class="fcard-row"><span class="k">${c.area}`
-    + `<i>${fmt(c.areaTotal)} · ${c.nPuntos} ${c.nPuntos === 1 ? 'punto' : 'puntos'}`
-    + `<b class="fcard-co2">${co2(c.areaTotal * kDe(fac, c.area))} ton CO₂eq/año</b></i></span>`
-    + `<span class="v">${c.equipo} <small>${fmt(c.tasa)} · ${c.pct}%</small></span></div>`).join('');
+    `<div class="fcard-row">`
+    + `<div class="fr-cab"><span>${c.area}</span>`
+    + `<span class="pts">${c.nPuntos} ${c.nPuntos === 1 ? 'punto' : 'puntos'}</span></div>`
+    + `<div class="fr-cifras"><span class="fr-gh">${fmt(c.areaTotal)}</span>`
+    + `<span class="fcard-co2">${co2(c.areaTotal * kDe(fac, c.area))} ton CO₂eq/año</span></div>`
+    + `<div class="fr-eq"><span class="fr-bar"><span style="width:${c.pct}%"></span></span>`
+    + `<b>${c.equipo}</b><span class="fr-pct">${c.pct}% · ${fmt(c.tasa)}</span></div>`
+    + `</div>`).join('');
 }
 
 let PERIODO_GLOBAL = 'hora';
@@ -4125,14 +4156,21 @@ function updateKPIs() {
                            : `${masaAcumulada(gTodo, P)}${et}`)
     + `<b class="fcard-co2">${nd2(cTodo)} ton CO₂eq/año</b>`);
   const vp2 = v => esTasa ? v.toLocaleString('es-CO') + ' g/Hr' : masaAcumulada(v, P);
-  const repartoHTML = [
+  const repartoHTML_ = [
     ['CPF-1', t1, AGG1.nPuntos, co2eqDe(DATA1, 'CPF-1')],
     ['CPF-2', t2, AGG2.nPuntos, co2eqDe(DATA2, 'CPF-2')],
     ['CAÑO SUR', gcs, DATACS.length, co2cs],
-  ].filter(f => f[2] > 0).map(([nom, g, n, c]) =>
-    `<div class="fcard-row"><span class="k">${nom}`
-    + `<i>${vp2(g)} · ${n} ${n === 1 ? 'punto' : 'puntos'}`
-    + `<b class="fcard-co2">${nd2(c)} ton CO₂eq/año</b></i></span></div>`).join('');
+  ].filter(f => f[2] > 0);
+  const gMax = Math.max(1, ...repartoHTML_.map(f => f[1]));
+  const repartoHTML = repartoHTML_.map(([nom, g, n, c]) =>
+    `<div class="fcard-row">`
+    + `<div class="fr-cab"><span>${nom}</span>`
+    + `<span class="pts">${n} ${n === 1 ? 'punto' : 'puntos'}</span></div>`
+    + `<div class="fr-cifras"><span class="fr-gh">${vp2(g)}</span>`
+    + `<span class="fcard-co2">${nd2(c)} ton CO₂eq/año</span></div>`
+    + `<div class="fr-eq"><span class="fr-bar"><span style="width:${Math.round(g / gMax * 100)}%"></span></span>`
+    + `<span class="fr-pct">${Math.round(g / Math.max(1, gTodo) * 100)}% del total</span></div>`
+    + `</div>`).join('');
   set('kpiTotReparto', repartoHTML);
   set('kpiF1Puntos', AGG1.nPuntos);
   set('kpiF1Sub', esTasa ? `${t1.toLocaleString('es-CO')} g/Hr medidos` : `${masaAcumulada(t1, P)}${et}`);
