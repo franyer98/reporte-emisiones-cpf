@@ -7795,18 +7795,30 @@ function buildTankMap3D(canvasId, hintId, data, totalId) {
   let periodo = 'hora';
   const totalEl = totalId ? document.getElementById(totalId) : null;
 
+  /* De qué facilidad es este mapa: hace falta para aplicarle a cada punto la
+     cromatografía de su área. */
+  function facDeMapa() {
+    if (typeof DATA1 !== 'undefined' && data === DATA1) return 'CPF-1';
+    if (typeof DATA2 !== 'undefined' && data === DATA2) return 'CPF-2';
+    if (typeof DATACS !== 'undefined' && data === DATACS) return 'CAÑO SUR';
+    return 'CPF-1';
+  }
+
   function actualizarTotal() {
     if (!totalEl) return;
     const sumaGh = data.reduce((a, d) => a + d.tasa, 0);
     const valEl = totalEl.querySelector('.t3d-value');
     const subEl = totalEl.querySelector('.t3d-sub');
-    if (periodo === 'hora') {
-      valEl.textContent = sumaGh.toLocaleString('es-CO') + ' g/Hr';
-      subEl.textContent = data.length + ' puntos · tasa medida';
-    } else {
-      valEl.textContent = masaAcumulada(sumaGh, periodo);
-      subEl.textContent = data.length + ' puntos · ' + PERIODOS[periodo].etiqueta;
-    }
+    /* El rótulo decía «TOTAL FACILIDAD» y mostraba masa de gas acumulada, que
+       no es lo que se reporta. Va el equivalente en CO2, que es anual por
+       definición y no se mueve con el periodo. */
+    const co2 = (typeof co2eqDe === 'function')
+      ? co2eqDe(data, facDeMapa())
+      : sumaGh * 0.2470244;
+    valEl.textContent = co2.toLocaleString('es-CO',
+      { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ton CO₂eq';
+    subEl.textContent = data.length + ' puntos · al año · '
+      + sumaGh.toLocaleString('es-CO') + ' g/Hr';
   }
 
   const periodBar = wrap.querySelector('.period3d-bar');
