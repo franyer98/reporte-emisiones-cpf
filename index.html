@@ -1641,10 +1641,13 @@ THREE.OrbitControls = OrbitControls;
   .hero-formula .hf-suma > span:first-child{color:var(--text);font-weight:700}
   @media (max-width:600px){ .hero-formula .hf-l{display:block} }
   @media (max-width:600px){ .hero-formula{font-size:11px;line-height:1.95} }
+  /* Cuatro tarjetas: el total de Rubiales, sus dos facilidades y Caño Sur.
+     En pantallas medianas se parten en dos filas antes de apilarse. */
   .facility-row {
-    display: grid; grid-template-columns: 0.9fr 1fr 1fr; gap: 14px;
+    display: grid; grid-template-columns: 0.9fr 1fr 1fr 1fr; gap: 14px;
     margin-top: 40px;
   }
+  @media (max-width: 1180px) { .facility-row { grid-template-columns: 1fr 1fr; } }
   .fcard {
     background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
     padding: 20px 20px 18px; position: relative; overflow: hidden;
@@ -3368,6 +3371,15 @@ THREE.OrbitControls = OrbitControls;
         <div id="kpiF2Crit"><div class="fcard-row"><span class="k">ALMACENAMIENTO</span><span class="v">300-TK-0103 <small>6.470 g/Hr · 100%</small></span></div>
         <div class="fcard-row"><span class="k">FWKOS</span><span class="v">300-TK-0201 <small>3.750 g/Hr · 67%</small></span></div></div>
       </div>
+      <!-- Caño Sur es otro campo y tiene su propio GOP-F-006, pero se mira
+           desde el mismo tablero: va aquí, con su rótulo bien claro. -->
+      <div class="fcard fcs">
+        <div class="fcard-label">Caño Sur</div>
+        <div class="fcard-main"><span id="kpiCSPuntos">—</span> <small>puntos</small></div>
+        <div class="fcard-sub" id="kpiCSSub">—</div>
+        <div class="fcard-crit-label">POR ÁREA · TOTAL Y EQUIPO QUE MÁS APORTA</div>
+        <div id="kpiCSCrit"></div>
+      </div>
     </div>
   </div>
 </header>
@@ -3747,7 +3759,7 @@ let PARETO1_LABELS, PARETO1_VALUES, PARETO1_COLORS, PARETO1_IDS;
 let PARETO2_LABELS, PARETO2_VALUES, PARETO2_COLORS, PARETO2_IDS;
 let AREA_TASA_LABELS, AREA_TASA_VALUES;
 let AREA2_LABELS, AREA2_VALUES;
-let AGG1 = null, AGG2 = null;
+let AGG1 = null, AGG2 = null, AGGCS = null;
 
 function equipoColorMap(data) {
   const eqs = [...new Set(data.map(d => d.equipo))].sort();
@@ -3786,7 +3798,7 @@ function aggregate(data) {
 }
 
 function applyAggregates() {
-  AGG1 = aggregate(DATA1); AGG2 = aggregate(DATA2);
+  AGG1 = aggregate(DATA1); AGG2 = aggregate(DATA2); AGGCS = aggregate(DATACS);
   PARETO1_LABELS = AGG1.labels; PARETO1_VALUES = AGG1.values; PARETO1_COLORS = AGG1.colors; PARETO1_IDS = AGG1.ids;
   PARETO2_LABELS = AGG2.labels; PARETO2_VALUES = AGG2.values; PARETO2_COLORS = AGG2.colors; PARETO2_IDS = AGG2.ids;
   AREA_TASA_LABELS = AGG1.areaLabels; AREA_TASA_VALUES = AGG1.areaValues;
@@ -3846,6 +3858,9 @@ function heroCanoSur() {
   set('kpiTotSub', esTasa ? `${a.total.toLocaleString('es-CO')} g/Hr · ${a.nPuntos} puntos medidos`
                           : `${masaAcumulada(a.total, P)}${et}`);
 
+  // en esta vista la tarjeta propia de Caño Sur sobra: todo el bloque ya es suyo
+  const tcs = document.querySelector('.fcard.fcs');
+  if (tcs) tcs.style.display = 'none';
   // las dos tarjetas de facilidad pasan a ser las dos áreas del campo
   const areas = [...new Set(DATACS.map(d => d.area))];
   [['f1', 0], ['f2', 1]].forEach(([cls, i]) => {
@@ -4082,23 +4097,17 @@ function updateKPIs() {
      «Total» sobra: la tarjeta propia de ese campo ya dice lo mismo. */
   const verT = (sel, v) => { const e = document.querySelector(sel);
     if (e) e.style.display = v ? '' : 'none'; };
-  const esCS = CAMPO_GLOBAL === 'cs';
   verT('.fcard.total', CAMPO_GLOBAL === 'todas');
-  verT('.fcard.f1', CAMPO_GLOBAL === 'todas' || CAMPO_GLOBAL === 'cpf1' || esCS);
-  verT('.fcard.f2', CAMPO_GLOBAL === 'todas' || CAMPO_GLOBAL === 'cpf2');
-  if (esCS) {
-    // Caño Sur no tiene tarjeta propia en esta fila: se presta la de CPF-1
-    const t = document.querySelector('.fcard.f1');
-    if (t) {
-      t.querySelector('.fcard-label').textContent = 'CAÑO SUR';
-      const m = t.querySelector('.fcard-main');
-      if (m) m.innerHTML = `<span>${DATACS.length}</span> <small>puntos</small>`;
-      const sub = t.querySelector('.fcard-sub');
-      if (sub) sub.innerHTML = `${gcs.toLocaleString('es-CO')} g/Hr medidos`
-        + `<b class="fcard-co2">${nd2(co2cs)} ton CO₂eq/año</b>`;
-      const cr = t.querySelector('.fcard-crit'); if (cr) cr.innerHTML = '';
-    }
-  }
+  verT('.fcard.f1',  CAMPO_GLOBAL === 'todas' || CAMPO_GLOBAL === 'cpf1');
+  verT('.fcard.f2',  CAMPO_GLOBAL === 'todas' || CAMPO_GLOBAL === 'cpf2');
+  verT('.fcard.fcs', (CAMPO_GLOBAL === 'todas' || CAMPO_GLOBAL === 'cs') && DATACS.length > 0);
+
+  // Caño Sur, con el mismo detalle por área que las otras dos
+  set('kpiCSPuntos', DATACS.length);
+  set('kpiCSSub', (esTasa ? `${gcs.toLocaleString('es-CO')} g/Hr medidos`
+                          : `${masaAcumulada(gcs, P)}${et}`)
+    + `<b class="fcard-co2">${nd2(co2cs)} ton CO₂eq/año</b>`);
+  set('kpiCSCrit', AGGCS ? critRowsHTML(AGGCS.critByArea, 'CAÑO SUR') : '');
 
   set('kpiTotPuntos', nRub);
   /* El equivalente de Rubiales solo —el que va a su GOP-F-006— vivía en la
