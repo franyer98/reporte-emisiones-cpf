@@ -3354,7 +3354,8 @@ THREE.OrbitControls = OrbitControls;
         <div class="fcard-label">Total · CPF-1 + CPF-2</div>
         <div class="fcard-main"><span id="kpiTotPuntos">25</span> <small>puntos</small></div>
         <div class="fcard-sub" id="kpiTotSub">58.059 g/Hr · 22 puntos medidos</div>
-        <div class="fcard-row"><span class="k">FACILIDADES</span><span class="v">CPF-1 + CPF-2</span></div>
+        <div class="fcard-crit-label">POR FACILIDAD</div>
+        <div id="kpiTotReparto"></div>
       </div>
       <div class="fcard f1">
         <div class="fcard-label">CPF-1</div>
@@ -3986,9 +3987,8 @@ function updateKPIs() {
   if (HERO_CS) { heroCanoSur(); return; }
   document.documentElement.classList.remove('sin-co2');
   const tot = document.querySelector('.fcard.total .fcard-label');
-  if (tot) tot.textContent = 'Total · CPF-1 + CPF-2';
-  const fila = document.querySelector('.fcard.total .fcard-row .v');
-  if (fila) fila.textContent = 'CPF-1 + CPF-2';
+  if (tot) tot.textContent = DATACS.length
+    ? 'Total · CPF-1 + CPF-2 + Caño Sur' : 'Total · CPF-1 + CPF-2';
   ['f1', 'f2'].forEach((cls, i) => {
     const t = document.querySelector('.fcard.' + cls);
     if (!t) return;
@@ -4113,13 +4113,27 @@ function updateKPIs() {
     + `<b class="fcard-co2">${nd2(co2cs)} ton CO₂eq/año</b>`);
   set('kpiCSCrit', AGGCS ? critRowsHTML(AGGCS.critByArea, 'CAÑO SUR') : '');
 
-  set('kpiTotPuntos', nRub);
-  /* El equivalente de Rubiales solo —el que va a su GOP-F-006— vivía en la
-     línea «Sólo Rubiales» del encabezado. Al quitarla se quedaba sin sitio,
-     así que baja a su propia tarjeta, igual que hacen las de Caño Sur. */
-  set('kpiTotSub', (esTasa ? `${tRub.toLocaleString('es-CO')} g/Hr · ${nRub} puntos medidos`
-                           : `${masaAcumulada(tRub, P)}${et}`)
-    + `<b class="fcard-co2">${nd2(co2rub)} ton CO₂eq/año</b>`);
+  /* Esta tarjeta es el total de TODO lo que el tablero sigue abierto: los dos
+     campos. Debajo, el reparto por facilidad, que es lo que llenaba el hueco
+     que le quedaba. Cada campo conserva su propia tarjeta y su propio
+     GOP-F-006; esta suma sólo existe para ver el conjunto. */
+  const nTodo = nRub + DATACS.length;
+  const gTodo = tRub + gcs;
+  const cTodo = co2rub + co2cs;
+  set('kpiTotPuntos', nTodo);
+  set('kpiTotSub', (esTasa ? `${gTodo.toLocaleString('es-CO')} g/Hr · ${nTodo} puntos medidos`
+                           : `${masaAcumulada(gTodo, P)}${et}`)
+    + `<b class="fcard-co2">${nd2(cTodo)} ton CO₂eq/año</b>`);
+  const vp2 = v => esTasa ? v.toLocaleString('es-CO') + ' g/Hr' : masaAcumulada(v, P);
+  const repartoHTML = [
+    ['CPF-1', t1, AGG1.nPuntos, co2eqDe(DATA1, 'CPF-1')],
+    ['CPF-2', t2, AGG2.nPuntos, co2eqDe(DATA2, 'CPF-2')],
+    ['CAÑO SUR', gcs, DATACS.length, co2cs],
+  ].filter(f => f[2] > 0).map(([nom, g, n, c]) =>
+    `<div class="fcard-row"><span class="k">${nom}`
+    + `<i>${vp2(g)} · ${n} ${n === 1 ? 'punto' : 'puntos'}`
+    + `<b class="fcard-co2">${nd2(c)} ton CO₂eq/año</b></i></span></div>`).join('');
+  set('kpiTotReparto', repartoHTML);
   set('kpiF1Puntos', AGG1.nPuntos);
   set('kpiF1Sub', esTasa ? `${t1.toLocaleString('es-CO')} g/Hr medidos` : `${masaAcumulada(t1, P)}${et}`);
   set('kpiF2Puntos', AGG2.nPuntos);
