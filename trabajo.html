@@ -3185,7 +3185,6 @@ THREE.OrbitControls = OrbitControls;
         <a href="#" class="nav-link" id="navOrden">Orden de trabajo · por tanque</a>
         <a href="#" class="nav-link" id="navSimulador">Simulador · cuánto deja de emitirse</a>
         <a href="#" class="nav-link" id="navMemoria">Memoria de cálculo · de dónde sale cada número</a>
-        <a href="#" class="nav-link" id="navHojaGOP">Descargar GOP-F-006 actualizado</a>
         <!-- La guía de columnas vive como archivo junto al tablero: se abre en
              pestaña nueva, no pasa por el código del tablero. -->
         <!-- Página, no PDF: un PDF en el teléfono se baja antes de verse, y
@@ -10082,13 +10081,9 @@ ${cssInforme()}
     }
   }
 
-  const nhg = document.getElementById('navHojaGOP');
-  if (nhg) nhg.addEventListener('click', e => {
-    e.preventDefault();
-    const m = document.querySelector('.nav-menu');
-    if (m) m.classList.remove('open');
-    actualizarLibroGOP(nhg);
-  });
+  /* El enlace «Descargar GOP-F-006 actualizado» se retiró del menú. El código
+     y la plantilla siguen en su sitio: devolverlo es volver a poner el <a> y
+     este manejador. Mientras tanto se puede llamar desde la consola. */
   window.actualizarGOP = actualizarLibroGOP;
 
   function memCromaHTML() {
