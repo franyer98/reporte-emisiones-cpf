@@ -1566,9 +1566,9 @@ THREE.OrbitControls = OrbitControls;
      Una es lectura de la cámara y la otra es cuenta: tienen que leerse como
      dos cosas, no como dos etiquetas seguidas. Cada una en su panel, con
      rótulo arriba y la aclaración abajo. */
-  .hero-dos { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 22px;
-    max-width: 880px; align-items: stretch; }
-  .hd { border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px 15px;
+  .hero-dos { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 0;
+    align-items: stretch; }
+  .hd { border: 1px solid var(--border); border-radius: 14px; padding: 18px 22px 17px;
     background: rgba(255,255,255,0.016); display: flex; flex-direction: column; }
   .hd-mide { border-left: 3px solid rgba(45,212,238,.75); }
   .hd-rep  { border-left: 3px solid rgba(0,184,40,.75); }
@@ -1645,7 +1645,7 @@ THREE.OrbitControls = OrbitControls;
      En pantallas medianas se parten en dos filas antes de apilarse. */
   .facility-row {
     display: grid; grid-template-columns: 0.9fr 1fr 1fr 1fr; gap: 14px;
-    margin-top: 40px;
+    margin-top: 18px;
   }
   @media (max-width: 1180px) { .facility-row { grid-template-columns: 1fr 1fr; } }
   .fcard {
@@ -1707,10 +1707,11 @@ THREE.OrbitControls = OrbitControls;
   .tabs-bar { position: sticky; top:54px; z-index: 20; background: var(--surface); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); }
   /* El encabezado se parte en dos para que el menú quede arriba: el rótulo
      antes, las cifras después. El segundo tramo no repite el aire del primero. */
-  .hero.hero-sigue { padding-top: 26px; }
-  /* El primer tramo ya sólo lleva el rótulo: sin esto quedaba un hueco
-     enorme entre él y el menú. */
-  #resumen { padding-bottom: 14px; }
+  .hero.hero-sigue { padding: 22px 0 26px; }
+  /* El primer tramo sólo lleva el rótulo y el menú va justo debajo: el aire
+     de un encabezado completo aquí dejaba la pantalla medio vacía. */
+  #resumen { padding: 26px 0 0; border-bottom: 0; }
+  #resumen .eyebrow { margin-bottom: 16px; }
   .tabs { overflow-x: auto; scrollbar-width: none; }
   .tabs::-webkit-scrollbar { display: none; }
   .tab { white-space: nowrap; }
@@ -1722,7 +1723,7 @@ THREE.OrbitControls = OrbitControls;
     font-size: 13.5px; padding: 54px 0 70px;
   }
   .sin-panel.on { display: block; }
-  .tabs { display:flex; gap: 4px; padding: 14px 0; }
+  .tabs { display:flex; gap: 4px; padding: 9px 0; }
   .tab {
     font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 14px;
     padding: 10px 20px; border-radius: 9px; cursor: pointer; border: 1px solid transparent;
@@ -1974,7 +1975,7 @@ THREE.OrbitControls = OrbitControls;
      una sola barra: ni el marco ni la línea decían nada que no se viera. */
   .period-global {
     display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
-    margin: 16px 0 4px;
+    margin: 0 0 18px;
   }
   .pg-label { min-width: 104px; }
   .pg-label {
@@ -4061,6 +4062,9 @@ function updateKPIs() {
   const set = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
   const P = PERIODO_GLOBAL, esTasa = (P === 'hora');
   const et = esTasa ? '' : ' ' + PERIODOS[P].etiqueta;
+  /* Arriba del todo: la usan varias líneas de abajo y declararla a mitad
+     dejaba a las de antes en la zona muerta. */
+  const nd2 = v => v.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   /* La cámara mide una TASA. Antes, al elegir un periodo, el renglón grande
      se volvía masa acumulada —«63,62 ton»— debajo del rótulo «LO QUE MIDE LA
@@ -4102,9 +4106,13 @@ function updateKPIs() {
   /* El origen ya está en la tarjeta de al lado, con el mismo número. Sólo se
      dice algo cuando la cifra es parcial, para que no se confunda con la anual
      del GOP-F-006. */
-  set('kpiRepSub', (esTasa || P === 'anio') ? ''
-    : `al año, <b>${co2.toLocaleString('es-CO',
-        { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ton</b>`);
+  /* Esta tarjeta se quedaba con media cara vacía. Va el mismo reparto que la
+     de al lado, pero en toneladas: así las dos se leen igual y el lector
+     puede comprobar la suma en los dos lados. */
+  const repCo2 = (CAMPO_GLOBAL === 'todas' && DATACS.length)
+    ? `Rubiales <b>${nd2(co2rub)}</b> + Caño Sur <b>${nd2(co2cs)}</b>` : '';
+  set('kpiRepSub', (esTasa || P === 'anio') ? repCo2
+    : `al año, <b>${nd2(co2)} ton</b>` + (repCo2 ? ` · ${repCo2}` : ''));
   /* Esta línea explicaba en prosa lo que las dos tarjetas ya dicen con
      números. Fuera: el encabezado es para leer de un vistazo. */
   set('kpiSub', '');
@@ -4118,7 +4126,6 @@ function updateKPIs() {
      compañía pide una sola cifra, pero Rubiales y Caño Sur siguen siendo dos
      campos con dos archivos, y confundirlos fue justamente lo que puso a
      pelear al tablero con el GOP-F-006. */
-  const nd2 = v => v.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   /* Aquí iba «Sólo Rubiales · …». El encabezado muestra los dos campos y el
      subtítulo ya los reparte; repetir Rubiales aparte sobraba. La cifra de
      Rubiales sola vive en su tarjeta, «Total · CPF-1 + CPF-2». */
