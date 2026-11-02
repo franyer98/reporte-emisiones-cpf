@@ -4184,17 +4184,41 @@ function updateKPIs() {
 function tierLabel(t) { return {alto:'ALTO', medio:'MEDIO', bajo:'BAJO'}[t]; }
 
 // ---------- Tabs ----------
+/* La barra CAMPO de arriba y las pestañas de abajo dicen lo mismo, así que van
+   enlazadas: elegir un campo arriba abre su mapa, y abrir un mapa marca su
+   campo arriba. «Todas» no mueve la pestaña — hay un mapa por facilidad y no
+   existe uno que las junte — y la pestaña de Cierres no toca el filtro. */
+const TAB_DE_CAMPO = { cpf1: 't1', cpf2: 't2', cs: 't3' };
+const CAMPO_DE_TAB = { t1: 'cpf1', t2: 'cpf2', t3: 'cs' };
+
+function marcarCampo(campo) {
+  const barra = document.getElementById('campoGlobal');
+  if (!barra) return;
+  barra.querySelectorAll('button').forEach(b =>
+    b.classList.toggle('active', b.dataset.campo === campo));
+}
+
+function abrirPestana(id, { sincronizarCampo = true } = {}) {
+  const tab = document.querySelector('.tab[data-tab="' + id + '"]');
+  const panel = document.getElementById('panel-' + id);
+  if (!tab || !panel) return;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  tab.classList.add('active');
+  panel.classList.add('active');
+  // el encabezado sigue a la pestaña: Caño Sur tiene sus propios totales
+  HERO_CS = (id === 't3');
+  if (sincronizarCampo && CAMPO_DE_TAB[id]) {
+    CAMPO_GLOBAL = CAMPO_DE_TAB[id];
+    marcarCampo(CAMPO_GLOBAL);
+  }
+  updateKPIs();
+  document.dispatchEvent(new CustomEvent('tabshown', { detail: id }));
+}
+window.abrirPestana = abrirPestana;
+
 document.querySelectorAll('.tab').forEach(tab => {
-  tab.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-    tab.classList.add('active');
-    document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
-    // el encabezado sigue a la pestaña: Caño Sur tiene sus propios totales
-    HERO_CS = (tab.dataset.tab === 't3');
-    updateKPIs();
-    document.dispatchEvent(new CustomEvent('tabshown', { detail: tab.dataset.tab }));
-  });
+  tab.addEventListener('click', () => abrirPestana(tab.dataset.tab));
 });
 
 // ---------- Chart.js global theme ----------
@@ -6065,6 +6089,14 @@ function repintarPorPeriodo() {
       barC.querySelectorAll('button').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       CAMPO_GLOBAL = btn.dataset.campo;
+      /* Elegir un campo arriba abre su mapa abajo. Con «Todas» la pestaña se
+         queda donde esté: no hay un mapa que junte las facilidades. */
+      const destino = (typeof TAB_DE_CAMPO !== 'undefined') && TAB_DE_CAMPO[CAMPO_GLOBAL];
+      if (destino && typeof abrirPestana === 'function') {
+        abrirPestana(destino, { sincronizarCampo: false });
+      } else {
+        if (typeof HERO_CS !== 'undefined') HERO_CS = false;
+      }
       repintarPorPeriodo();
     });
   });
