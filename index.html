@@ -4354,16 +4354,11 @@ function renderPrioridad(data, areaActiva, contenedorId, leadId) {
   const lista = areaActiva === 'Todas' ? todos : todos.filter(d => d.area === areaActiva);
   const maxTasa = todos.length ? todos[0].tasa : 1;
 
-  // frase de arranque: cuantos puntos concentran el 70% de la fuga
+  /* Aquí iba una frase de arranque —«2 de 4 puntos concentran el 81% de la
+     fuga…»— encima de los filtros por área. La tabla de abajo ya va ordenada
+     por tasa y lleva el acumulado, así que lo decía dos veces. */
   const lead = document.getElementById(leadId);
-  if (lead) {
-    let acumulado = 0, n = 0;
-    for (const d of todos) { acumulado += d.tasa; n++; if (acumulado / totalGeneral >= 0.7) break; }
-    const pct = Math.round(acumulado / totalGeneral * 100);
-    const equipos = [...new Set(todos.slice(0, n).map(d => d.equipo))].join(', ');
-    lead.innerHTML = `<b>${n} de ${todos.length} puntos concentran el ${pct}% de la fuga</b>`
-      + ` — en ${equipos}. Intervenirlos primero elimina la mayor parte del volumen con el menor esfuerzo.`;
-  }
+  if (lead) { lead.innerHTML = ''; lead.style.display = 'none'; }
 
   let acum = 0;
   const filasHTML = todos.map((d, i) => {
