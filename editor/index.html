@@ -8235,6 +8235,32 @@ try { initCharts(); } catch (e) {}
 
   document.querySelectorAll('.nav-link').forEach(link => {
     link.addEventListener('click', (e) => {
+      /* Casi todos los enlaces del menú son anclas a secciones del propio
+         tablero y los mueve este código, por eso se cancela el clic. Pero la
+         guía de columnas es una página aparte, con su href de verdad: a ésa
+         cancelarle el clic la dejaba muerta —se tocaba y no pasaba nada—.
+         Cualquier enlace con destino real se deja pasar; sólo se cierra el
+         menú para que no quede abierto detrás. */
+      const destino = link.getAttribute('href');
+      if (destino && destino !== '#') {
+        nav.classList.remove('open');
+        menuBtn.classList.remove('open');
+        /* Instalado como app, abrir en pestaña nueva no siempre hace nada: el
+           teléfono no tiene dónde ponerla. Ahí se navega en la misma ventana y
+           se vuelve con el gesto de atrás. En el navegador normal sí conviene
+           la pestaña aparte, que el tablero pesa y no da gusto recargarlo. */
+        let comoApp = false;
+        try {
+          comoApp = (window.matchMedia
+            && window.matchMedia('(display-mode: standalone)').matches)
+            || window.navigator.standalone === true;
+        } catch (err) { comoApp = false; }
+        if (comoApp) {
+          e.preventDefault();
+          window.location.href = destino;
+        }
+        return;
+      }
       e.preventDefault();
       // desde la guía de introducción el tablero aún está oculto: se abre
       // primero, para que el enlace lleve de verdad a su sección
