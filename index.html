@@ -1705,6 +1705,23 @@ THREE.OrbitControls = OrbitControls;
 
   /* ---------- FACILITY TABS ---------- */
   .tabs-bar { position: sticky; top:54px; z-index: 20; background: var(--surface); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); }
+  /* El encabezado se parte en dos para que el menú quede arriba: el rótulo
+     antes, las cifras después. El segundo tramo no repite el aire del primero. */
+  .hero.hero-sigue { padding-top: 26px; }
+  /* El primer tramo ya sólo lleva el rótulo: sin esto quedaba un hueco
+     enorme entre él y el menú. */
+  #resumen { padding-bottom: 14px; }
+  .tabs { overflow-x: auto; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { white-space: nowrap; }
+  .tab.active.todas { box-shadow: inset 0 -2px 0 var(--cool); }
+  /* Con «Todas» no hay un mapa que junte las facilidades: en su lugar va una
+     línea que invita a elegir una. */
+  .sin-panel {
+    display: none; text-align: center; color: var(--text-faint);
+    font-size: 13.5px; padding: 54px 0 70px;
+  }
+  .sin-panel.on { display: block; }
   .tabs { display:flex; gap: 4px; padding: 14px 0; }
   .tab {
     font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 14px;
@@ -3321,6 +3338,24 @@ THREE.OrbitControls = OrbitControls;
 <header class="hero" id="resumen">
   <div class="wrap">
     <div class="eyebrow"><span class="dot"></span>INSPECCIÓN TERMOGRÁFICA (FLIR) · EMISIONES FUGITIVAS</div>
+  </div>
+</header>
+<!-- El menú principal. Estaba a media página, debajo del encabezado y de las
+     tarjetas, y encima repetía lo que hacía la barra CAMPO: dos controles para
+     lo mismo. Queda uno solo, arriba, y se pega al borde al bajar. -->
+<div class="tabs-bar">
+  <div class="wrap">
+    <div class="tabs">
+      <div class="tab todas active" data-tab="todas">Todas <span class="n" id="tabN0">—</span></div>
+      <div class="tab t1" data-tab="t1">CPF-1 <span class="n" id="tabN1">14</span></div>
+      <div class="tab t2" data-tab="t2">CPF-2 <span class="n" id="tabN2">11</span></div>
+      <div class="tab t3" data-tab="t3">Caño Sur <span class="n" id="tabN3">5</span></div>
+      <div class="tab t4" data-tab="t4">Cierres <span class="n" id="tabN4">0</span></div>
+    </div>
+  </div>
+</div>
+<header class="hero hero-sigue" id="resumen2">
+  <div class="wrap">
     <div class="filtros">
     <div class="period-global" id="periodGlobal">
       <span class="pg-label">VER DATOS COMO</span>
@@ -3335,15 +3370,6 @@ THREE.OrbitControls = OrbitControls;
          cifra es siempre g/Hr y el equivalente siempre toneladas, así que el
          selector no cambiaba nada que estuviera a la vista. Lo que queda de
          masa acumulada, en los paneles de abajo, va en automático. -->
-    <!-- Elegir campo: el encabezado y las tarjetas de facilidad se recortan
-         a lo elegido. «Todas» suma los dos campos, que es como arranca. -->
-    <div class="period-global" id="campoGlobal">
-      <span class="pg-label">CAMPO</span>
-      <button data-campo="todas" class="active">Todas</button>
-      <button data-campo="cpf1">CPF-1</button>
-      <button data-campo="cpf2">CPF-2</button>
-      <button data-campo="cs">Caño Sur</button>
-    </div>
     <div class="filtros-dice" id="filtrosDice">—</div>
     </div>
     <!-- Las dos cifras iban pegadas en dos píldoras, una al lado de la otra,
@@ -3414,19 +3440,13 @@ THREE.OrbitControls = OrbitControls;
   </div>
 </header>
 
-<div class="tabs-bar">
-  <div class="wrap">
-    <div class="tabs">
-      <div class="tab t1 active" data-tab="t1">CPF-1 <span class="n" id="tabN1">14</span></div>
-      <div class="tab t2" data-tab="t2">CPF-2 <span class="n" id="tabN2">11</span></div>
-      <div class="tab t4" data-tab="t4">Cierres <span class="n" id="tabN4">0</span></div>
-      <div class="tab t3" data-tab="t3">Caño Sur <span class="n" id="tabN3">5</span></div>
-    </div>
-  </div>
-</div>
+<div class="wrap"><div class="sin-panel on" id="sinPanel">
+  Arriba está el resumen de los dos campos. Elige <b>CPF-1</b>, <b>CPF-2</b> o
+  <b>Caño Sur</b> en el menú para ver su mapa, su ranking y el detalle de cada punto.
+</div></div>
 
 <!-- ============ PANEL CPF-1 ============ -->
-<div class="panel t1 active" id="panel-t1">
+<div class="panel t1" id="panel-t1">
   <section id="mapa">
     <div class="wrap">
       <div class="section-head"><h2>Mapa por área</h2><div class="section-note">TOCA UN ÁREA PARA VER SUS PUNTOS</div></div>
@@ -3678,7 +3698,7 @@ const PERIODOS = {
 };
 
 /* Qué campo se está mirando: 'todas' | 'cpf1' | 'cpf2' | 'cs'. */
-let CAMPO_GLOBAL = 'todas';
+let CAMPO_GLOBAL = 'todas';   // arranca en el resumen de los dos campos
 
 let CERRADAS1 = [];
 /* Caño Sur también cierra hallazgos. Va aquí arriba, con las otras dos, y no
@@ -4093,6 +4113,8 @@ function updateKPIs() {
   const NOMBRE = { todas: 'los dos campos', cpf1: 'CPF-1', cpf2: 'CPF-2', cs: 'Caño Sur' };
   set('filtrosDice', `VIENDO <b>${NOMBRE[CAMPO_GLOBAL] || NOMBRE.todas}</b> · `
     + (esTasa ? 'LECTURA DE LA CÁMARA' : `EQUIVALENTE <b>${PERIODOS[P].etiqueta.toUpperCase()}</b>`));
+  // el contador de la pestaña «Todas»
+  set('tabN0', nRub + DATACS.length);
   // «esos ton» no concuerda: se nombra el gas y la cifra va entre paréntesis
   /* El equivalente siempre se calcula sobre la lectura de la cámara, nunca
      sobre la masa acumulada. Que lo diga la tarjeta, con el número delante. */
@@ -4186,30 +4208,21 @@ function tierLabel(t) { return {alto:'ALTO', medio:'MEDIO', bajo:'BAJO'}[t]; }
    enlazadas: elegir un campo arriba abre su mapa, y abrir un mapa marca su
    campo arriba. «Todas» no mueve la pestaña — hay un mapa por facilidad y no
    existe uno que las junte — y la pestaña de Cierres no toca el filtro. */
-const TAB_DE_CAMPO = { cpf1: 't1', cpf2: 't2', cs: 't3' };
-const CAMPO_DE_TAB = { t1: 'cpf1', t2: 'cpf2', t3: 'cs' };
+const CAMPO_DE_TAB = { todas: 'todas', t1: 'cpf1', t2: 'cpf2', t3: 'cs' };
 
-function marcarCampo(campo) {
-  const barra = document.getElementById('campoGlobal');
-  if (!barra) return;
-  barra.querySelectorAll('button').forEach(b =>
-    b.classList.toggle('active', b.dataset.campo === campo));
-}
-
-function abrirPestana(id, { sincronizarCampo = true } = {}) {
+function abrirPestana(id) {
   const tab = document.querySelector('.tab[data-tab="' + id + '"]');
-  const panel = document.getElementById('panel-' + id);
-  if (!tab || !panel) return;
+  if (!tab) return;
+  const panel = document.getElementById('panel-' + id);   // «Todas» no tiene
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   tab.classList.add('active');
-  panel.classList.add('active');
+  if (panel) panel.classList.add('active');
+  const aviso = document.getElementById('sinPanel');
+  if (aviso) aviso.classList.toggle('on', !panel);
   // el encabezado sigue a la pestaña: Caño Sur tiene sus propios totales
   HERO_CS = (id === 't3');
-  if (sincronizarCampo && CAMPO_DE_TAB[id]) {
-    CAMPO_GLOBAL = CAMPO_DE_TAB[id];
-    marcarCampo(CAMPO_GLOBAL);
-  }
+  CAMPO_GLOBAL = CAMPO_DE_TAB[id] || CAMPO_GLOBAL;
   updateKPIs();
   document.dispatchEvent(new CustomEvent('tabshown', { detail: id }));
 }
@@ -5278,24 +5291,6 @@ function repintarPorPeriodo() {
       btn.classList.add('active');
       PERIODO_GLOBAL = btn.dataset.period;
       verUnidades();
-      repintarPorPeriodo();
-    });
-  });
-
-  const barC = document.getElementById('campoGlobal');
-  if (barC) barC.querySelectorAll('button').forEach(btn => {
-    btn.addEventListener('click', () => {
-      barC.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      CAMPO_GLOBAL = btn.dataset.campo;
-      /* Elegir un campo arriba abre su mapa abajo. Con «Todas» la pestaña se
-         queda donde esté: no hay un mapa que junte las facilidades. */
-      const destino = (typeof TAB_DE_CAMPO !== 'undefined') && TAB_DE_CAMPO[CAMPO_GLOBAL];
-      if (destino && typeof abrirPestana === 'function') {
-        abrirPestana(destino, { sincronizarCampo: false });
-      } else {
-        if (typeof HERO_CS !== 'undefined') HERO_CS = false;
-      }
       repintarPorPeriodo();
     });
   });
