@@ -3180,7 +3180,8 @@ THREE.OrbitControls = OrbitControls;
       <div class="nav-group" style="grid-column:1/-1">
         <div class="nav-group-title">DATOS</div>
         <a href="editor/" class="nav-editar"><span>Editar datos</span><small>Pide tu correo y un código</small></a>
-                <a href="#" class="nav-link" id="navInforme">Informe para imprimir o enviar en PDF</a>
+                <a href="#" class="nav-link" id="navGuia">Guía introductoria · qué son las emisiones fugitivas</a>
+        <a href="#" class="nav-link" id="navInforme">Informe para imprimir o enviar en PDF</a>
         <a href="#" class="nav-link" id="navOrden">Orden de trabajo · por tanque</a>
         <a href="#" class="nav-link" id="navSimulador">Simulador · cuánto deja de emitirse</a>
         <a href="#" class="nav-link" id="navMemoria">Memoria de cálculo · de dónde sale cada número</a>
@@ -3212,14 +3213,14 @@ THREE.OrbitControls = OrbitControls;
 </div>
 
 
-<div id="pageIntro">
+<div id="pageIntro" style="display:none;">
 <div id="introTop"></div>
 <header class="intro-hero">
   <div class="intro-wrap">
     <div class="intro-eyebrow">GUÍA INTRODUCTORIA</div>
     <!-- Para quien ya conoce la guía: el botón de entrar estaba sólo al final,
          después de toda la explicación, y había que bajarla entera. -->
-    <button class="intro-saltar" id="introSaltar">Saltar la guía · ir al tablero &#8594;</button>
+    <button class="intro-saltar" id="introSaltar">&#8592; Volver al tablero</button>
     <h1 class="intro-title">¿Qué son las<br>emisiones fugitivas?</h1>
     <p class="intro-lede">Metodología de cuantificación de emisiones fugitivas: de la medición directa en campo (g/h) al resultado en toneladas de CO2 equivalente por año.</p>
   </div>
@@ -3312,11 +3313,11 @@ THREE.OrbitControls = OrbitControls;
 <div class="intro-cta">
   <h2>¿Listo para ver los datos reales?</h2>
   <p><span id="introN">—</span> puntos de fuga cuantificados, con evidencia fotográfica, vista 3D de los tanques y el detalle de cada hallazgo.</p>
-  <button class="intro-cta-btn" id="introUnlockBtn">Ver el Dashboard &#8594;</button>
+  <button class="intro-cta-btn" id="introUnlockBtn">Volver al Dashboard &#8594;</button>
 </div>
 </div> <!-- /pageIntro -->
 
-<div id="pageDashboard" style="display:none;">
+<div id="pageDashboard">
 <header class="hero" id="resumen">
   <div class="wrap">
     <div class="eyebrow"><span class="dot"></span>INSPECCIÓN TERMOGRÁFICA (FLIR) · EMISIONES FUGITIVAS</div>
@@ -7346,6 +7347,25 @@ try { initCharts(); } catch (e) {}
   menuToggle.style.display = 'flex';
   window.abrirDashboard = abrirDashboard;
   btn.addEventListener('click', abrirDashboard);
+
+  /* El tablero abre directo; la guía pasa a ser una vista más, a la que se
+     entra desde el menú y de la que se sale con la franja de arriba. */
+  function abrirGuia() {
+    pageDashboard.style.display = 'none';
+    pageIntro.style.display = 'block';
+    const sa = document.getElementById('introSaltar');
+    if (sa) sa.style.display = '';
+    menuToggle.style.display = 'flex';
+    window.scrollTo(0, 0);
+  }
+  window.abrirGuia = abrirGuia;
+  const ng = document.getElementById('navGuia');
+  if (ng) ng.addEventListener('click', e => {
+    e.preventDefault();
+    const m = document.getElementById('menuToggle');
+    if (m && document.querySelector('.nav-menu.open')) m.click();   // cierra el menú
+    abrirGuia();
+  });
   // el atajo de arriba hace lo mismo y desaparece con la guía
   const saltar = document.getElementById('introSaltar');
   if (saltar) saltar.addEventListener('click', abrirDashboard);
