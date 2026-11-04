@@ -1708,6 +1708,13 @@ THREE.OrbitControls = OrbitControls;
      píxeles de alto 3, donde un 5% no se veía. Ahora la barra es el mismo
      porcentaje que el número, ocupa el ancho de la tarjeta y lleva el color
      de su campo. */
+  .ed-cierre-act { display: block; margin-top: 10px; font-size: 12px;
+    color: var(--text-dim); }
+  .ed-cierre-act small { display: block; font-size: 10.5px; color: var(--text-faint);
+    margin-top: 1px; }
+  .ed-cierre-act textarea { width: 100%; margin-top: 5px; padding: 8px 9px;
+    border-radius: 8px; border: 1px solid var(--border); background: #16202c;
+    color: var(--text); font: inherit; font-size: 12.5px; resize: vertical; }
   .fr-k {
     font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-faint);
     white-space: nowrap;
@@ -3214,11 +3221,11 @@ THREE.OrbitControls = OrbitControls;
              teléfono sigue mostrando lo de antes, no hay manera de saber si
              falta el despliegue o si es la copia guardada del navegador. La
              rellena construir.py al armar la página. -->
-        <div class="nav-sello" id="navSello">versión <b>04/11/2026 10:19 · 9ca6d42</b></div>
+        <div class="nav-sello" id="navSello">versión <b>04/11/2026 11:18 · 5d03ecc</b></div>
       </div>
       <script>
         /* Si alguien abre el archivo fuente sin pasar por construir.py, el
-           hueco sigue sin rellenar: mejor decirlo que mostrar un 04/11/2026 10:19 · 9ca6d42. */
+           hueco sigue sin rellenar: mejor decirlo que mostrar un 04/11/2026 11:18 · 5d03ecc. */
         (function () {
           var e = document.getElementById('navSello');
           if (e && e.textContent.indexOf('__SEL' + 'LO__') >= 0) {
@@ -9462,6 +9469,36 @@ ${cssInforme()}
      y la descripción de las actividades ejecutadas. La fecha de verificación
      sí sale, porque ahora se guarda al cerrar.
      ============================================================ */
+  /* ---------- quién elabora, quién revisa y quién aprueba ----------
+     El formato cierra con tres columnas. Lo que el tablero escribe es el
+     NOMBRE, el REGISTRO y la EMPRESA de cada una: eso es preparar el formato,
+     que es lo que se hace siempre antes de llevarlo a firmar.
+
+     La casilla «Firma» se queda vacía, y no por falta de ganas: la firma es el
+     acto de revisar y aprobar, no un dato que se rellene. Un formato que sale
+     del computador ya firmado por tres personas no es evidencia de nada.
+
+     Para cambiar estos datos se editan aquí y listo; si una columna se deja en
+     blanco, no se escribe nada en ella. */
+  const F007_FIRMAS = {
+    elaboro: { nombre: 'Franyer López Díaz', registro: '', empresa: 'Magnex' },
+    reviso:  { nombre: '', registro: '', empresa: '' },
+    aprobo:  { nombre: '', registro: '', empresa: '' },
+  };
+  // fila 28 Firma · 29 Nombre · 30 Registro · 31 Empresa; D elaboró, H revisó, L aprobó
+  const F007_COL_FIRMA = { elaboro: 'D', reviso: 'H', aprobo: 'L' };
+
+  function f007Firmas(hoja) {
+    Object.keys(F007_COL_FIRMA).forEach(quien => {
+      const q = F007_FIRMAS[quien] || {};
+      const col = F007_COL_FIRMA[quien];
+      hoja = f007Casilla(hoja, col + '29', q.nombre);
+      hoja = f007Casilla(hoja, col + '30', q.registro);
+      hoja = f007Casilla(hoja, col + '31', q.empresa);
+    });
+    return hoja;
+  }
+
   const F007_MOLDE = 'plantilla/GOP-F-007.xlsx';
   // los dos marcos de foto del formato, en coordenadas del propio archivo
   const F007_INI = [1, 44450, 14, 25400, 6, 584200, 20, 374650];
@@ -9575,6 +9612,7 @@ ${cssInforme()}
         fechaDeteccion: d.fechaDeteccion, fechaCierre: d.fechaCierre,
         fechaVerificacion: d.fechaVerificacion,
         hallazgo: d.hallazgo || '',
+        actividades: d.actividades || '',
         fotoInicial: f007Foto(d.img), fotoFinal: f007Foto(d.imgCierre),
       };
     });
@@ -9617,6 +9655,10 @@ ${cssInforme()}
       hoja = f007Casilla(hoja, 'K23', gopSerie(c.fechaCierre), true);
       hoja = f007Casilla(hoja, 'K24', c.tasaCierre, true);
       hoja = f007Casilla(hoja, 'K25', gopSerie(c.fechaVerificacion), true);
+      hoja = f007Casilla(hoja, 'B24', c.actividades);
+      hoja = f007Alto(hoja, 24, c.actividades, F007_ANCHO_ACT, 2);
+      hoja = f007Alto(hoja, 25, c.actividades, F007_ANCHO_ACT, 2);
+      hoja = f007Firmas(hoja);
 
       const anclas = [logo];
       let relsDib = f007Rel('rId1', 'image', '../media/image1.png');
