@@ -3231,11 +3231,11 @@ THREE.OrbitControls = OrbitControls;
              teléfono sigue mostrando lo de antes, no hay manera de saber si
              falta el despliegue o si es la copia guardada del navegador. La
              rellena construir.py al armar la página. -->
-        <div class="nav-sello" id="navSello">versión <b>04/11/2026 11:34 · 666137f</b></div>
+        <div class="nav-sello" id="navSello">versión <b>04/11/2026 12:15 · 38356dd</b></div>
       </div>
       <script>
         /* Si alguien abre el archivo fuente sin pasar por construir.py, el
-           hueco sigue sin rellenar: mejor decirlo que mostrar un 04/11/2026 11:34 · 666137f. */
+           hueco sigue sin rellenar: mejor decirlo que mostrar un 04/11/2026 12:15 · 38356dd. */
         (function () {
           var e = document.getElementById('navSello');
           if (e && e.textContent.indexOf('__SEL' + 'LO__') >= 0) {
@@ -9892,7 +9892,14 @@ ${cssInforme()}
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'GOP-F-007 fichas de cierre ' + hoyISO() + '.xlsx';
+      /* El nombre sigue el del formato oficial, que es por donde lo identifica
+         control de documentos. Se copia tal cual del archivo de la campaña
+         anterior —con su doble guión bajo y su «Fuguitivas»— y sólo cambia el
+         año: un nombre «mejorado» deja de casar con lo que ellos esperan. */
+      const anio = (cierres.map(c => String(c.campana || ''))
+        .filter(Boolean).sort().pop()) || String(new Date().getFullYear());
+      a.download = 'GOP-F_007_Formato_Ficha_Tecnica_De_Cierres__'
+        + 'Emisiones_Fuguitivas_GOR_' + anio + '.xlsx';
       document.body.appendChild(a);
       a.click();
       a.remove();

@@ -10742,7 +10742,14 @@ ${cssInforme()}
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'GOP-F-007 fichas de cierre ' + hoyISO() + '.xlsx';
+      /* El nombre sigue el del formato oficial, que es por donde lo identifica
+         control de documentos. Se copia tal cual del archivo de la campaña
+         anterior —con su doble guión bajo y su «Fuguitivas»— y sólo cambia el
+         año: un nombre «mejorado» deja de casar con lo que ellos esperan. */
+      const anio = (cierres.map(c => String(c.campana || ''))
+        .filter(Boolean).sort().pop()) || String(new Date().getFullYear());
+      a.download = 'GOP-F_007_Formato_Ficha_Tecnica_De_Cierres__'
+        + 'Emisiones_Fuguitivas_GOR_' + anio + '.xlsx';
       document.body.appendChild(a);
       a.click();
       a.remove();
