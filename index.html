@@ -3199,6 +3199,7 @@ THREE.OrbitControls = OrbitControls;
         <a href="#" class="nav-link" id="navOrden">Orden de trabajo · por tanque</a>
         <a href="#" class="nav-link" id="navSimulador">Simulador · cuánto deja de emitirse</a>
         <a href="#" class="nav-link" id="navMemoria">Memoria de cálculo · de dónde sale cada número</a>
+        <a href="#" class="nav-link" id="navFichas">Fichas de cierre · GOP-F-007, una por hallazgo cerrado</a>
         <!-- La guía de columnas vive como archivo junto al tablero: se abre en
              pestaña nueva, no pasa por el código del tablero. -->
         <!-- Página, no PDF: un PDF en el teléfono se baja antes de verse, y
@@ -3209,11 +3210,11 @@ THREE.OrbitControls = OrbitControls;
              teléfono sigue mostrando lo de antes, no hay manera de saber si
              falta el despliegue o si es la copia guardada del navegador. La
              rellena construir.py al armar la página. -->
-        <div class="nav-sello" id="navSello">versión <b>02/11/2026 11:13 · 6a83b75</b></div>
+        <div class="nav-sello" id="navSello">versión <b>04/11/2026 09:44 · a8f288e</b></div>
       </div>
       <script>
         /* Si alguien abre el archivo fuente sin pasar por construir.py, el
-           hueco sigue sin rellenar: mejor decirlo que mostrar un 02/11/2026 11:13 · 6a83b75. */
+           hueco sigue sin rellenar: mejor decirlo que mostrar un 04/11/2026 09:44 · a8f288e. */
         (function () {
           var e = document.getElementById('navSello');
           if (e && e.textContent.indexOf('__SEL' + 'LO__') >= 0) {
@@ -8343,6 +8344,14 @@ ${cssInforme()}
     tasaEl.select();
   }
 
+  const fich = document.getElementById('navFichas');
+  if (fich) fich.addEventListener('click', e => {
+    e.preventDefault();
+    const m = document.querySelector('.nav-menu');
+    if (m) m.classList.remove('open');
+    generarFichasCierre(fich);
+  });
+
   const sim = document.getElementById('navSimulador');
   if (sim) sim.addEventListener('click', e => {
     e.preventDefault();
@@ -9429,6 +9438,281 @@ ${cssInforme()}
      el tablero tiene ahora y se entrega. Las imágenes, los logos de las
      primeras casillas, las muestras de cromatografía y los vínculos
      salen tal cual porque esas piezas del archivo ni se tocan. */
+  /* ============================================================
+     FICHAS DE CIERRE · GOP-F-007
+
+     Una hoja por hallazgo cerrado, con el formato tal cual lo hizo
+     Ecopetrol. El molde es ese mismo formato vaciado —una sola ficha en
+     blanco, 30 KB— y por cada cierre se clona y se le escriben las casillas
+     que el tablero ya conoce.
+
+     Queda vacío a propósito lo que ninguna máquina puede saber: las firmas
+     y la descripción de las actividades ejecutadas. La fecha de verificación
+     sí sale, porque ahora se guarda al cerrar.
+     ============================================================ */
+  const F007_MOLDE = 'plantilla/GOP-F-007.xlsx';
+  // los dos marcos de foto del formato, en coordenadas del propio archivo
+  const F007_INI = [1, 44450, 14, 25400, 6, 584200, 20, 374650];
+  const F007_FIN = [8, 31750, 14, 12700, 13, 679450, 20, 368300];
+  // lo que cabe en una línea de cada bloque combinado, en caracteres
+  const F007_ANCHO_DESC = 93, F007_ANCHO_ACT = 59;
+
+  const f007Rel = (id, tipo, destino) =>
+    '<Relationship Id="' + id + '" Type="http://schemas.openxmlformats.org/'
+    + 'officeDocument/2006/relationships/' + tipo + '" Target="' + destino + '"/>';
+  const f007Rels = cuerpo =>
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/'
+    + 'relationships">' + cuerpo + '</Relationships>';
+
+  /* Escribe una casilla conservando su estilo. El texto va «en línea» y no por
+     la tabla de cadenas compartidas: así no hay que tocar sharedStrings ni
+     llevar la cuenta de los índices, que es donde estos archivos se rompen. */
+  function f007Casilla(hoja, ref, valor, numero) {
+    if (valor === null || valor === undefined || valor === '') return hoja;
+    const re = new RegExp('<c r="' + ref + '"([^>]*?)(?:/>|>[\\s\\S]*?</c>)');
+    if (!re.test(hoja)) throw new Error('el molde no tiene la casilla ' + ref);
+    return hoja.replace(re, (t, attr) => {
+      const a = attr.replace(/\s*t="\w+"/, '');
+      return numero
+        ? '<c r="' + ref + '"' + a + '><v>' + valor + '</v></c>'
+        : '<c r="' + ref + '"' + a + ' t="inlineStr"><is><t xml:space="preserve">'
+          + gopEsc(valor) + '</t></is></c>';
+    });
+  }
+
+  /* El formato trae las filas con alto fijo, y Excel no ajusta solo cuando las
+     celdas están combinadas: un texto de tres líneas sale cortado a la mitad y
+     al imprimir falta justo lo que explica la fuga. */
+  function f007Alto(hoja, fila, texto, ancho, filas) {
+    if (!texto) return hoja;
+    const lineas = Math.max(1, Math.ceil(String(texto).length / ancho));
+    const alto = Math.max(25.15, lineas * 13.5 + 5) / (filas || 1);
+    return hoja.replace(new RegExp('<row r="' + fila + '"([^>]*?)>'),
+      (t, attr) => '<row r="' + fila + '"'
+        + attr.replace(/ht="[\d.]+"/, 'ht="' + alto.toFixed(2) + '"') + '>');
+  }
+
+  function f007AnclaXML(a, rid, idp, nombre) {
+    return '<xdr:twoCellAnchor editAs="oneCell">'
+      + '<xdr:from><xdr:col>' + a[0] + '</xdr:col><xdr:colOff>' + a[1]
+      + '</xdr:colOff><xdr:row>' + a[2] + '</xdr:row><xdr:rowOff>' + a[3]
+      + '</xdr:rowOff></xdr:from>'
+      + '<xdr:to><xdr:col>' + a[4] + '</xdr:col><xdr:colOff>' + a[5]
+      + '</xdr:colOff><xdr:row>' + a[6] + '</xdr:row><xdr:rowOff>' + a[7]
+      + '</xdr:rowOff></xdr:to>'
+      + '<xdr:pic><xdr:nvPicPr><xdr:cNvPr id="' + idp + '" name="' + nombre + '"/>'
+      + '<xdr:cNvPicPr><a:picLocks noChangeAspect="1"/></xdr:cNvPicPr></xdr:nvPicPr>'
+      + '<xdr:blipFill><a:blip xmlns:r="http://schemas.openxmlformats.org/'
+      + 'officeDocument/2006/relationships" r:embed="' + rid + '"/>'
+      + '<a:stretch><a:fillRect/></a:stretch></xdr:blipFill>'
+      + '<xdr:spPr><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr>'
+      + '</xdr:pic><xdr:clientData/></xdr:twoCellAnchor>';
+  }
+
+  /* Las fotos del tablero vienen como data:image/...;base64. Aquí se vuelven
+     bytes, que es como van dentro del archivo. */
+  function f007Foto(url) {
+    const m = /^data:image\/(\w+);base64,(.+)$/.exec(String(url || ''));
+    if (!m) return null;
+    const ext = m[1].toLowerCase() === 'jpg' ? 'jpeg' : m[1].toLowerCase();
+    const bin = atob(m[2]);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return { bytes, ext };
+  }
+
+  /* Esta pieza lleva la lista de hojas, y Excel la compara con el libro al
+     abrirlo: si sobra o falta un nombre, avisa de que «encontró un problema
+     con el contenido». Hay que rehacerla, no heredarla. */
+  function f007AppXML(nombres) {
+    const tit = nombres.map(n => '<vt:lpstr>' + gopEsc(n) + '</vt:lpstr>').join('');
+    return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+      + '<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/'
+      + '2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/'
+      + 'officeDocument/2006/docPropsVTypes">'
+      + '<Application>Tablero de emisiones fugitivas</Application>'
+      + '<ScaleCrop>false</ScaleCrop><HeadingPairs><vt:vector size="2" '
+      + 'baseType="variant"><vt:variant><vt:lpstr>Hojas de cálculo</vt:lpstr>'
+      + '</vt:variant><vt:variant><vt:i4>' + nombres.length + '</vt:i4></vt:variant>'
+      + '</vt:vector></HeadingPairs><TitlesOfParts><vt:vector size="'
+      + nombres.length + '" baseType="lpstr">' + tit + '</vt:vector></TitlesOfParts>'
+      + '<LinksUpToDate>false</LinksUpToDate><SharedDoc>false</SharedDoc>'
+      + '<HyperlinksChanged>false</HyperlinksChanged><AppVersion>16.0300'
+      + '</AppVersion></Properties>';
+  }
+
+  const F007_CAMPO = {
+    'CPF-1': ['CAMPO RUBIALES', 'CPF-1'],
+    'CPF-2': ['CAMPO RUBIALES', 'CPF-2'],
+    'CAÑO SUR': ['CAÑO SUR', 'CENTAUROS'],
+  };
+
+  /* Los cierres que hay hoy, de los tres campos, con lo que la ficha pide. */
+  function f007Cierres() {
+    const de = (lista, fac) => (lista || []).map(d => {
+      const par = F007_CAMPO[fac] || ['CAMPO RUBIALES', fac];
+      const anio = /^(\d{4})/.exec(String(d.fechaDeteccion || ''));
+      return {
+        id: d.fid || '', fac,
+        campo: par[0], facilidad: par[1],
+        equipo: d.equipo || '', punto: d.punto || '', elemento: d.elemento || '',
+        campana: anio ? anio[1] : '',
+        tasa: d.tasa, gei: d.tasa * kDe(fac, d.area, d.equipo, d.punto),
+        tasaCierre: d.tasaCierre != null ? d.tasaCierre : 0,
+        fechaDeteccion: d.fechaDeteccion, fechaCierre: d.fechaCierre,
+        fechaVerificacion: d.fechaVerificacion,
+        hallazgo: d.hallazgo || '',
+        fotoInicial: f007Foto(d.img), fotoFinal: f007Foto(d.imgCierre),
+      };
+    });
+    return [...de(CERRADAS1, 'CPF-1'), ...de(CERRADAS2, 'CPF-2'),
+            ...de(typeof CERRADASCS !== 'undefined' ? CERRADASCS : [], 'CAÑO SUR')]
+      .filter(c => c.id || c.equipo);
+  }
+
+  /* La cirugía: el molde entra, el libro de fichas sale. */
+  function f007Construir(u8, cierres) {
+    const F = window.fflate;
+    const z = F.unzipSync(u8);
+    const modelo = F.strFromU8(z['xl/worksheets/sheet1.xml']);
+    const dibujo = F.strFromU8(z['xl/drawings/drawing1.xml']);
+    const iAncla = dibujo.indexOf('<xdr:twoCellAnchor');
+    const logo = /<xdr:twoCellAnchor[\s\S]*?<\/xdr:twoCellAnchor>/.exec(dibujo)[0];
+    const cabDib = dibujo.slice(0, iAncla);
+    const impresion = z['xl/printerSettings/printerSettings1.bin'];
+
+    const hojasXML = [], relsWB = [], overrides = [], nombres = [];
+    let medios = 2;                      // image1.png es el logo
+
+    cierres.forEach((c, k) => {
+      const i = k + 1;
+      let hoja = modelo;
+      hoja = f007Casilla(hoja, 'D5', c.id);
+      hoja = f007Casilla(hoja, 'K5', gopSerie(c.fechaDeteccion), true);
+      hoja = f007Casilla(hoja, 'D6', 'CRU');
+      hoja = f007Casilla(hoja, 'K6', c.campo);
+      hoja = f007Casilla(hoja, 'D7', 'TANQUE');
+      hoja = f007Casilla(hoja, 'K7', c.facilidad);
+      hoja = f007Casilla(hoja, 'D8', c.equipo);
+      hoja = f007Casilla(hoja, 'K8', c.punto);
+      hoja = f007Casilla(hoja, 'D9', c.elemento);
+      hoja = f007Casilla(hoja, 'K9', c.campana);
+      hoja = f007Casilla(hoja, 'D10', c.tasa, true);
+      hoja = f007Casilla(hoja, 'K10', Math.round(c.gei * 100) / 100, true);
+      hoja = f007Casilla(hoja, 'E12', c.hallazgo);
+      hoja = f007Alto(hoja, 12, c.hallazgo, F007_ANCHO_DESC, 1);
+      hoja = f007Casilla(hoja, 'K23', gopSerie(c.fechaCierre), true);
+      hoja = f007Casilla(hoja, 'K24', c.tasaCierre, true);
+      hoja = f007Casilla(hoja, 'K25', gopSerie(c.fechaVerificacion), true);
+
+      const anclas = [logo];
+      let relsDib = f007Rel('rId1', 'image', '../media/image1.png');
+      [[c.fotoInicial, F007_INI, 'Condición inicial'],
+       [c.fotoFinal, F007_FIN, 'Condición final']].forEach((par, j) => {
+        const foto = par[0];
+        if (!foto) return;
+        const rid = 'rId' + (j + 2);
+        const ruta = 'xl/media/image' + medios + '.' + foto.ext;
+        z[ruta] = foto.bytes;
+        relsDib += f007Rel(rid, 'image', '../media/image' + medios + '.' + foto.ext);
+        anclas.push(f007AnclaXML(par[1], rid, 100 + i * 10 + j, par[2]));
+        medios++;
+      });
+
+      z['xl/drawings/drawing' + i + '.xml'] =
+        F.strToU8(cabDib + anclas.join('') + '</xdr:wsDr>');
+      z['xl/drawings/_rels/drawing' + i + '.xml.rels'] = F.strToU8(f007Rels(relsDib));
+
+      // cada hoja con su propia configuración de impresión: compartir una sola
+      // pieza entre varias es de las cosas que Excel mira con lupa
+      z['xl/printerSettings/printerSettings' + i + '.bin'] = impresion;
+      z['xl/worksheets/sheet' + i + '.xml'] = F.strToU8(hoja);
+      z['xl/worksheets/_rels/sheet' + i + '.xml.rels'] = F.strToU8(f007Rels(
+        f007Rel('rId1', 'printerSettings',
+                '../printerSettings/printerSettings' + i + '.bin')
+        + f007Rel('rId2', 'drawing', '../drawings/drawing' + i + '.xml')));
+
+      const nombre = String(c.id || ('FICHA ' + i)).slice(0, 31);
+      nombres.push(nombre);
+      const rid = 'rId' + (100 + i);
+      hojasXML.push('<sheet name="' + gopEsc(nombre) + '" sheetId="' + i
+                    + '" r:id="' + rid + '"/>');
+      relsWB.push(f007Rel(rid, 'worksheet', 'worksheets/sheet' + i + '.xml'));
+      overrides.push('<Override PartName="/xl/worksheets/sheet' + i + '.xml" '
+        + 'ContentType="application/vnd.openxmlformats-officedocument.'
+        + 'spreadsheetml.worksheet+xml"/><Override PartName="/xl/drawings/'
+        + 'drawing' + i + '.xml" ContentType="application/vnd.openxmlformats-'
+        + 'officedocument.drawing+xml"/>');
+    });
+
+    let wb = F.strFromU8(z['xl/workbook.xml'])
+      .replace(/<sheets>[\s\S]*?<\/sheets>/, '<sheets>' + hojasXML.join('') + '</sheets>')
+      // la pestaña activa tiene que existir: si apunta más allá de la última
+      // hoja, Excel se niega a abrir el archivo
+      .replace(/firstSheet="\d+"/, 'firstSheet="0"')
+      .replace(/activeTab="\d+"/, 'activeTab="0"');
+    z['xl/workbook.xml'] = F.strToU8(wb);
+
+    z['xl/_rels/workbook.xml.rels'] = F.strToU8(
+      F.strFromU8(z['xl/_rels/workbook.xml.rels'])
+        .replace(/<Relationship\s[^>]*?Target="worksheets\/sheet1\.xml"[^>]*\/>/,
+                 relsWB.join('')));
+
+    let ct = F.strFromU8(z['[Content_Types].xml'])
+      .replace(/<Override PartName="\/xl\/worksheets\/sheet1\.xml"[^>]*\/>/, '')
+      .replace(/<Override PartName="\/xl\/drawings\/drawing1\.xml"[^>]*\/>/, '')
+      .replace('</Types>', overrides.join('') + '</Types>');
+    // una foto puede venir en un formato que el molde no declara
+    ['jpeg', 'png', 'gif', 'webp'].forEach(ext => {
+      if (ct.indexOf('Extension="' + ext + '"') < 0) {
+        ct = ct.replace('<Default', '<Default Extension="' + ext
+          + '" ContentType="image/' + ext + '"/><Default');
+      }
+    });
+    z['[Content_Types].xml'] = F.strToU8(ct);
+    z['docProps/app.xml'] = F.strToU8(f007AppXML(nombres));
+
+    return F.zipSync(z, { level: 6 });
+  }
+
+  async function generarFichasCierre(enlace) {
+    const previo = enlace ? enlace.textContent : '';
+    const avisar = t => { if (enlace) enlace.textContent = t; };
+    try {
+      const cierres = f007Cierres();
+      if (!cierres.length) {
+        avisar('No hay hallazgos cerrados todavía');
+        setTimeout(() => avisar(previo), 2600);
+        return;
+      }
+      avisar('Armando ' + cierres.length + ' ficha(s)…');
+      const raiz = location.pathname.replace(/[^/]*$/, '').replace(/editor\/$/, '');
+      const [, resp] = await Promise.all([
+        cargarScript(raiz + 'lib/fflate.min.js'),
+        fetch(raiz + F007_MOLDE, { cache: 'no-cache' }),
+      ]);
+      if (!resp.ok) throw new Error('no se pudo descargar el molde');
+      const u8 = new Uint8Array(await resp.arrayBuffer());
+      const zip = f007Construir(u8, cierres);
+      const blob = new Blob([zip], { type: 'application/vnd.openxmlformats-'
+        + 'officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'GOP-F-007 fichas de cierre ' + hoyISO() + '.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+      avisar(cierres.length + ' ficha(s) descargada(s)');
+    } catch (e) {
+      avisar('No se pudo: ' + (e && e.message ? e.message : e));
+    }
+    setTimeout(() => avisar(previo), 3200);
+  }
+  window.fichasDeCierre = generarFichasCierre;
+
   const GOP_MOLDE = 'plantilla/GOP-F-006.xlsx';
 
   async function actualizarLibroGOP(enlace) {
