@@ -3253,11 +3253,11 @@ THREE.OrbitControls = OrbitControls;
              teléfono sigue mostrando lo de antes, no hay manera de saber si
              falta el despliegue o si es la copia guardada del navegador. La
              rellena construir.py al armar la página. -->
-        <div class="nav-sello" id="navSello">versión <b>04/11/2026 13:46 · b070cd9</b></div>
+        <div class="nav-sello" id="navSello">versión <b>04/11/2026 13:54 · 8ec6854</b></div>
       </div>
       <script>
         /* Si alguien abre el archivo fuente sin pasar por construir.py, el
-           hueco sigue sin rellenar: mejor decirlo que mostrar un 04/11/2026 13:46 · b070cd9. */
+           hueco sigue sin rellenar: mejor decirlo que mostrar un 04/11/2026 13:54 · 8ec6854. */
         (function () {
           var e = document.getElementById('navSello');
           if (e && e.textContent.indexOf('__SEL' + 'LO__') >= 0) {
@@ -4270,6 +4270,22 @@ function updateKPIs() {
     cpf2:  { tt: t2,  co2: co2eqDe(DATA2, 'CPF-2') },
     cs:    { tt: gcs, co2: co2cs },
   };
+  const vacio = !DATA1.length && !DATA2.length
+    && !(typeof DATACS !== 'undefined' && DATACS.length);
+  if (vacio && !DATOS_PROPIOS) {
+    /* Un «0 g/Hr» aquí se lee como «no hay fugas», y lo que pasa es que no se
+       pudo preguntar. Sólo se muestra el cero cuando el servidor contestó: un
+       cero de verdad significa que todo está cerrado. */
+    const el = document.getElementById('kpiTotal');
+    const sub = document.getElementById('kpiMedSub');
+    const co2 = document.getElementById('kpiCo2');
+    if (el) el.textContent = CARGA_INTENTADA ? '—' : 'Cargando\u2026';
+    if (sub) sub.innerHTML = CARGA_INTENTADA
+      ? 'No se pudieron cargar los datos'
+      : 'Trayendo los datos del servidor';
+    if (co2) co2.textContent = '—';
+    return;
+  }
   const C = CAMPOS[CAMPO_GLOBAL] || CAMPOS.todas;
   const tt = C.tt, co2 = C.co2;
   const set = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
@@ -5476,6 +5492,61 @@ function refrescarTodo() {
   // la memoria de cálculo, si está abierta, se rehace con los datos nuevos
   try { if (typeof window.memRepintar === 'function') window.memRepintar(); } catch (e) {}
 }
+
+/* ---------- la primera pintada no inventa nada ----------
+   La página trae datos de ejemplo dentro, y se pintaban mientras llegaban los
+   de verdad desde el servidor. En 4G eso dura lo suficiente para leerlo, y lo
+   que se lee son cifras falsas: 24 puntos y 15.112 toneladas donde hay 14 y
+   1.312. Alguien podía tomarle una foto a eso.
+
+   Así que los de ejemplo no se muestran nunca. En su lugar se pinta la última
+   copia real que vio este aparato —sin las fotos, que no caben y no hacen
+   falta para las cifras— y, si no hay ninguna, no se pinta nada hasta que
+   lleguen. */
+const ULTIMOS = 'emisiones.ultimos';
+
+function recordarDatos() {
+  try {
+    const limpiar = l => (l || []).map(d => {
+      const c = Object.assign({}, d);
+      delete c.img; delete c.imgCierre;      // las fotos no caben en el disco
+      return c;
+    });
+    localStorage.setItem(ULTIMOS, JSON.stringify({
+      DATA1: limpiar(DATA1), DATA2: limpiar(DATA2),
+      DATACS: limpiar(typeof DATACS !== 'undefined' ? DATACS : []),
+      CERRADAS1: limpiar(CERRADAS1), CERRADAS2: limpiar(CERRADAS2),
+      CERRADASCS: limpiar(typeof CERRADASCS !== 'undefined' ? CERRADASCS : []),
+      cuando: new Date().toISOString(),
+    }));
+  } catch (e) {}                              // sin disco, se sigue igual
+}
+
+/* Tres estados, no dos. «Cargando…» sólo vale mientras no se ha intentado
+   todavía; si ya se intentó y no hay nada, hay que decir qué pasó: que el
+   servidor contestó y no hay puntos abiertos, o que no se pudo preguntar.
+   Si no, un tablero sin señal se queda en «Cargando…» para siempre. */
+let DATOS_PROPIOS = false;
+let CARGA_INTENTADA = false;
+
+(function quitarElEjemplo() {
+  let g = null;
+  try { g = JSON.parse(localStorage.getItem(ULTIMOS) || 'null'); } catch (e) {}
+  const poner = (dest, src) => {
+    if (!Array.isArray(dest)) return;
+    dest.length = 0;
+    (src || []).forEach(x => dest.push(x));
+  };
+  poner(DATA1, g && g.DATA1);
+  poner(DATA2, g && g.DATA2);
+  if (typeof DATACS !== 'undefined') poner(DATACS, g && g.DATACS);
+  poner(CERRADAS1, g && g.CERRADAS1);
+  poner(CERRADAS2, g && g.CERRADAS2);
+  if (typeof CERRADASCS !== 'undefined') poner(CERRADASCS, g && g.CERRADASCS);
+  DATOS_PROPIOS = !!(g && (g.DATA1 || []).length + (g.DATA2 || []).length
+                     + (g.DATACS || []).length);
+})();
+
 refrescarTodo();
 
 
@@ -10439,14 +10510,26 @@ ${cssInforme()}
     if (Array.isArray(d.DATACS)) poner(DATACS, d.DATACS);
     if (Array.isArray(d.CERRADASCS)) poner(CERRADASCS, d.CERRADASCS);
     if (typeof sanearIds === 'function') sanearIds();
+    if (typeof DATOS_PROPIOS !== 'undefined') DATOS_PROPIOS = true;
+    if (typeof recordarDatos === 'function') recordarDatos();
     if (typeof refrescarTodo === 'function') refrescarTodo();
     if (window.contarIntro) window.contarIntro();
     return true;
   }
 
+  /* Que no se pudo traer nada hay que decirlo en los dos casos: cuando la
+     petición falla —sin señal— y cuando el servidor contesta con un error.
+     Lo segundo no lanza excepción, así que se escapaba del catch. */
+  function sinDatos(primeraVez) {
+    if (typeof DATOS_PROPIOS !== 'undefined' && DATOS_PROPIOS) return;
+    if (!primeraVez) return;
+    aviso('<b>No se pudieron cargar los datos.</b> Se reintenta solo cuando '
+          + 'vuelva la señal.', true);
+  }
+
   async function traerDatos(primeraVez) {
     const r = await fetch('/api/datos', { cache: 'no-store' });
-    if (!r.ok) return;
+    if (!r.ok) { sinDatos(primeraVez); return; }
     const d = await r.json();
     /* En el editor no se pisa lo que alguien está escribiendo: se avisa y él
        decide cuándo recargar. Perder una corrección a medio hacer por un
@@ -10474,8 +10557,13 @@ ${cssInforme()}
         sello = v;
       }
     } catch (e) {
-      // sin señal se sigue con lo que hay dentro; se reintenta al rato
+      /* Sin señal se sigue con lo que haya guardado y se reintenta al rato.
+         Lo que no se puede es callarlo cuando no hay nada que mostrar: ahí el
+         tablero se quedaría en «Cargando…» sin que nadie sepa por qué. */
+      sinDatos(primeraVez);
     } finally {
+      if (typeof CARGA_INTENTADA !== 'undefined') CARGA_INTENTADA = true;
+      if (typeof refrescarTodo === 'function') refrescarTodo();
       ocupado = false;
     }
   }
