@@ -1708,6 +1708,10 @@ THREE.OrbitControls = OrbitControls;
      píxeles de alto 3, donde un 5% no se veía. Ahora la barra es el mismo
      porcentaje que el número, ocupa el ancho de la tarjeta y lleva el color
      de su campo. */
+  .fr-k {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-faint);
+    white-space: nowrap;
+  }
   .tr-share { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
   .tr-bar {
     flex: 1 1 auto; height: 9px; border-radius: 99px; overflow: hidden;
@@ -4289,6 +4293,8 @@ function updateKPIs() {
                            : `${masaAcumulada(gTodo, P)}${et}`)
     + `<b class="fcard-co2">${nd2(cTodo)} ton CO₂eq/año</b>`);
   const vp2 = v => esTasa ? v.toLocaleString('es-CO') + ' g/Hr' : masaAcumulada(v, P);
+  const n7 = v => v.toLocaleString('es-CO',
+    { minimumFractionDigits: 3, maximumFractionDigits: 3 });
   const repartoHTML_ = [
     ['CPF-1', t1, AGG1.nPuntos, co2eqDe(DATA1, 'CPF-1')],
     ['CPF-2', t2, AGG2.nPuntos, co2eqDe(DATA2, 'CPF-2')],
@@ -4310,6 +4316,12 @@ function updateKPIs() {
     + `<div class="fr-cab"><span>${nom}</span>`
     + `<span class="pts">${n} ${n === 1 ? 'punto' : 'puntos'}</span></div>`
     + `<div class="fr-cifras"><span class="fr-gh">${vp2(g)}</span>`
+    /* El factor, a la vista. Sin él la tarjeta enseña el resultado y esconde
+       la multiplicación, y entonces dos campos que fugan muy distinto —2.710
+       y 4.173 g/Hr— aparecen con las mismas toneladas sin explicación: el gas
+       de uno es casi metano puro y el del otro no. Con el «× 0,151» al lado,
+       la cuenta se sigue con el dedo. */
+    + `<span class="fr-k">× ${n7(g > 0 ? c / g : 0)}</span>`
     + `<span class="fcard-co2">${nd2(c)} ton CO₂eq/año</span></div>`
     + `<div class="tr-share">`
     + `<span class="tr-bar ${COLOR_CAMPO[nom] || ''}">`
