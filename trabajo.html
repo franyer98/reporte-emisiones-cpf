@@ -1737,6 +1737,10 @@ THREE.OrbitControls = OrbitControls;
     letter-spacing: .12em; color: var(--text-dim); margin-bottom: 6px; }
   .fir-t small { font-family: 'Inter', sans-serif; letter-spacing: 0;
     text-transform: none; color: var(--text-faint); }
+  .fir-pad { width: 100%; height: 86px; border-radius: 8px; background: #f4f7fa;
+    border: 1px dashed var(--border); touch-action: none; cursor: crosshair;
+    display: block; }
+  .fir-pb { display: flex; justify-content: flex-end; margin-top: 5px; }
   .fir-i { width: 100%; margin-bottom: 5px; padding: 8px 9px; border-radius: 8px;
     border: 1px solid var(--border); background: #16202c; color: var(--text);
     font: inherit; font-size: 13px; }
@@ -10526,6 +10530,8 @@ ${cssInforme()}
   // los dos marcos de foto del formato, en coordenadas del propio archivo
   const F007_INI = [1, 44450, 14, 25400, 6, 584200, 20, 374650];
   const F007_FIN = [8, 31750, 14, 12700, 13, 679450, 20, 368300];
+  // la casilla «Firma» de la columna de Elaboró: D28:G28
+  const F007_FIRMA = [3, 38100, 27, 25400, 7, 0, 28, 0];
   // lo que cabe en una línea de cada bloque combinado, en caracteres
   const F007_ANCHO_DESC = 93, F007_ANCHO_ACT = 59;
 
@@ -10714,8 +10720,12 @@ ${cssInforme()}
 
       const anclas = [logo];
       let relsDib = f007Rel('rId1', 'image', '../media/image1.png');
+      const firmas = f007FirmasGuardadas() || {};
+      const rubrica = (firmas.elaboro && firmas.elaboro.firma)
+        ? f007Foto(firmas.elaboro.firma) : null;
       [[c.fotoInicial, F007_INI, 'Condición inicial'],
-       [c.fotoFinal, F007_FIN, 'Condición final']].forEach((par, j) => {
+       [c.fotoFinal, F007_FIN, 'Condición final'],
+       [rubrica, F007_FIRMA, 'Firma']].forEach((par, j) => {
         const foto = par[0];
         if (!foto) return;
         const rid = 'rId' + (j + 2);
@@ -10814,6 +10824,14 @@ ${cssInforme()}
           ficha. Quedan guardados en este aparato: no viajan al sitio ni al
           repositorio. La casilla «Firma» se deja vacía para firmar a mano.</p>
           ${fila('elaboro', 'Elaboró')}
+          <div class="fir-g">
+            <div class="fir-t">TU FIRMA <small>dibújala con el dedo; se guarda
+              sólo en este aparato</small></div>
+            <canvas id="firPad" class="fir-pad" width="640" height="100"></canvas>
+            <div class="fir-pb">
+              <button type="button" class="fic-b" id="firBorrar">Borrar</button>
+            </div>
+          </div>
           ${fila('reviso', 'Revisó', 'vacío si se llena a mano')}
           ${fila('aprobo', 'Aprobó', 'vacío si se llena a mano')}
           <div class="bd-btns">
@@ -10822,6 +10840,42 @@ ${cssInforme()}
           </div>
         </div>`;
       document.body.appendChild(cap);
+
+      /* El trazo se dibuja con el dedo. Se guarda la imagen y no un tipo de
+         letra bonito: una firma es la marca de alguien, y un nombre escrito en
+         cursiva por el computador no es la firma de nadie —la haría igual
+         cualquiera que abra la página—. */
+      const pad = cap.querySelector('#firPad');
+      const ctx = pad.getContext('2d');
+      let trazos = 0, pintando = false;
+      ctx.lineWidth = 2.6; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.strokeStyle = '#0b1b2b';
+      const punto = e => {
+        const r = pad.getBoundingClientRect();
+        return [(e.clientX - r.left) * pad.width / r.width,
+                (e.clientY - r.top) * pad.height / r.height];
+      };
+      const previa = (g.elaboro && g.elaboro.firma) || '';
+      if (previa) {
+        const im = new Image();
+        im.onload = () => ctx.drawImage(im, 0, 0, pad.width, pad.height);
+        im.src = previa;
+        trazos = 1;
+      }
+      pad.addEventListener('pointerdown', e => {
+        pintando = true; trazos++; pad.setPointerCapture(e.pointerId);
+        ctx.beginPath(); ctx.moveTo(...punto(e)); e.preventDefault();
+      });
+      pad.addEventListener('pointermove', e => {
+        if (!pintando) return;
+        ctx.lineTo(...punto(e)); ctx.stroke(); e.preventDefault();
+      });
+      ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev =>
+        pad.addEventListener(ev, () => { pintando = false; }));
+      cap.querySelector('#firBorrar').onclick = () => {
+        ctx.clearRect(0, 0, pad.width, pad.height); trazos = 0;
+      };
+
       const cerrar = r => { cap.remove(); resolve(r); };
       cap.querySelector('.bd-x').onclick = () => cerrar(null);
       cap.onclick = e => { if (e.target === cap) cerrar(null); };
@@ -10831,6 +10885,7 @@ ${cssInforme()}
         cap.querySelectorAll('.fir-i').forEach(i => {
           d[i.dataset.q][i.dataset.c] = i.value.trim();
         });
+        if (trazos) d.elaboro.firma = pad.toDataURL('image/png');
         f007GuardarFirmas(d);
         cerrar(d);
       };
