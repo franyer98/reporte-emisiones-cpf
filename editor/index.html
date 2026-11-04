@@ -3615,6 +3615,9 @@ function renderGrid2() { renderPrioridad(DATA2, active2, 'prio2', 'prioLead2'); 
    escalón está señalado y en qué punto va el recorrido. Vive fuera de la
    función porque sobrevive a cada repintado. */
 let curvaUni = 'g', curvaAmb = 'ambas', curvaSel = null, curvaPaso = null;
+/* Las dos lecturas del avance —en gramos y en toneladas— se guardan aquí para
+   que el botón de unidad pueda repintar la barra sin recalcular los datos. */
+let PROG = null;
 let curvaCh = null, curvaReloj = null, curvaEstado = null;
 
 /* Ambas facilidades son de Campo Rubiales, así que se pueden sumar entre
@@ -4005,6 +4008,7 @@ function prepararBarraCurva() {
     } else if (b.dataset.uni) {
       curvaUni = b.dataset.uni;
       bar.querySelectorAll('[data-uni]').forEach(o => o.classList.toggle('active', o === b));
+      pintarAvance();          // la barra de arriba habla la misma unidad
     }
     pintarCurva();
   });
@@ -4023,6 +4027,31 @@ function campanaBase() {
                  'agosto','septiembre','octubre','noviembre','diciembre'];
   const [a, m] = fechas[0].split('-');
   return `${MESES[+m - 1]} ${a}`;
+}
+
+/* La barra, el porcentaje y la leyenda hablan la MISMA unidad que la curva.
+   Antes la leyenda decía siempre g/Hr: se cambiaba el gráfico a toneladas y
+   arriba seguía «Eliminada 62.070 g/Hr» junto a una curva que arrancaba en
+   14.078 ton. Dos unidades distintas en la misma tarjeta.
+   Y no es sólo la etiqueta: el porcentaje eliminado en gramos no es el mismo
+   que en toneladas —cada punto convierte con su propia cromatografía—, así que
+   la barra también se vuelve a medir. */
+function pintarAvance() {
+  if (!PROG) return;
+  const esCo2 = curvaUni === 'co2';
+  const base = esCo2 ? PROG.baseCo2 : PROG.baseG;
+  const elim = esCo2 ? PROG.elimCo2 : PROG.elimG;
+  const hoy  = esCo2 ? PROG.hoyCo2  : PROG.hoyG;
+  const uni  = esCo2 ? ' ton CO₂eq/año' : ' g/Hr';
+  const fmt  = v => esCo2 ? tonFmt(v) : Math.round(v).toLocaleString('es-CO');
+  const pct  = base ? elim / base * 100 : 0;
+
+  const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+  set('pgPct', pct.toFixed(1).replace('.', ',') + '%');
+  set('pgElimG', fmt(elim) + uni);
+  set('pgActivaG', fmt(hoy) + uni);
+  const rel = document.getElementById('pgRel');
+  if (rel) rel.style.width = Math.max(pct, pct > 0 ? 1.5 : 0) + '%';
 }
 
 function renderProgreso() {
@@ -4054,17 +4083,14 @@ function renderProgreso() {
   const pct = baseG ? elimG / baseG * 100 : 0;
 
   set('pgCampana', `campaña ${CAMPANA} · ${campanaBase()}`);
-  set('pgPct', pct.toFixed(1).replace('.', ',') + '%');
+
   set('pgBaseG', n0(baseG) + ' g/Hr');
   set('pgBaseSub', `${baseN} puntos · ${n2(baseCo2)} ton CO₂eq/año`);
   set('pgHoyG', n0(hoyG) + ' g/Hr');
   set('pgHoySub', `${hoyN} punto${hoyN === 1 ? '' : 's'} activo${hoyN === 1 ? '' : 's'} · ${n2(hoyCo2)} ton CO₂eq/año`);
   set('pgCo2', n2(elimCo2));
-  set('pgElimG', n0(elimG) + ' g/Hr');
-  set('pgActivaG', n0(hoyG) + ' g/Hr');
-
-  const rel = document.getElementById('pgRel');
-  if (rel) rel.style.width = Math.max(pct, pct > 0 ? 1.5 : 0) + '%';
+  PROG = { baseG, baseCo2, hoyG, hoyCo2, elimG, elimCo2 };
+  pintarAvance();
 
   pintarCurva();
 
