@@ -3231,11 +3231,11 @@ THREE.OrbitControls = OrbitControls;
              teléfono sigue mostrando lo de antes, no hay manera de saber si
              falta el despliegue o si es la copia guardada del navegador. La
              rellena construir.py al armar la página. -->
-        <div class="nav-sello" id="navSello">versión <b>04/11/2026 11:28 · 51fa8cf</b></div>
+        <div class="nav-sello" id="navSello">versión <b>04/11/2026 11:34 · 666137f</b></div>
       </div>
       <script>
         /* Si alguien abre el archivo fuente sin pasar por construir.py, el
-           hueco sigue sin rellenar: mejor decirlo que mostrar un 04/11/2026 11:28 · 51fa8cf. */
+           hueco sigue sin rellenar: mejor decirlo que mostrar un 04/11/2026 11:34 · 666137f. */
         (function () {
           var e = document.getElementById('navSello');
           if (e && e.textContent.indexOf('__SEL' + 'LO__') >= 0) {
@@ -3398,7 +3398,7 @@ THREE.OrbitControls = OrbitControls;
       <section class="hd hd-mide">
         <div class="hd-k">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
-          MEDICIÓN DIRECTA
+          <span id="kpiMedK">MEDICIÓN DIRECTA</span>
         </div>
         <div class="hero-num" id="kpiTotal">58.059 g/Hr</div>
         <div class="hd-s" id="kpiMedSub">—</div>
@@ -4006,6 +4006,11 @@ let PERIODO_GLOBAL = 'hora';
 // El encabezado resume la pestaña que se está mirando. En Caño Sur mostraba
 // los totales de CPF-1 y CPF-2, que no tienen nada que ver con lo que hay debajo.
 let HERO_CS = false;
+/* La pestaña de cierres tiene su propio encabezado. Sin esto, al entrar en
+   ella la cifra grande se quedaba con las emisiones ACTIVAS del campo que
+   estuviera seleccionado: uno mira «Cierres» y ve un total que no es de los
+   cierres, sino de lo que sigue abierto. */
+let HERO_CIERRES = false;
 
 function heroCanoSur() {
   const a = aggregate(DATACS);
@@ -4162,7 +4167,49 @@ function bloqueDosPasos(partes, tt, co2) {
     + ` de CO₂eq.</span>`;
 }
 
+/* El encabezado de la pestaña de cierres: lo que se eliminó, no lo que queda.
+   Las tres cifras son las mismas que usa el informe —puntos cerrados, g/Hr que
+   dejaron de fugarse y toneladas evitadas al año—, calculadas con la
+   cromatografía de cada punto. */
+function heroCierres() {
+  const set = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+  const cer = [...CERRADAS1.map(d => ({ d, fac: 'CPF-1' })),
+               ...CERRADAS2.map(d => ({ d, fac: 'CPF-2' })),
+               ...(typeof CERRADASCS !== 'undefined'
+                   ? CERRADASCS.map(d => ({ d, fac: 'CAÑO SUR' })) : [])];
+  const g = cer.reduce((a, x) => a + (x.d.tasa || 0), 0);
+  const co2 = cer.reduce((a, x) =>
+    a + (x.d.tasa || 0) * kDe(x.fac, x.d.area, x.d.equipo, x.d.punto), 0);
+  const verificados = cer.filter(x => x.d.imgCierre).length;
+
+  document.documentElement.classList.remove('sin-co2');
+  /* El rótulo cambia con la pestaña: en cierres la cifra grande es lo que
+     dejó de fugarse, y dejarlo en «MEDICIÓN DIRECTA» la hacía leer como si
+     fuera fuga activa. */
+  set('kpiMedK', 'YA REPARADO');
+  set('kpiTotal', g.toLocaleString('es-CO') + ' g/Hr');
+  pintarCo2(co2, PERIODO_GLOBAL);
+  set('kpiMedSub', cer.length
+    ? `<b>${cer.length} ${cer.length === 1 ? 'hallazgo' : 'hallazgos'}</b> ya `
+      + `reparados · dejaron de fugarse esos g/Hr`
+      + (verificados ? ` · <b>${verificados}</b> con foto de verificación` : '')
+    : 'Todavía no hay hallazgos cerrados');
+  set('kpiRepSub', '');
+  set('kpiSub', '');
+  const cons = document.getElementById('kpiConsolidado');
+  if (cons) cons.style.display = 'none';
+  try { bloqueDosPasos([], g, co2); } catch (e) {}
+  // las tarjetas de abajo son de lo activo: en esta pestaña no pintan nada
+  ['.fcard.total', '.fcard.f1', '.fcard.f2', '.fcard.fcs'].forEach(sel => {
+    const t = document.querySelector(sel);
+    if (t) t.style.display = 'none';
+  });
+}
+
 function updateKPIs() {
+  if (HERO_CIERRES) { heroCierres(); return; }
+  const k = document.getElementById('kpiMedK');
+  if (k) k.textContent = 'MEDICIÓN DIRECTA';
   if (HERO_CS) { heroCanoSur(); return; }
   document.documentElement.classList.remove('sin-co2');
   const tot = document.querySelector('.fcard.total .fcard-label');
@@ -4372,6 +4419,7 @@ function abrirPestana(id) {
   if (panel) panel.classList.add('active');
   // el encabezado sigue a la pestaña: Caño Sur tiene sus propios totales
   HERO_CS = (id === 't3');
+  HERO_CIERRES = (id === 't4');
   CAMPO_GLOBAL = CAMPO_DE_TAB[id] || CAMPO_GLOBAL;
   updateKPIs();
   document.dispatchEvent(new CustomEvent('tabshown', { detail: id }));
