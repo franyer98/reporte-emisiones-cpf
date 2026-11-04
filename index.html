@@ -303,7 +303,15 @@
     color: var(--text-faint); text-transform: uppercase; margin-bottom: 5px;
   }
   .fr-cab .pts { white-space: nowrap; }
-  .fr-cifras { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; }
+  /* Tasa a la izquierda, equivalente a la derecha, siempre en una sola línea.
+     Antes era una fila que se envolvía: con tres cosas dentro, cada facilidad
+     rompía en un sitio distinto —CPF-1 cabía, CPF-2 y Caño Sur no— y las filas
+     perdían el ritmo. Sin envolver, las tres se leen igual. */
+  .fr-cifras {
+    display: flex; justify-content: space-between; align-items: baseline;
+    gap: 10px; flex-wrap: nowrap;
+  }
+  .fr-cifras .fcard-co2 { flex: 0 0 auto; }
   .fr-gh {
     font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 16px;
     color: var(--text); font-variant-numeric: tabular-nums; line-height: 1.15;
@@ -378,6 +386,11 @@
   .fr-k {
     font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-faint);
     white-space: nowrap;
+  }
+  /* La advertencia que antes repetía el factor en cada fila. */
+  .fr-nota {
+    margin-top: 11px; padding-top: 9px; border-top: 1px solid rgba(255,255,255,.055);
+    font-size: 11.5px; line-height: 1.45; color: var(--text-faint);
   }
   .tr-share { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
   .tr-bar {
@@ -1881,11 +1894,11 @@
              teléfono sigue mostrando lo de antes, no hay manera de saber si
              falta el despliegue o si es la copia guardada del navegador. La
              rellena construir.py al armar la página. -->
-        <div class="nav-sello" id="navSello">versión <b>04/11/2026 14:55 · 64e093c</b></div>
+        <div class="nav-sello" id="navSello">versión <b>04/11/2026 17:51 · 4fc356b</b></div>
       </div>
       <script>
         /* Si alguien abre el archivo fuente sin pasar por construir.py, el
-           hueco sigue sin rellenar: mejor decirlo que mostrar un 04/11/2026 14:55 · 64e093c. */
+           hueco sigue sin rellenar: mejor decirlo que mostrar un 04/11/2026 17:51 · 4fc356b. */
         (function () {
           var e = document.getElementById('navSello');
           if (e && e.textContent.indexOf('__SEL' + 'LO__') >= 0) {
@@ -3078,20 +3091,24 @@ function updateKPIs() {
     `<div class="fcard-row">`
     + `<div class="fr-cab"><span>${nom}</span>`
     + `<span class="pts">${n} ${n === 1 ? 'punto' : 'puntos'}</span></div>`
+    /* El factor de cromatografía ya no va en cada fila. Estaba ahí para que no
+       pareciera un error que CPF-2 (2.710 g/Hr) y Caño Sur (4.173) salgan con
+       casi las mismas toneladas, pero repetido tres veces convertía la tarjeta
+       en una fórmula. Esa misma advertencia va ahora una sola vez, al pie, y
+       el factor exacto de cada punto sigue en la memoria de cálculo. */
     + `<div class="fr-cifras"><span class="fr-gh">${vp2(g)}</span>`
-    /* El factor, a la vista. Sin él la tarjeta enseña el resultado y esconde
-       la multiplicación, y entonces dos campos que fugan muy distinto —2.710
-       y 4.173 g/Hr— aparecen con las mismas toneladas sin explicación: el gas
-       de uno es casi metano puro y el del otro no. Con el «× 0,151» al lado,
-       la cuenta se sigue con el dedo. */
-    + `<span class="fr-k">× ${n7(g > 0 ? c / g : 0)}</span>`
     + `<span class="fcard-co2">${nd2(c)} ton CO₂eq/año</span></div>`
     + `<div class="tr-share">`
     + `<span class="tr-bar ${COLOR_CAMPO[nom] || ''}">`
     + `<span style="width:${pctR[i]}%"></span></span>`
     + `<b class="tr-pct">${pctR[i]}%</b></div>`
     + `</div>`).join('');
-  set('kpiTotReparto', repartoHTML);
+  /* Una línea, no un número en cada fila. */
+  const notaReparto = repartoHTML_.length > 1
+    ? `<div class="fr-nota">Cada facilidad convierte con su propia cromatografía:`
+      + ` más g/Hr no siempre son más toneladas.</div>`
+    : '';
+  set('kpiTotReparto', repartoHTML + notaReparto);
   set('kpiF1Puntos', AGG1.nPuntos);
   set('kpiF1Sub', esTasa ? `${t1.toLocaleString('es-CO')} g/Hr medidos` : `${masaAcumulada(t1, P)}${et}`);
   set('kpiF2Puntos', AGG2.nPuntos);
