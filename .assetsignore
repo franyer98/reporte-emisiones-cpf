@@ -28,6 +28,13 @@ reporte-v3.html
 generador.html
 
 # Lo que sí se publica y no hay que tocar: index.html, editor/, guia/, icono/,
-# lib/, plantilla/GOP-F-006.xlsx (el molde del GOP, que el tablero descarga),
-# sw.js y manifest.webmanifest.
-!plantilla/GOP-F-006.xlsx
+# lib/, sw.js, manifest.webmanifest y la carpeta plantilla/, donde viven los
+# moldes que el tablero descarga para armar el GOP-F-006 y las fichas de
+# cierre GOP-F-007.
+#
+# La excepción es de la carpeta entera y no de cada archivo: con un molde
+# nombrado uno por uno, el siguiente que se agregue queda fuera sin que nadie
+# lo note, y el botón que lo usa falla pidiendo un archivo que no existe. Eso
+# ya pasó con el GOP-F-007.
+!plantilla/
+!plantilla/*.xlsx
