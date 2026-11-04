@@ -3391,10 +3391,10 @@ THREE.OrbitControls = OrbitControls;
   <div class="wrap">
     <div class="tabs">
       <div class="tab todas active" data-tab="todas">Todas <span class="n" id="tabN0">—</span></div>
-      <div class="tab t1" data-tab="t1">CPF-1 <span class="n" id="tabN1">14</span></div>
-      <div class="tab t2" data-tab="t2">CPF-2 <span class="n" id="tabN2">11</span></div>
-      <div class="tab t3" data-tab="t3">Caño Sur <span class="n" id="tabN3">5</span></div>
-      <div class="tab t4" data-tab="t4">Cierres <span class="n" id="tabN4">0</span></div>
+      <div class="tab t1" data-tab="t1">CPF-1 <span class="n" id="tabN1">—</span></div>
+      <div class="tab t2" data-tab="t2">CPF-2 <span class="n" id="tabN2">—</span></div>
+      <div class="tab t3" data-tab="t3">Caño Sur <span class="n" id="tabN3">—</span></div>
+      <div class="tab t4" data-tab="t4">Cierres <span class="n" id="tabN4">—</span></div>
     </div>
   </div>
 </div>
@@ -3422,16 +3422,19 @@ THREE.OrbitControls = OrbitControls;
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
           <span id="kpiMedK">MEDICIÓN DIRECTA</span>
         </div>
-        <div class="hero-num" id="kpiTotal">58.059 g/Hr</div>
-        <div class="hd-s" id="kpiMedSub">—</div>
+        <!-- Sin cifra: el navegador pinta este HTML antes de que corra una sola
+           línea de código, así que cualquier número que se deje aquí se ve
+           como si fuera un dato real mientras carga. -->
+        <div class="hero-num" id="kpiTotal">Cargando…</div>
+        <div class="hd-s" id="kpiMedSub">Trayendo los datos del servidor</div>
       </section>
       <section class="hd hd-rep" id="heroCo2">
         <div class="hd-k">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><path d="M8 12h8M12 8v8"/></svg>
           EQUIVALENTE EN CO₂ <span class="hero-tag-mini">CALCULADO</span>
         </div>
-        <div class="hero-num co2"><span id="kpiCo2">14,447</span> <small id="kpiCo2U">ton CO₂eq/año</small></div>
-        <div class="hd-s" id="kpiRepSub">el mismo gas, medido por su efecto climático</div>
+        <div class="hero-num co2"><span id="kpiCo2">—</span> <small id="kpiCo2U">ton CO₂eq/año</small></div>
+        <div class="hd-s" id="kpiRepSub"></div>
       </section>
     </div>
     <!-- El consolidado de los dos campos. Va aparte y rotulado, nunca dentro
@@ -3442,19 +3445,19 @@ THREE.OrbitControls = OrbitControls;
     <!-- La cuenta escrita con los números que están en pantalla: es la forma
          de que nadie tenga que creer en el tablero, sino comprobarlo. -->
     <div class="hero-formula" id="kpiFormula" style="display:none"></div>
-    <div class="hero-sub" id="kpiSub">de gas fugitivo detectado entre dos facilidades — <b>CPF-1</b> (11 puntos, 45.959 g/Hr) y <b>CPF-2</b> (11 puntos, 12.100 g/Hr) — la misma lectura que registra la ficha GOP-F-006.</div>
+    <div class="hero-sub" id="kpiSub"></div>
     <div class="facility-row">
       <div class="fcard total">
         <div class="fcard-label">Total · CPF-1 + CPF-2</div>
-        <div class="fcard-main"><span id="kpiTotPuntos">25</span> <small>puntos</small></div>
-        <div class="fcard-sub" id="kpiTotSub">58.059 g/Hr · 22 puntos medidos</div>
+        <div class="fcard-main"><span id="kpiTotPuntos">—</span> <small>puntos</small></div>
+        <div class="fcard-sub" id="kpiTotSub"></div>
         <div class="fcard-crit-label">POR FACILIDAD <span>· reparto del CO₂eq</span></div>
         <div id="kpiTotReparto"></div>
       </div>
       <div class="fcard f1">
         <div class="fcard-label">CPF-1</div>
-        <div class="fcard-main"><span id="kpiF1Puntos">14</span> <small>puntos</small></div>
-        <div class="fcard-sub" id="kpiF1Sub">45.959 g/Hr medidos</div>
+        <div class="fcard-main"><span id="kpiF1Puntos">—</span> <small>puntos</small></div>
+        <div class="fcard-sub" id="kpiF1Sub"></div>
         <div class="fcard-crit-label">POR ÁREA · TOTAL Y EQUIPO QUE MÁS APORTA</div>
         <div id="kpiF1Crit"><div class="fcard-row"><span class="k">FWKOS</span><span class="v">TK-901B <small>17.700 g/Hr · 100%</small></span></div>
         <div class="fcard-row"><span class="k">PROCESOS</span><span class="v">TK-901C <small>10.000 g/Hr · 36%</small></span></div>
@@ -3462,8 +3465,8 @@ THREE.OrbitControls = OrbitControls;
       </div>
       <div class="fcard f2">
         <div class="fcard-label">CPF-2</div>
-        <div class="fcard-main"><span id="kpiF2Puntos">11</span> <small>puntos</small></div>
-        <div class="fcard-sub" id="kpiF2Sub">12.100 g/Hr medidos</div>
+        <div class="fcard-main"><span id="kpiF2Puntos">—</span> <small>puntos</small></div>
+        <div class="fcard-sub" id="kpiF2Sub"></div>
         <div class="fcard-crit-label">POR ÁREA · TOTAL Y EQUIPO QUE MÁS APORTA</div>
         <div id="kpiF2Crit"><div class="fcard-row"><span class="k">ALMACENAMIENTO</span><span class="v">300-TK-0103 <small>6.470 g/Hr · 100%</small></span></div>
         <div class="fcard-row"><span class="k">FWKOS</span><span class="v">300-TK-0201 <small>3.750 g/Hr · 67%</small></span></div></div>
