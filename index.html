@@ -3231,11 +3231,11 @@ THREE.OrbitControls = OrbitControls;
              teléfono sigue mostrando lo de antes, no hay manera de saber si
              falta el despliegue o si es la copia guardada del navegador. La
              rellena construir.py al armar la página. -->
-        <div class="nav-sello" id="navSello">versión <b>04/11/2026 11:24 · 0455a6b</b></div>
+        <div class="nav-sello" id="navSello">versión <b>04/11/2026 11:28 · 51fa8cf</b></div>
       </div>
       <script>
         /* Si alguien abre el archivo fuente sin pasar por construir.py, el
-           hueco sigue sin rellenar: mejor decirlo que mostrar un 04/11/2026 11:24 · 0455a6b. */
+           hueco sigue sin rellenar: mejor decirlo que mostrar un 04/11/2026 11:28 · 51fa8cf. */
         (function () {
           var e = document.getElementById('navSello');
           if (e && e.textContent.indexOf('__SEL' + 'LO__') >= 0) {
@@ -9496,6 +9496,8 @@ ${cssInforme()}
      o computador, se piden una sola vez, y no salen de ahí: ni al sitio, ni al
      servidor, ni al repositorio. */
   const F007_LLAVE = 'emisiones.f007firmas';
+  // la contratista, tal como debe ir en el formato de Ecopetrol
+  const F007_EMPRESA = 'Mecánicos Asociados S.A.S.';
 
   function f007FirmasGuardadas() {
     try {
@@ -9515,6 +9517,10 @@ ${cssInforme()}
     Object.keys(F007_COL_FIRMA).forEach(quien => {
       const q = datos[quien] || {};
       const col = F007_COL_FIRMA[quien];
+      /* Sin nombre, la columna entera se deja vacía: una empresa suelta debajo
+         de una casilla sin nombre queda a medio llenar y se ve peor que en
+         blanco. El que la llene a mano la escribe completa. */
+      if (!q.nombre) return;
       hoja = f007Casilla(hoja, col + '29', q.nombre);
       hoja = f007Casilla(hoja, col + '30', q.registro);
       hoja = f007Casilla(hoja, col + '31', q.empresa);
@@ -9758,7 +9764,11 @@ ${cssInforme()}
   function pedirFirmas() {
     return new Promise(resolve => {
       const g = f007FirmasGuardadas() || {};
-      const v = (q, c) => (g[q] && g[q][c]) ? String(g[q][c]) : '';
+      /* La empresa viene puesta: no es un dato personal y es la misma en todas
+         las fichas. El nombre y el registro se dejan vacíos a propósito —esos
+         sí son de la persona y no tienen por qué estar escritos en el código. */
+      const v = (q, c) => (g[q] && g[q][c]) ? String(g[q][c])
+        : (c === 'empresa' && q === 'elaboro' ? F007_EMPRESA : '');
       const cap = document.createElement('div');
       cap.className = 'bd-capa';
       const fila = (q, rot, nota) => `
