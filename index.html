@@ -1708,6 +1708,28 @@ THREE.OrbitControls = OrbitControls;
      píxeles de alto 3, donde un 5% no se veía. Ahora la barra es el mismo
      porcentaje que el número, ocupa el ancho de la tarjeta y lleva el color
      de su campo. */
+  .fic-bar { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 12px; }
+  .fic-b { padding: 5px 10px; border-radius: 99px; border: 1px solid var(--border);
+    background: transparent; color: var(--text-dim); font: inherit; font-size: 11.5px;
+    cursor: pointer; }
+  .fic-b:hover { color: var(--text); border-color: var(--text-faint); }
+  .fic-lista { max-height: 48vh; overflow-y: auto; margin: 0 -4px; padding: 0 4px; }
+  .fic-g { margin-bottom: 12px; }
+  .fic-gt { font-family: 'JetBrains Mono', monospace; font-size: 9.5px;
+    letter-spacing: .14em; color: var(--text-faint); margin-bottom: 5px; }
+  .fic-l { display: flex; align-items: center; gap: 9px; padding: 7px 8px;
+    border-radius: 8px; cursor: pointer; }
+  .fic-l:hover { background: rgba(255,255,255,.04); }
+  .fic-c { width: 16px; height: 16px; flex: 0 0 auto; accent-color: var(--cool); }
+  .fic-id { font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    color: var(--text); flex: 0 0 auto; }
+  .fic-eq { font-size: 11.5px; color: var(--text-faint); flex: 1 1 auto;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fic-e { font-size: 9.5px; font-family: 'JetBrains Mono', monospace;
+    letter-spacing: .08em; padding: 2px 7px; border-radius: 99px; flex: 0 0 auto; }
+  .fic-e.ab { color: var(--mid); border: 1px solid rgba(255,178,56,.35); }
+  .fic-e.ce { color: var(--ok, #2ecc71); border: 1px solid rgba(46,204,113,.3); }
+  .bd-b:disabled { opacity: .4; cursor: default; }
   .fir-p { font-size: 12.5px; color: var(--text-faint); line-height: 1.5;
     margin: 4px 0 14px; }
   .fir-g { margin-bottom: 13px; }
@@ -3220,7 +3242,7 @@ THREE.OrbitControls = OrbitControls;
         <a href="#" class="nav-link" id="navOrden">Orden de trabajo · por tanque</a>
         <a href="#" class="nav-link" id="navSimulador">Simulador · cuánto deja de emitirse</a>
         <a href="#" class="nav-link" id="navMemoria">Memoria de cálculo · de dónde sale cada número</a>
-        <a href="#" class="nav-link" id="navFichas">Fichas de cierre · GOP-F-007, una por hallazgo cerrado</a>
+        <a href="#" class="nav-link" id="navFichas">Fichas GOP-F-007 · eliges cuáles y se arma el Excel</a>
         <!-- La guía de columnas vive como archivo junto al tablero: se abre en
              pestaña nueva, no pasa por el código del tablero. -->
         <!-- Página, no PDF: un PDF en el teléfono se baja antes de verse, y
@@ -3231,11 +3253,11 @@ THREE.OrbitControls = OrbitControls;
              teléfono sigue mostrando lo de antes, no hay manera de saber si
              falta el despliegue o si es la copia guardada del navegador. La
              rellena construir.py al armar la página. -->
-        <div class="nav-sello" id="navSello">versión <b>04/11/2026 12:15 · 38356dd</b></div>
+        <div class="nav-sello" id="navSello">versión <b>04/11/2026 13:46 · b070cd9</b></div>
       </div>
       <script>
         /* Si alguien abre el archivo fuente sin pasar por construir.py, el
-           hueco sigue sin rellenar: mejor decirlo que mostrar un 04/11/2026 12:15 · 38356dd. */
+           hueco sigue sin rellenar: mejor decirlo que mostrar un 04/11/2026 13:46 · b070cd9. */
         (function () {
           var e = document.getElementById('navSello');
           if (e && e.textContent.indexOf('__SEL' + 'LO__') >= 0) {
@@ -9674,8 +9696,13 @@ ${cssInforme()}
     'CAÑO SUR': ['CAÑO SUR', 'CENTAUROS'],
   };
 
-  /* Los cierres que hay hoy, de los tres campos, con lo que la ficha pide. */
-  function f007Cierres() {
+  /* Todas las fichas posibles: los puntos abiertos y los ya cerrados.
+
+     Un punto abierto se lleva su ficha con todo lo que ya se sabe
+     —identificación, lectura, GEI, descripción y la foto de la condición
+     inicial— y el bloque de cierre en blanco. Así se imprime, se lleva al
+     campo y sólo queda completar lo que falte al reparar. */
+  function f007Fichas() {
     const de = (lista, fac) => (lista || []).map(d => {
       const par = F007_CAMPO[fac] || ['CAMPO RUBIALES', fac];
       const anio = /^(\d{4})/.exec(String(d.fechaDeteccion || ''));
@@ -9685,7 +9712,10 @@ ${cssInforme()}
         equipo: d.equipo || '', punto: d.punto || '', elemento: d.elemento || '',
         campana: anio ? anio[1] : '',
         tasa: d.tasa, gei: d.tasa * kDe(fac, d.area, d.equipo, d.punto),
-        tasaCierre: d.tasaCierre != null ? d.tasaCierre : 0,
+        abierta: !d.fechaCierre,
+        // un punto abierto no tiene medición de cierre: esa casilla va
+        // vacía, que no es lo mismo que un cero
+        tasaCierre: d.fechaCierre ? (d.tasaCierre != null ? d.tasaCierre : 0) : null,
         fechaDeteccion: d.fechaDeteccion, fechaCierre: d.fechaCierre,
         fechaVerificacion: d.fechaVerificacion,
         hallazgo: d.hallazgo || '',
@@ -9693,9 +9723,12 @@ ${cssInforme()}
         fotoInicial: f007Foto(d.img), fotoFinal: f007Foto(d.imgCierre),
       };
     });
-    return [...de(CERRADAS1, 'CPF-1'), ...de(CERRADAS2, 'CPF-2'),
-            ...de(typeof CERRADASCS !== 'undefined' ? CERRADASCS : [], 'CAÑO SUR')]
-      .filter(c => c.id || c.equipo);
+    const abiertas = [...de(DATA1, 'CPF-1'), ...de(DATA2, 'CPF-2'),
+                      ...de(typeof DATACS !== 'undefined' ? DATACS : [], 'CAÑO SUR')];
+    const cerradas = [...de(CERRADAS1, 'CPF-1'), ...de(CERRADAS2, 'CPF-2'),
+                      ...de(typeof CERRADASCS !== 'undefined' ? CERRADASCS : [],
+                            'CAÑO SUR')];
+    return [...abiertas, ...cerradas].filter(c => c.id || c.equipo);
   }
 
   /* La cirugía: el molde entra, el libro de fichas sale. */
@@ -9730,7 +9763,9 @@ ${cssInforme()}
       hoja = f007Casilla(hoja, 'E12', c.hallazgo);
       hoja = f007Alto(hoja, 12, c.hallazgo, F007_ANCHO_DESC, 1);
       hoja = f007Casilla(hoja, 'K23', gopSerie(c.fechaCierre), true);
-      hoja = f007Casilla(hoja, 'K24', c.tasaCierre, true);
+      if (c.tasaCierre !== null && c.tasaCierre !== undefined) {
+        hoja = f007Casilla(hoja, 'K24', c.tasaCierre, true);
+      }
       hoja = f007Casilla(hoja, 'K25', gopSerie(c.fechaVerificacion), true);
       hoja = f007Casilla(hoja, 'B24', c.actividades);
       hoja = f007Alto(hoja, 24, c.actividades, F007_ANCHO_ACT, 2);
@@ -9864,14 +9899,92 @@ ${cssInforme()}
     });
   }
 
+  /* Cuáles se llevan. Antes salían todas de golpe; con veintisiete puntos eso
+     es un archivo que nadie quiere abrir en el teléfono, y casi siempre se
+     necesitan unas pocas. Se marcan y se genera sólo eso. */
+  function elegirFichas(fichas) {
+    return new Promise(resolve => {
+      const cap = document.createElement('div');
+      cap.className = 'bd-capa';
+      const fila = (c, i) => `
+        <label class="fic-l">
+          <input type="checkbox" class="fic-c" data-i="${i}"
+                 ${c.abierta ? 'checked' : ''}>
+          <span class="fic-id">${gopEsc(c.id || '—')}</span>
+          <span class="fic-eq">${gopEsc(c.equipo || '')}</span>
+          <span class="fic-e ${c.abierta ? 'ab' : 'ce'}">${
+            c.abierta ? 'abierta' : 'cerrada'}</span>
+        </label>`;
+      const grupos = {};
+      fichas.forEach((c, i) => {
+        (grupos[c.facilidad] = grupos[c.facilidad] || []).push(fila(c, i));
+      });
+      const bloques = Object.keys(grupos).map(f =>
+        `<div class="fic-g"><div class="fic-gt">${gopEsc(f)}</div>`
+        + grupos[f].join('') + '</div>').join('');
+      cap.innerHTML = `
+        <div class="bd-caja" role="dialog" aria-label="Qué fichas generar">
+          <div class="bd-top"><div>
+            <div class="bd-kick">FICHA GOP-F-007</div>
+            <h3 class="bd-h">¿Cuáles?</h3>
+          </div><button class="bd-x" aria-label="Cerrar">×</button></div>
+          <div class="fic-bar">
+            <button class="fic-b" data-sel="todas">Todas</button>
+            <button class="fic-b" data-sel="abiertas">Sólo abiertas</button>
+            <button class="fic-b" data-sel="cerradas">Sólo cerradas</button>
+            <button class="fic-b" data-sel="ninguna">Ninguna</button>
+          </div>
+          <div class="fic-lista">${bloques}</div>
+          <div class="bd-btns">
+            <button class="bd-b bd-pri" id="ficOk">Generar</button>
+          </div>
+        </div>`;
+      document.body.appendChild(cap);
+      const cajas = () => [...cap.querySelectorAll('.fic-c')];
+      const boton = cap.querySelector('#ficOk');
+      const contar = () => {
+        const n = cajas().filter(c => c.checked).length;
+        boton.textContent = n ? 'Generar ' + n + (n === 1 ? ' ficha' : ' fichas')
+                              : 'Generar';
+        boton.disabled = !n;
+      };
+      cap.querySelectorAll('.fic-b').forEach(b => {
+        b.onclick = () => {
+          const q = b.dataset.sel;
+          cajas().forEach(c => {
+            const f = fichas[+c.dataset.i];
+            c.checked = q === 'todas' ? true
+              : q === 'ninguna' ? false
+              : q === 'abiertas' ? !!f.abierta : !f.abierta;
+          });
+          contar();
+        };
+      });
+      cap.addEventListener('change', contar);
+      const cerrar = r => { cap.remove(); resolve(r); };
+      cap.querySelector('.bd-x').onclick = () => cerrar(null);
+      cap.onclick = e => { if (e.target === cap) cerrar(null); };
+      boton.onclick = () => cerrar(cajas().filter(c => c.checked)
+        .map(c => fichas[+c.dataset.i]));
+      contar();
+    });
+  }
+
   async function generarFichasCierre(enlace) {
     const previo = enlace ? enlace.textContent : '';
     const avisar = t => { if (enlace) enlace.textContent = t; };
     try {
-      const cierres = f007Cierres();
-      if (!cierres.length) {
-        avisar('No hay hallazgos cerrados todavía');
+      const todas = f007Fichas();
+      if (!todas.length) {
+        avisar('No hay hallazgos que documentar todavía');
         setTimeout(() => avisar(previo), 2600);
+        return;
+      }
+      const cierres = await elegirFichas(todas);
+      if (cierres === null) { avisar(previo); return; }
+      if (!cierres.length) {
+        avisar('No marcaste ninguna');
+        setTimeout(() => avisar(previo), 2400);
         return;
       }
       if (!f007FirmasGuardadas()) {
@@ -9904,7 +10017,9 @@ ${cssInforme()}
       a.click();
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 4000);
-      avisar(cierres.length + ' ficha(s) descargada(s)');
+      const nAb = cierres.filter(c => c.abierta).length;
+      avisar(cierres.length + ' fichas'
+        + (nAb ? ' · ' + nAb + ' por completar' : ''));
     } catch (e) {
       avisar('No se pudo: ' + (e && e.message ? e.message : e));
     }
