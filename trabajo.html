@@ -10614,6 +10614,22 @@ ${cssInforme()}
       + '</AppVersion></Properties>';
   }
 
+  /* El código de la emisión, como lo lleva el formato.
+
+     El tablero los guarda cortos —«CPF-2-02»— y la ficha los pide completos:
+     «EFRB-CPF-2-002». Delante va EFRB para Rubiales y EFCS para Caño Sur, y el
+     número final se rellena a tres cifras. Si el código ya viene completo, se
+     deja como está. */
+  function f007Id(fid, fac) {
+    const t = String(fid || '').trim().toUpperCase();
+    if (!t) return '';
+    if (/^EF(RB|CS)/.test(t)) return t;
+    const pre = (fac === 'CAÑO SUR') ? 'EFCS' : 'EFRB';
+    const m = /^(.*?)[-\s]*(\d+)$/.exec(t);
+    if (!m) return pre + '-' + t;
+    return pre + '-' + m[1].replace(/[-\s]+$/, '') + '-' + m[2].padStart(3, '0');
+  }
+
   const F007_CAMPO = {
     'CPF-1': ['CAMPO RUBIALES', 'CPF-1'],
     'CPF-2': ['CAMPO RUBIALES', 'CPF-2'],
@@ -10631,7 +10647,7 @@ ${cssInforme()}
       const par = F007_CAMPO[fac] || ['CAMPO RUBIALES', fac];
       const anio = /^(\d{4})/.exec(String(d.fechaDeteccion || ''));
       return {
-        id: d.fid || '', fac,
+        id: f007Id(d.fid, fac), fac,
         campo: par[0], facilidad: par[1],
         equipo: d.equipo || '', punto: d.punto || '', elemento: d.elemento || '',
         campana: anio ? anio[1] : '',

@@ -3253,11 +3253,11 @@ THREE.OrbitControls = OrbitControls;
              teléfono sigue mostrando lo de antes, no hay manera de saber si
              falta el despliegue o si es la copia guardada del navegador. La
              rellena construir.py al armar la página. -->
-        <div class="nav-sello" id="navSello">versión <b>04/11/2026 14:00 · 7d98cc9</b></div>
+        <div class="nav-sello" id="navSello">versión <b>04/11/2026 14:08 · b8cc358</b></div>
       </div>
       <script>
         /* Si alguien abre el archivo fuente sin pasar por construir.py, el
-           hueco sigue sin rellenar: mejor decirlo que mostrar un 04/11/2026 14:00 · 7d98cc9. */
+           hueco sigue sin rellenar: mejor decirlo que mostrar un 04/11/2026 14:08 · b8cc358. */
         (function () {
           var e = document.getElementById('navSello');
           if (e && e.textContent.indexOf('__SEL' + 'LO__') >= 0) {
@@ -9764,6 +9764,22 @@ ${cssInforme()}
       + '</AppVersion></Properties>';
   }
 
+  /* El código de la emisión, como lo lleva el formato.
+
+     El tablero los guarda cortos —«CPF-2-02»— y la ficha los pide completos:
+     «EFRB-CPF-2-002». Delante va EFRB para Rubiales y EFCS para Caño Sur, y el
+     número final se rellena a tres cifras. Si el código ya viene completo, se
+     deja como está. */
+  function f007Id(fid, fac) {
+    const t = String(fid || '').trim().toUpperCase();
+    if (!t) return '';
+    if (/^EF(RB|CS)/.test(t)) return t;
+    const pre = (fac === 'CAÑO SUR') ? 'EFCS' : 'EFRB';
+    const m = /^(.*?)[-\s]*(\d+)$/.exec(t);
+    if (!m) return pre + '-' + t;
+    return pre + '-' + m[1].replace(/[-\s]+$/, '') + '-' + m[2].padStart(3, '0');
+  }
+
   const F007_CAMPO = {
     'CPF-1': ['CAMPO RUBIALES', 'CPF-1'],
     'CPF-2': ['CAMPO RUBIALES', 'CPF-2'],
@@ -9781,7 +9797,7 @@ ${cssInforme()}
       const par = F007_CAMPO[fac] || ['CAMPO RUBIALES', fac];
       const anio = /^(\d{4})/.exec(String(d.fechaDeteccion || ''));
       return {
-        id: d.fid || '', fac,
+        id: f007Id(d.fid, fac), fac,
         campo: par[0], facilidad: par[1],
         equipo: d.equipo || '', punto: d.punto || '', elemento: d.elemento || '',
         campana: anio ? anio[1] : '',
