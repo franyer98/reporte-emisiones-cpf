@@ -387,11 +387,6 @@
     font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-faint);
     white-space: nowrap;
   }
-  /* La advertencia que antes repetía el factor en cada fila. */
-  .fr-nota {
-    margin-top: 11px; padding-top: 9px; border-top: 1px solid rgba(255,255,255,.055);
-    font-size: 11.5px; line-height: 1.45; color: var(--text-faint);
-  }
   .tr-share { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
   .tr-bar {
     flex: 1 1 auto; height: 9px; border-radius: 99px; overflow: hidden;
@@ -1894,11 +1889,11 @@
              teléfono sigue mostrando lo de antes, no hay manera de saber si
              falta el despliegue o si es la copia guardada del navegador. La
              rellena construir.py al armar la página. -->
-        <div class="nav-sello" id="navSello">versión <b>04/11/2026 17:51 · 4fc356b</b></div>
+        <div class="nav-sello" id="navSello">versión <b>04/11/2026 18:23 · ff9f640</b></div>
       </div>
       <script>
         /* Si alguien abre el archivo fuente sin pasar por construir.py, el
-           hueco sigue sin rellenar: mejor decirlo que mostrar un 04/11/2026 17:51 · 4fc356b. */
+           hueco sigue sin rellenar: mejor decirlo que mostrar un 04/11/2026 18:23 · ff9f640. */
         (function () {
           var e = document.getElementById('navSello');
           if (e && e.textContent.indexOf('__SEL' + 'LO__') >= 0) {
@@ -3094,8 +3089,8 @@ function updateKPIs() {
     /* El factor de cromatografía ya no va en cada fila. Estaba ahí para que no
        pareciera un error que CPF-2 (2.710 g/Hr) y Caño Sur (4.173) salgan con
        casi las mismas toneladas, pero repetido tres veces convertía la tarjeta
-       en una fórmula. Esa misma advertencia va ahora una sola vez, al pie, y
-       el factor exacto de cada punto sigue en la memoria de cálculo. */
+       en una fórmula. El factor exacto de cada punto está en la memoria de
+       cálculo, que es donde se audita. */
     + `<div class="fr-cifras"><span class="fr-gh">${vp2(g)}</span>`
     + `<span class="fcard-co2">${nd2(c)} ton CO₂eq/año</span></div>`
     + `<div class="tr-share">`
@@ -3103,12 +3098,7 @@ function updateKPIs() {
     + `<span style="width:${pctR[i]}%"></span></span>`
     + `<b class="tr-pct">${pctR[i]}%</b></div>`
     + `</div>`).join('');
-  /* Una línea, no un número en cada fila. */
-  const notaReparto = repartoHTML_.length > 1
-    ? `<div class="fr-nota">Cada facilidad convierte con su propia cromatografía:`
-      + ` más g/Hr no siempre son más toneladas.</div>`
-    : '';
-  set('kpiTotReparto', repartoHTML + notaReparto);
+  set('kpiTotReparto', repartoHTML);
   set('kpiF1Puntos', AGG1.nPuntos);
   set('kpiF1Sub', esTasa ? `${t1.toLocaleString('es-CO')} g/Hr medidos` : `${masaAcumulada(t1, P)}${et}`);
   set('kpiF2Puntos', AGG2.nPuntos);

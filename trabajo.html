@@ -303,7 +303,15 @@
     color: var(--text-faint); text-transform: uppercase; margin-bottom: 5px;
   }
   .fr-cab .pts { white-space: nowrap; }
-  .fr-cifras { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; }
+  /* Tasa a la izquierda, equivalente a la derecha, siempre en una sola línea.
+     Antes era una fila que se envolvía: con tres cosas dentro, cada facilidad
+     rompía en un sitio distinto —CPF-1 cabía, CPF-2 y Caño Sur no— y las filas
+     perdían el ritmo. Sin envolver, las tres se leen igual. */
+  .fr-cifras {
+    display: flex; justify-content: space-between; align-items: baseline;
+    gap: 10px; flex-wrap: nowrap;
+  }
+  .fr-cifras .fcard-co2 { flex: 0 0 auto; }
   .fr-gh {
     font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 16px;
     color: var(--text); font-variant-numeric: tabular-nums; line-height: 1.15;
@@ -2656,10 +2664,11 @@ const n2 = (v, d) => v.toFixed(d);
    número sí se cuadra contra una celda del libro —la memoria de cálculo, el
    simulador y el avance— van completos, que ahí ese es el oficio. Por debajo de
    una tonelada se muestran dos decimales: si no, un punto chico sale como 0. */
+/* Dos decimales, siempre. Estas cifras son las del libro —AJ21 y sus parciales—
+   y así cada una se puede comprobar contra su celda sin que el redondeo deje
+   dudas: el total en pantalla dice 1.312,92 igual que el libro, no 1.313. */
 function tonFmt(v) {
-  return (v > 0 && v < 1)
-    ? v.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    : Math.round(v).toLocaleString('es-CO');
+  return v.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 /* El color de cada campo, el mismo en la tarjeta Total y en las de área, para
@@ -3079,13 +3088,12 @@ function updateKPIs() {
     `<div class="fcard-row">`
     + `<div class="fr-cab"><span>${nom}</span>`
     + `<span class="pts">${n} ${n === 1 ? 'punto' : 'puntos'}</span></div>`
+    /* El factor de cromatografía ya no va en cada fila. Estaba ahí para que no
+       pareciera un error que CPF-2 (2.710 g/Hr) y Caño Sur (4.173) salgan con
+       casi las mismas toneladas, pero repetido tres veces convertía la tarjeta
+       en una fórmula. El factor exacto de cada punto está en la memoria de
+       cálculo, que es donde se audita. */
     + `<div class="fr-cifras"><span class="fr-gh">${vp2(g)}</span>`
-    /* El factor, a la vista. Sin él la tarjeta enseña el resultado y esconde
-       la multiplicación, y entonces dos campos que fugan muy distinto —2.710
-       y 4.173 g/Hr— aparecen con las mismas toneladas sin explicación: el gas
-       de uno es casi metano puro y el del otro no. Con el «× 0,151» al lado,
-       la cuenta se sigue con el dedo. */
-    + `<span class="fr-k">× ${n7(g > 0 ? c / g : 0)}</span>`
     + `<span class="fcard-co2">${nd2(c)} ton CO₂eq/año</span></div>`
     + `<div class="tr-share">`
     + `<span class="tr-bar ${COLOR_CAMPO[nom] || ''}">`
