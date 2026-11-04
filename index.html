@@ -283,6 +283,19 @@
   .fcard.f1::before { background: var(--hot); }
   .fcard.f2::before { background: var(--cpf2); }
   .fcard-label { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 14px; }
+  /* De qué campaña y de cuándo es la cifra. Es lo primero que pregunta
+     cualquiera que la reciba, y la tarjeta no lo decía. Va flotando arriba a
+     la derecha para no agregarle un renglón. */
+  .fcard.total { position: relative; }
+  .fcard-campana {
+    position: absolute; top: 18px; right: 18px; max-width: 40%; text-align: right;
+    font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--text-faint); line-height: 1.5;
+  }
+  .fcard-campana b { color: var(--text-dim); font-weight: 600; }
+  /* El rótulo es un bloque y el sello flota encima: sin reservarle el hueco,
+     en pantallas angostas «CPF-1 + CPF-2 + CAÑO SUR» se le mete debajo. */
+  .fcard.total .fcard-label { padding-right: 44%; }
   .fcard-main { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 30px; line-height: 1; margin-bottom: 4px; }
   .fcard-main small { font-size: 14px; color: var(--text-dim); font-weight: 500; }
   .fcard-sub { font-size: 12.5px; color: var(--text-dim); margin-bottom: 14px; }
@@ -1889,11 +1902,11 @@
              teléfono sigue mostrando lo de antes, no hay manera de saber si
              falta el despliegue o si es la copia guardada del navegador. La
              rellena construir.py al armar la página. -->
-        <div class="nav-sello" id="navSello">versión <b>04/11/2026 18:23 · ff9f640</b></div>
+        <div class="nav-sello" id="navSello">versión <b>04/11/2026 18:26 · b6e69ac</b></div>
       </div>
       <script>
         /* Si alguien abre el archivo fuente sin pasar por construir.py, el
-           hueco sigue sin rellenar: mejor decirlo que mostrar un 04/11/2026 18:23 · ff9f640. */
+           hueco sigue sin rellenar: mejor decirlo que mostrar un 04/11/2026 18:26 · b6e69ac. */
         (function () {
           var e = document.getElementById('navSello');
           if (e && e.textContent.indexOf('__SEL' + 'LO__') >= 0) {
@@ -2084,6 +2097,9 @@
     <div class="hero-sub" id="kpiSub"></div>
     <div class="facility-row">
       <div class="fcard total">
+        <!-- El sello va en su propio elemento, no dentro del rótulo: el rótulo
+             se reescribe con textContent en varios sitios y se lo llevaría. -->
+        <div class="fcard-campana" id="kpiCampana"></div>
         <div class="fcard-label">Total · CPF-1 + CPF-2</div>
         <div class="fcard-main"><span id="kpiTotPuntos">—</span> <small>puntos</small></div>
         <div class="fcard-sub" id="kpiTotSub"></div>
@@ -3099,6 +3115,15 @@ function updateKPIs() {
     + `<b class="tr-pct">${pctR[i]}%</b></div>`
     + `</div>`).join('');
   set('kpiTotReparto', repartoHTML);
+  const sello = document.getElementById('kpiCampana');
+  if (sello) {
+    /* Mes abreviado: en un teléfono de 360 px «medido en septiembre 2026»
+       se partía en tres renglones y le comía el rótulo a la tarjeta. */
+    const cuando = campanaBase();
+    const corto = cuando === 'la medición inicial' ? ''
+      : cuando.replace(/^(\w{3})\w*/, (m, a) => a);
+    sello.innerHTML = `<b>Campaña ${CAMPANA}</b>` + (corto ? `<br>${corto}` : '');
+  }
   set('kpiF1Puntos', AGG1.nPuntos);
   set('kpiF1Sub', esTasa ? `${t1.toLocaleString('es-CO')} g/Hr medidos` : `${masaAcumulada(t1, P)}${et}`);
   set('kpiF2Puntos', AGG2.nPuntos);
@@ -3941,6 +3966,11 @@ function prepararBarraCurva() {
   });
 }
 
+/* El número de campaña no sale de los datos: se lleva aparte. Al empezar la
+   siguiente, cambiar este número es lo único que hay que tocar. El mes sí sale
+   de las mediciones, para que la etiqueta no pueda contradecir las fechas. */
+const CAMPANA = 6;
+
 function campanaBase() {
   const fechas = [...DATA1, ...DATA2, ...CERRADAS1, ...CERRADAS2, ...DATACS, ...CERRADASCS]
     .filter(d => !d.nuevo && d.fechaDeteccion).map(d => d.fechaDeteccion).sort();
@@ -3979,7 +4009,7 @@ function renderProgreso() {
                 + CERRADASCS.reduce((a, d) => a + d.tasa * kDe('CAÑO SUR', d.area, d.equipo, d.punto), 0);
   const pct = baseG ? elimG / baseG * 100 : 0;
 
-  set('pgCampana', campanaBase());
+  set('pgCampana', `campaña ${CAMPANA} · ${campanaBase()}`);
   set('pgPct', pct.toFixed(1).replace('.', ',') + '%');
   set('pgBaseG', n0(baseG) + ' g/Hr');
   set('pgBaseSub', `${baseN} puntos · ${n2(baseCo2)} ton CO₂eq/año`);
