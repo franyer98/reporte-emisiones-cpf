@@ -267,15 +267,23 @@
   @media (max-width:600px){ .hero-formula{font-size:11px;line-height:1.95} }
   /* Cuatro tarjetas: el total de Rubiales, sus dos facilidades y Caño Sur.
      En pantallas medianas se parten en dos filas antes de apilarse. */
+  /* La fila se reparte entre las tarjetas que estén VISIBLES, no entre cuatro
+     columnas fijas. Con la rejilla, al filtrar por una sola facilidad las otras
+     tres se ocultaban pero sus columnas seguían ahí: la tarjeta que quedaba se
+     encogía en el primer tercio y al lado quedaba un hueco vacío enorme.
+     Con flex, la que queda sola crece y ocupa el ancho entero. */
   .facility-row {
-    display: grid; grid-template-columns: 0.9fr 1fr 1fr 1fr; gap: 14px;
-    margin-top: 18px;
+    display: flex; flex-wrap: wrap; gap: 14px; margin-top: 18px;
   }
-  @media (max-width: 1180px) { .facility-row { grid-template-columns: 1fr 1fr; } }
   .fcard {
+    flex: 1 1 240px; min-width: 0;
     background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
     padding: 20px 20px 18px; position: relative; overflow: hidden;
   }
+  /* La de total iba un poco más angosta que las demás; se conserva, pero sólo
+     cuando comparte la fila: sola crece igual que cualquiera. */
+  .fcard.total { flex-grow: .9; }
+  @media (max-width: 1180px) { .fcard { flex-basis: calc(50% - 7px); } }
   .fcard::before {
     content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
   }
@@ -428,7 +436,7 @@
     color: var(--text-faint);
   }
   .nav-sello b { color: var(--text-dim); font-weight: 600; }
-  @media (max-width: 760px) { .facility-row { grid-template-columns: 1fr; } }
+  @media (max-width: 760px) { .fcard { flex-basis: 100%; } }
 
   /* ---------- FACILITY TABS ---------- */
   .tabs-bar { position: sticky; top:54px; z-index: 20; background: var(--surface); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); }
