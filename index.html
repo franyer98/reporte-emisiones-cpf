@@ -1708,6 +1708,16 @@ THREE.OrbitControls = OrbitControls;
      píxeles de alto 3, donde un 5% no se veía. Ahora la barra es el mismo
      porcentaje que el número, ocupa el ancho de la tarjeta y lleva el color
      de su campo. */
+  .fir-p { font-size: 12.5px; color: var(--text-faint); line-height: 1.5;
+    margin: 4px 0 14px; }
+  .fir-g { margin-bottom: 13px; }
+  .fir-t { font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    letter-spacing: .12em; color: var(--text-dim); margin-bottom: 6px; }
+  .fir-t small { font-family: 'Inter', sans-serif; letter-spacing: 0;
+    text-transform: none; color: var(--text-faint); }
+  .fir-i { width: 100%; margin-bottom: 5px; padding: 8px 9px; border-radius: 8px;
+    border: 1px solid var(--border); background: #16202c; color: var(--text);
+    font: inherit; font-size: 13px; }
   .ed-cierre-act { display: block; margin-top: 10px; font-size: 12px;
     color: var(--text-dim); }
   .ed-cierre-act small { display: block; font-size: 10.5px; color: var(--text-faint);
@@ -3221,11 +3231,11 @@ THREE.OrbitControls = OrbitControls;
              teléfono sigue mostrando lo de antes, no hay manera de saber si
              falta el despliegue o si es la copia guardada del navegador. La
              rellena construir.py al armar la página. -->
-        <div class="nav-sello" id="navSello">versión <b>04/11/2026 11:18 · 5d03ecc</b></div>
+        <div class="nav-sello" id="navSello">versión <b>04/11/2026 11:24 · 0455a6b</b></div>
       </div>
       <script>
         /* Si alguien abre el archivo fuente sin pasar por construir.py, el
-           hueco sigue sin rellenar: mejor decirlo que mostrar un 04/11/2026 11:18 · 5d03ecc. */
+           hueco sigue sin rellenar: mejor decirlo que mostrar un 04/11/2026 11:24 · 0455a6b. */
         (function () {
           var e = document.getElementById('navSello');
           if (e && e.textContent.indexOf('__SEL' + 'LO__') >= 0) {
@@ -9480,17 +9490,30 @@ ${cssInforme()}
 
      Para cambiar estos datos se editan aquí y listo; si una columna se deja en
      blanco, no se escribe nada en ella. */
-  const F007_FIRMAS = {
-    elaboro: { nombre: 'Franyer López Díaz', registro: '', empresa: 'Magnex' },
-    reviso:  { nombre: '', registro: '', empresa: '' },
-    aprobo:  { nombre: '', registro: '', empresa: '' },
-  };
+  /* Los datos de quien firma NO viven en el código. Un número de registro es un
+     dato personal, y este archivo va a un repositorio público: ahí quedaría
+     para siempre, aunque después se borrara. Se guardan en el propio teléfono
+     o computador, se piden una sola vez, y no salen de ahí: ni al sitio, ni al
+     servidor, ni al repositorio. */
+  const F007_LLAVE = 'emisiones.f007firmas';
+
+  function f007FirmasGuardadas() {
+    try {
+      const t = localStorage.getItem(F007_LLAVE);
+      return t ? JSON.parse(t) : null;
+    } catch (e) { return null; }
+  }
+
+  function f007GuardarFirmas(datos) {
+    try { localStorage.setItem(F007_LLAVE, JSON.stringify(datos)); } catch (e) {}
+  }
   // fila 28 Firma · 29 Nombre · 30 Registro · 31 Empresa; D elaboró, H revisó, L aprobó
   const F007_COL_FIRMA = { elaboro: 'D', reviso: 'H', aprobo: 'L' };
 
   function f007Firmas(hoja) {
+    const datos = f007FirmasGuardadas() || {};
     Object.keys(F007_COL_FIRMA).forEach(quien => {
-      const q = F007_FIRMAS[quien] || {};
+      const q = datos[quien] || {};
       const col = F007_COL_FIRMA[quien];
       hoja = f007Casilla(hoja, col + '29', q.nombre);
       hoja = f007Casilla(hoja, col + '30', q.registro);
@@ -9730,6 +9753,59 @@ ${cssInforme()}
     return F.zipSync(z, { level: 6 });
   }
 
+  /* Se piden una sola vez y quedan guardados en este aparato. Si ya están, no
+     vuelve a preguntar. */
+  function pedirFirmas() {
+    return new Promise(resolve => {
+      const g = f007FirmasGuardadas() || {};
+      const v = (q, c) => (g[q] && g[q][c]) ? String(g[q][c]) : '';
+      const cap = document.createElement('div');
+      cap.className = 'bd-capa';
+      const fila = (q, rot, nota) => `
+        <div class="fir-g"><div class="fir-t">${rot}${
+          nota ? ` <small>${nota}</small>` : ''}</div>
+          <input class="fir-i" data-q="${q}" data-c="nombre" placeholder="Nombre"
+                 value="${v(q, 'nombre')}">
+          <input class="fir-i" data-q="${q}" data-c="registro" placeholder="Registro"
+                 value="${v(q, 'registro')}">
+          <input class="fir-i" data-q="${q}" data-c="empresa" placeholder="Empresa"
+                 value="${v(q, 'empresa')}">
+        </div>`;
+      cap.innerHTML = `
+        <div class="bd-caja" role="dialog" aria-label="Quién firma la ficha">
+          <div class="bd-top"><div>
+            <div class="bd-kick">FICHA GOP-F-007</div>
+            <h3 class="bd-h">¿Quién firma?</h3>
+          </div><button class="bd-x" aria-label="Cerrar">×</button></div>
+          <p class="fir-p">Se escriben en las tres columnas del final de cada
+          ficha. Quedan guardados en este aparato: no viajan al sitio ni al
+          repositorio. La casilla «Firma» se deja vacía para firmar a mano.</p>
+          ${fila('elaboro', 'Elaboró')}
+          ${fila('reviso', 'Revisó', 'vacío si se llena a mano')}
+          ${fila('aprobo', 'Aprobó', 'vacío si se llena a mano')}
+          <div class="bd-btns">
+            <button class="bd-b bd-pri" id="firOk">Guardar y generar</button>
+            <button class="bd-b" id="firNo">Dejarlas en blanco</button>
+          </div>
+        </div>`;
+      document.body.appendChild(cap);
+      const cerrar = r => { cap.remove(); resolve(r); };
+      cap.querySelector('.bd-x').onclick = () => cerrar(null);
+      cap.onclick = e => { if (e.target === cap) cerrar(null); };
+      cap.querySelector('#firNo').onclick = () => cerrar({});
+      cap.querySelector('#firOk').onclick = () => {
+        const d = { elaboro: {}, reviso: {}, aprobo: {} };
+        cap.querySelectorAll('.fir-i').forEach(i => {
+          d[i.dataset.q][i.dataset.c] = i.value.trim();
+        });
+        f007GuardarFirmas(d);
+        cerrar(d);
+      };
+      const primero = cap.querySelector('.fir-i');
+      if (primero) primero.focus();
+    });
+  }
+
   async function generarFichasCierre(enlace) {
     const previo = enlace ? enlace.textContent : '';
     const avisar = t => { if (enlace) enlace.textContent = t; };
@@ -9739,6 +9815,10 @@ ${cssInforme()}
         avisar('No hay hallazgos cerrados todavía');
         setTimeout(() => avisar(previo), 2600);
         return;
+      }
+      if (!f007FirmasGuardadas()) {
+        const r = await pedirFirmas();
+        if (r === null) { avisar(previo); return; }
       }
       avisar('Armando ' + cierres.length + ' ficha(s)…');
       const raiz = location.pathname.replace(/[^/]*$/, '').replace(/editor\/$/, '');
