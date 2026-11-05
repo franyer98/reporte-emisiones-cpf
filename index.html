@@ -638,6 +638,14 @@
   .prio-nums { text-align: right; white-space: nowrap; }
   .prio-val { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 14px; color: var(--text); }
   .prio-val small { font-size: 9.5px; font-weight: 400; color: var(--text-faint); }
+  /* El equivalente en CO2eq de ese punto. Va SIEMPRE al año, cambie o no el
+     periodo de arriba: la lectura se proyecta, el equivalente no. Por eso
+     lleva el «/año» escrito al lado, como en el resto del tablero.
+     La cifra de encima es masa de gas; esta es la que pide el reporte. */
+  .prio-co2 {
+    font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #6ddc9a;
+    margin-top: 2px;
+  }
   .prio-acum {
     font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--cool); margin-top: 3px;
   }
@@ -650,6 +658,7 @@
     .prio-thumb { width: 42px; height: 42px; }
     .prio-eq { font-size: 13px; }
     .prio-val { font-size: 12.5px; }
+    .prio-co2 { font-size: 9.5px; }
     .prio-acum { font-size: 9px; }
     .prio-lead { font-size: 13px; padding: 11px 13px; }
   }
@@ -1021,12 +1030,6 @@
   html.sin-co2 #heroCo2 { display: none; }
 
 
-  .cs-aviso{display:flex;gap:11px;align-items:flex-start;margin:0 0 22px;padding:13px 16px;
-    border-radius:11px;background:rgba(255,196,0,.09);border-left:3px solid #ffc400;
-    font-size:13.5px;line-height:1.6;color:var(--text-dim)}
-  .cs-aviso b{color:var(--text)}
-  .cs-dot{width:8px;height:8px;border-radius:50%;background:#ffc400;flex:none;margin-top:7px;
-    box-shadow:0 0 0 0 rgba(255,196,0,.5);animation:edLat 2.4s infinite}
   .cs-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:13px;margin-bottom:34px}
   .cs-kpi{border:1px solid var(--border);border-radius:12px;padding:15px 17px;background:var(--surface)}
   .cs-kpi.pend{border-style:dashed;opacity:.72}
@@ -1916,11 +1919,11 @@
              teléfono sigue mostrando lo de antes, no hay manera de saber si
              falta el despliegue o si es la copia guardada del navegador. La
              rellena construir.py al armar la página. -->
-        <div class="nav-sello" id="navSello">versión <b>04/11/2026 18:57 · 6923d95</b></div>
+        <div class="nav-sello" id="navSello">versión <b>04/11/2026 19:18 · 9cb0d5a</b></div>
       </div>
       <script>
         /* Si alguien abre el archivo fuente sin pasar por construir.py, el
-           hueco sigue sin rellenar: mejor decirlo que mostrar un 04/11/2026 18:57 · 6923d95. */
+           hueco sigue sin rellenar: mejor decirlo que mostrar un 04/11/2026 19:18 · 9cb0d5a. */
         (function () {
           var e = document.getElementById('navSello');
           if (e && e.textContent.indexOf('__SEL' + 'LO__') >= 0) {
@@ -2191,17 +2194,6 @@
 <div class="panel t3" id="panel-t3">
   <section id="canosur">
     <div class="wrap">
-
-      <div class="cs-aviso">
-        <span class="cs-dot"></span>
-        <div>
-          <b>Inspección en campo cerrada.</b>
-          Los cinco puntos están cuantificados con cámara OGI/FLIR. El CO2
-          equivalente de los FWKO usa la cromatografía del propio campo
-          (ETK-1101). Los puntos de SKIM TANK no tienen análisis de Caño Sur:
-          ahí se aplica el del SKIM TANK de CPF-1.
-        </div>
-      </div>
 
       <div class="section-head"><h2>Mapa por área</h2>
         <div class="section-note">TOCA UN ÁREA PARA VER SUS PUNTOS</div></div>
@@ -2694,10 +2686,12 @@ function heroCanoSur() {
   set('kpiTotSub', esTasa ? `${a.total.toLocaleString('es-CO')} g/Hr · ${a.nPuntos} puntos medidos`
                           : `${masaAcumulada(a.total, P)}${et}`);
 
-  const tot = document.querySelector('.fcard.total .fcard-label');
-  if (tot) tot.textContent = 'Total · Caño Sur';
-  const fila = document.querySelector('.fcard.total .fcard-row .v');
-  if (fila) fila.textContent = 'CENTAUROS';
+  /* La fila de tarjetas se esconde AQUÍ, no más abajo: esta función sale con
+     return y nunca llegaba a la línea que la oculta. Entrando desde «Todas»
+     —donde la fila está visible— se quedaba puesta, con el reparto de las tres
+     facilidades debajo de un encabezado que ya decía Caño Sur. */
+  const filaCS = document.querySelector('.facility-row');
+  if (filaCS) filaCS.style.display = 'none';
 }
 
 /* ---------- CÓMO SALE ESTE NÚMERO ----------
@@ -3215,7 +3209,7 @@ function severidadTexto(t) { return {alto:'ALTO', medio:'MEDIO', bajo:'BAJO'}[t]
 
 // Tabla de priorizacion: ordena por tasa y muestra el aporte acumulado,
 // para responder "¿por donde empiezo?"
-function renderPrioridad(data, areaActiva, contenedorId, leadId) {
+function renderPrioridad(data, areaActiva, contenedorId, leadId, fac) {
   const cont = document.getElementById(contenedorId);
   if (!cont) return;
   const todos = [...data].sort((a, b) => b.tasa - a.tasa);
@@ -3254,6 +3248,7 @@ function renderPrioridad(data, areaActiva, contenedorId, leadId) {
         </div>
         <div class="prio-nums">
           <div class="prio-val">${valor}</div>
+          <div class="prio-co2">${tonFmt(d.tasa * kDe(fac, d.area, d.equipo, d.punto))} ton CO₂eq/año</div>
           <div class="prio-acum">${pctAcum}% acum.</div>
         </div>
       </div>`;
@@ -3431,7 +3426,7 @@ function renderTarjetas(data, areaActiva, gridId) {
 
 
 
-function renderGrid1() { renderPrioridad(DATA1, active1, 'prio1', 'prioLead1'); renderTarjetas(DATA1, active1, 'grid1'); }
+function renderGrid1() { renderPrioridad(DATA1, active1, 'prio1', 'prioLead1', 'CPF-1'); renderTarjetas(DATA1, active1, 'grid1'); }
 function renderFilters1() {
   const el = document.getElementById('filters1'); el.innerHTML = '';
   areas1.forEach(a => {
@@ -3455,7 +3450,7 @@ function renderFilters2() {
     el.appendChild(c);
   });
 }
-function renderGrid2() { renderPrioridad(DATA2, active2, 'prio2', 'prioLead2'); renderTarjetas(DATA2, active2, 'grid2'); }
+function renderGrid2() { renderPrioridad(DATA2, active2, 'prio2', 'prioLead2', 'CPF-2'); renderTarjetas(DATA2, active2, 'grid2'); }
 
 
 // ---------- Hallazgos intervenidos ----------
@@ -6153,7 +6148,7 @@ function renderFilters3() {
   });
 }
 function renderGrid3() {
-  renderPrioridad(DATACS, active3, 'prio3', 'prioLead3');
+  renderPrioridad(DATACS, active3, 'prio3', 'prioLead3', 'CAÑO SUR');
   renderTarjetas(DATACS, active3, 'grid3');
 }
 function renderCanoSur() {

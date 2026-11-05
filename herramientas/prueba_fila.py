@@ -10,7 +10,7 @@ class M(http.server.SimpleHTTPRequestHandler):
             s.send_response(404); s.send_header('content-length','0'); s.end_headers(); return
         return super().do_GET()
     def log_message(s,*a): pass
-threading.Thread(target=http.server.ThreadingHTTPServer(('127.0.0.1',8912),M).serve_forever,daemon=True).start()
+threading.Thread(target=http.server.ThreadingHTTPServer(('127.0.0.1',8931),M).serve_forever,daemon=True).start()
 LIBRO={'CPF-1-022':240,'CPF-1-023':67,'CPF-1-024':53,'CPF-1-025':19,
  'CPF-2-016':1100,'CPF-2-017':510,'CPF-2-018':300,'CPF-2-019':280,
  'CPF-2-020':270,'CPF-2-021':250,'CEN-008':2400,'CEN-009':1100,
@@ -27,7 +27,7 @@ async def main():
         nav=await p.chromium.launch(args=['--use-gl=swiftshader'])
         ctx=await nav.new_context(viewport={'width':1366,'height':768})
         pg=await ctx.new_page(); errs=[]; pg.on('pageerror',lambda e:errs.append(str(e)))
-        await pg.goto('http://127.0.0.1:8912/'); await pg.wait_for_timeout(3500)
+        await pg.goto('http://127.0.0.1:8931/'); await pg.wait_for_timeout(3500)
         datos=[[c,eq,ar,LIBRO[c],f] for c,eq,ar,f in REAL]
         await pg.evaluate("""(real)=>{
           const mk=(x,i)=>({id:'p'+i,punto:x[0],equipo:x[1],area:x[2],tasa:x[3],
@@ -36,7 +36,16 @@ async def main():
           real.forEach((x,i)=>{const d=mk(x,i);(x[4]===1?DATA1:x[4]===2?DATA2:DATACS).push(d);});
           refrescarTodo();}""", datos)
         await pg.evaluate("document.querySelectorAll('[class*=aviso]').forEach(e=>e.remove())")
-        for etq in ['Todas','CPF-1','CPF-2','Caño Sur']:
+        # SIEMPRE volviendo a «Todas» primero. Antes se iba de pestaña en
+        # pestaña y se llegaba a Caño Sur con la fila ya oculta por la
+        # anterior: el fallo real —que heroCanoSur sale con return antes de
+        # ocultarla— quedaba tapado.
+        malas=[]
+        for etq in ['Todas','CPF-1','CPF-2','Caño Sur','Cierres']:
+            if etq != 'Todas':
+                await pg.evaluate("""()=>{const b=[...document.querySelectorAll('.tab')]
+                  .find(x=>x.textContent.trim().startsWith('Todas')); if(b) b.click();}""")
+                await pg.wait_for_timeout(600)
             await pg.evaluate("""(t)=>{const b=[...document.querySelectorAll('.tab')]
               .find(x=>x.textContent.trim().startsWith(t)); if(b) b.click();}""", etq)
             await pg.wait_for_timeout(900)
@@ -51,6 +60,7 @@ async def main():
             alto=await pg.evaluate("()=>{const f=document.querySelector('.facility-row');"
                  "return f?Math.round(f.getBoundingClientRect().height):-1}")
             print(f"            alto de la fila: {alto} px")
+        print('  pestañas con la fila mal:', malas or 'ninguna')
         print('  errores:', errs[:3] or 'ninguno')
         await nav.close()
 asyncio.run(main())
