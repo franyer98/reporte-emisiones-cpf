@@ -846,9 +846,16 @@
   @media (max-width:760px){ #ciCuerpo .grid{grid-template-columns:1fr} }
   /* A dos columnas, una foto 4:3 se come la pantalla entera y sólo cabe una
      fila. Se le fija una altura atada al alto de la ventana: la foto recorta,
-     la ficha no crece y se ven varias de un vistazo. */
-  #ciCuerpo .card-photo{max-height:clamp(210px,34vh,300px)}
-  #ciCuerpo .cmp img{aspect-ratio:auto;height:100%}
+     la ficha no crece y se ven varias de un vistazo.
+
+     Ojo con cómo: antes era «max-height» dejando el «aspect-ratio: 4/3» puesto,
+     y eso encoge TAMBIÉN el ancho —la proporción se respeta recortando los dos
+     lados—, así que el marco quedaba más angosto que la ficha y a la derecha de
+     cada foto se veía una franja muerta de unos 150 px. Hay que soltar la
+     proporción y fijar la altura, para que el marco ocupe el ancho entero y sea
+     la foto la que recorte, que para eso está «object-fit: cover». */
+  #ciCuerpo .card-photo{aspect-ratio:auto;width:100%;height:clamp(210px,34vh,300px)}
+  #ciCuerpo .cmp img{aspect-ratio:auto;width:100%;height:100%;object-fit:cover}
   @media (max-width:760px){ #ciCuerpo .card-photo{max-height:none} }
   .card-cerrada{opacity:.62;transition:opacity .18s ease}
   .card-cerrada:hover{opacity:1}
@@ -4064,8 +4071,8 @@ function renderCierres() {
         ${foto}
         <div class="card-body">
           <div class="card-eq">${d.equipo}${tagFac}${d.fid ? `<span class="cod${codFac ? ' fac-cod' : ''}">${d.fid}</span>` : ''}</div>
-          <div class="card-meta">${d.area} · ${d.punto} · ${d.elemento}</div>
-          <div class="card-desc">${d.hallazgo}</div>
+          <div class="card-meta">${[d.area, d.punto, d.elemento].filter(Boolean).join(' · ')}</div>
+          ${d.hallazgo ? `<div class="card-desc">${d.hallazgo}</div>` : ''}
           <div class="card-periodo cerr-antes">Medición previa: ${d.tasa.toLocaleString('es-CO')} g/Hr${d.cierre ? ' · ' + d.cierre : ''}</div>
           ${d.fechaCierre ? `<div class="cerr-fecha">Reparado el ${fechaLarga(d.fechaCierre)}</div>` : ''}
         </div>`;
