@@ -10,7 +10,7 @@ class M(http.server.SimpleHTTPRequestHandler):
             s.send_response(404); s.send_header('content-length','0'); s.end_headers(); return
         return super().do_GET()
     def log_message(s,*a): pass
-threading.Thread(target=http.server.ThreadingHTTPServer(('127.0.0.1',8993),M).serve_forever,daemon=True).start()
+threading.Thread(target=http.server.ThreadingHTTPServer(('127.0.0.1',8995),M).serve_forever,daemon=True).start()
 
 def num(t):
     import re
@@ -22,7 +22,7 @@ async def main():
         nav=await p.chromium.launch(args=['--use-gl=swiftshader'])
         pg=await (await nav.new_context(viewport={'width':1280,'height':1000})).new_page()
         errs=[]; pg.on('pageerror',lambda e:errs.append(str(e)))
-        await pg.goto('http://127.0.0.1:8993/'); await pg.wait_for_timeout(3400)
+        await pg.goto('http://127.0.0.1:8995/'); await pg.wait_for_timeout(3400)
         # sin Caño Sur a propósito: el pie NO debe nombrarlo
         await pg.evaluate("""()=>{
           DATA1.length=0;DATA2.length=0;DATACS.length=0;
@@ -55,8 +55,10 @@ async def main():
         if 'CAÑO SUR' in (r['meta'] or ''): malos.append('nombra Caño Sur sin tener puntos')
         if 'CPF-1' not in (r['meta'] or '') or 'CPF-2' not in (r['meta'] or ''):
             malos.append('no nombra las facilidades que sí tienen puntos')
-        if 'VERSIÓN' not in (r['meta'] or '') or '__SELLO__' in (r['meta'] or ''):
-            malos.append('el sello de versión no quedó')
+        # el libro y el sello salieron del pie a propósito: el sello vive en el menú
+        if 'FACTORES' in (r['meta'] or '') or 'VERSIÓN' in (r['meta'] or ''):
+            malos.append('el pie volvió a cargar el libro o el sello')
+        if '__SELLO__' in (r['meta'] or ''): malos.append('hueco de sello sin rellenar')
         print('  fallos:', malos or 'ninguno')
         print('  errores:', errs[:3] or 'ninguno')
         el=await pg.query_selector('footer')

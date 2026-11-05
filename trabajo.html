@@ -2363,7 +2363,7 @@
     <div class="pie-tira" id="pieTira"></div>
     <div class="footer-inner">
       <div class="footer-credit">Proyecto dirigido por <b>Alberto Guzmán</b></div>
-      <div class="footer-meta" id="pieMeta">INSPECCIÓN TERMOGRÁFICA OGI/FLIR · VERSIÓN __SELLO__</div>
+      <div class="footer-meta" id="pieMeta">INSPECCIÓN TERMOGRÁFICA OGI/FLIR</div>
     </div>
   </div>
 </footer>
@@ -3989,10 +3989,12 @@ function pintarPie(nBase, base, abierto, eliminado) {
     const hay = [['CPF-1', DATA1, CERRADAS1], ['CPF-2', DATA2, CERRADAS2],
                  ['CAÑO SUR', DATACS, CERRADASCS]]
       .filter(([, a, c]) => a.length || c.length).map(([n]) => n);
+    /* Sólo la cámara y las facilidades. Iban también el libro de los factores
+       y el sello de versión, y en el teléfono eran tres renglones de letra
+       pequeña que nadie lee. El libro se cita en la memoria de cálculo, que es
+       donde se audita, y el sello sigue en el menú. */
     const trozos = ['INSPECCIÓN TERMOGRÁFICA OGI/FLIR'];
     if (hay.length) trozos.push(hay.join(' · '));
-    trozos.push('FACTORES DE CALCULOS CO2 META 2027');
-    trozos.push('VERSIÓN __SELLO__');
     meta.textContent = trozos.join(' · ');
   }
 }
