@@ -132,7 +132,12 @@ def main():
 
     os.makedirs(os.path.join(REPO, 'editor'), exist_ok=True)
     open(os.path.join(REPO, 'index.html'), 'w', encoding='utf8').write(pub)
-    shutil.copyfile(FUENTE, os.path.join(REPO, 'editor', 'index.html'))
+    # El editor se escribe desde «src», que es el texto YA sellado. Antes se
+    # copiaba el archivo del disco con shutil.copyfile, y eso se saltaba el
+    # sellado: la copia publicada en /editor llegaba con el hueco __SELLO__ sin
+    # rellenar y decía «versión de trabajo, sin publicar». Resultado: el editor
+    # nunca pudo decir qué versión era, que es justo para lo que está el sello.
+    open(os.path.join(REPO, 'editor', 'index.html'), 'w', encoding='utf8').write(src)
 
     kb = lambda t: round(len(t.encode()) / 1024)
     print(f'index.html        {kb(pub):>5} KB   sin edición')
