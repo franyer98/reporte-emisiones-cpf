@@ -12,6 +12,7 @@ El editor queda bajo /editor para que Cloudflare Access proteja esa ruta y
 deje el tablero abierto.
 """
 
+import datetime
 import os
 import re
 import shutil
@@ -107,8 +108,24 @@ def comprobar(out):
         raise SystemExit('quedó código de edición en la pública: ' + ', '.join(hallados))
 
 
+def sello():
+    """Fecha y hora de armado, para saber qué versión se está viendo.
+
+    Iba acompañada del commit, y era engañoso: la página se arma ANTES de
+    confirmar el cambio, así que el identificador que salía era siempre el del
+    commit anterior. Quien lo leyera creería estar en una versión que no es.
+    La fecha y la hora bastan para distinguir una compilación de otra, y no
+    pueden equivocarse.
+    """
+    return datetime.datetime.now().strftime('%d/%m/%Y %H:%M')
+
+
 def main():
     src = open(FUENTE, encoding='utf8').read()
+    marca = sello()
+    if '__SELLO__' not in src:
+        raise SystemExit('falta el hueco __SELLO__ en el tablero')
+    src = src.replace('__SELLO__', marca)
 
     pub = publica(src)
     comprobar(pub)
