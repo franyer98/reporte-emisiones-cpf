@@ -1707,6 +1707,24 @@
   .footer-credit b { color: var(--text); font-weight: 600; }
   .footer-meta { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-faint); letter-spacing: .04em; }
   footer p { font-size: 12px; color: var(--text-faint); font-family:'JetBrains Mono',monospace; line-height:1.8; }
+  /* La tira de cierre. Las celdas comparten borde: un solo hueco de 1px y el
+     fondo del contenedor asomando, que es lo que da la rejilla sin dibujarla. */
+  .pie-tira {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1px; background: var(--border); border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden; margin-top: 30px;
+  }
+  .pie-tira:empty { display: none; }
+  .pie-cel { background: var(--surface); padding: 15px 17px; }
+  .pie-cel .k { font-family:'JetBrains Mono',monospace; font-size: 9px; letter-spacing:.12em;
+    color: var(--text-faint); text-transform: uppercase; }
+  .pie-cel .n { font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:21px;
+    margin-top: 5px; line-height: 1; }
+  .pie-cel .u { font-family:'JetBrains Mono',monospace; font-size:9.5px;
+    color: var(--text-faint); margin-top: 4px; }
+  .pie-cel .n.ok { color: #6ddc9a; }
+  .pie-cel .n.ab { color: var(--mid); }
+  @media (max-width: 620px) { .pie-cel .n { font-size: 18px; } }
 
   @media (max-width: 620px) {
     .bar-row { grid-template-columns: 110px 1fr 70px; gap: 10px; }
@@ -1928,11 +1946,11 @@
              teléfono sigue mostrando lo de antes, no hay manera de saber si
              falta el despliegue o si es la copia guardada del navegador. La
              rellena construir.py al armar la página. -->
-        <div class="nav-sello" id="navSello">versión <b>04/11/2026 21:15</b></div>
+        <div class="nav-sello" id="navSello">versión <b>04/11/2026 21:28</b></div>
       </div>
       <script>
         /* Si alguien abre el archivo fuente sin pasar por construir.py, el
-           hueco sigue sin rellenar: mejor decirlo que mostrar un 04/11/2026 21:15. */
+           hueco sigue sin rellenar: mejor decirlo que mostrar un 04/11/2026 21:28. */
         (function () {
           var e = document.getElementById('navSello');
           if (e && e.textContent.indexOf('__SEL' + 'LO__') >= 0) {
@@ -2331,9 +2349,16 @@
 
 <footer>
   <div class="wrap">
+    <!-- La tira de cierre: lo esencial de la campaña para quien llega al
+         fondo sin volver arriba. Y sobre todo, lo eliminado AL LADO de lo
+         abierto: en el encabezado sólo se ve lo que sigue fugando, que leído
+         solo parece un problema y no un avance.
+         Todo sale de los datos. El rótulo de aquí decía «CPF-1 & CPF-2»
+         escrito a mano y llevaba meses sin nombrar a Caño Sur. -->
+    <div class="pie-tira" id="pieTira"></div>
     <div class="footer-inner">
       <div class="footer-credit">Proyecto dirigido por <b>Alberto Guzmán</b></div>
-      <div class="footer-meta">INSPECCIÓN TERMOGRÁFICA FLIR · CPF-1 &amp; CPF-2</div>
+      <div class="footer-meta" id="pieMeta">INSPECCIÓN TERMOGRÁFICA OGI/FLIR · VERSIÓN 04/11/2026 21:28</div>
     </div>
   </div>
 </footer>
@@ -3901,6 +3926,38 @@ function pintarAvance() {
   if (rel) rel.style.width = Math.max(pct, pct > 0 ? 1.5 : 0) + '%';
 }
 
+/* La tira del pie. Las cuatro cifras de la campaña entera, pase lo que pase
+   con la pestaña elegida: es un cierre del documento, no una vista más.
+   Ninguna va escrita a mano —el rótulo que había antes decía «CPF-1 & CPF-2» y
+   llevaba meses sin nombrar a Caño Sur—, y las facilidades se nombran según
+   cuáles tengan puntos de verdad. */
+function pintarPie(nBase, base, abierto, eliminado) {
+  const tira = document.getElementById('pieTira');
+  if (tira) {
+    const avance = base ? eliminado / base * 100 : 0;
+    const cel = (k, n, clase, u) =>
+      `<div class="pie-cel"><div class="k">${k}</div>`
+      + `<div class="n ${clase}">${n}</div><div class="u">${u}</div></div>`;
+    tira.innerHTML = nBase === 0 ? '' : (
+        cel('Medido', nBase, '', `puntos · campaña ${CAMPANA}`)
+      + cel('Eliminado', tonFmt(eliminado), 'ok', 'ton CO₂eq/año')
+      + cel('Abierto', tonFmt(abierto), 'ab', 'ton CO₂eq/año')
+      + cel('Avance', avance.toFixed(0) + '%', 'ok', 'de lo hallado'));
+  }
+
+  const meta = document.getElementById('pieMeta');
+  if (meta) {
+    const hay = [['CPF-1', DATA1, CERRADAS1], ['CPF-2', DATA2, CERRADAS2],
+                 ['CAÑO SUR', DATACS, CERRADASCS]]
+      .filter(([, a, c]) => a.length || c.length).map(([n]) => n);
+    const trozos = ['INSPECCIÓN TERMOGRÁFICA OGI/FLIR'];
+    if (hay.length) trozos.push(hay.join(' · '));
+    trozos.push('FACTORES DE CALCULOS CO2 META 2027');
+    trozos.push('VERSIÓN 04/11/2026 21:28');
+    meta.textContent = trozos.join(' · ');
+  }
+}
+
 function renderProgreso() {
   const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
   const n0 = v => Math.round(v).toLocaleString('es-CO');
@@ -3938,6 +3995,7 @@ function renderProgreso() {
   set('pgCo2', n2(elimCo2));
   PROG = { baseG, baseCo2, hoyG, hoyCo2, elimG, elimCo2 };
   pintarAvance();
+  pintarPie(baseN, baseCo2, hoyCo2, elimCo2);
 
   pintarCurva();
 
