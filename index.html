@@ -1701,8 +1701,11 @@
   .sim-step-row .v { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--text); white-space: nowrap; }
   @media (max-width: 800px) { .sim-grid { grid-template-columns: 1fr; } }
 
-  footer { padding: 40px 0 60px; border-top: 1px solid var(--border); margin-top: 8px; }
-  .footer-inner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding-top: 28px; }
+  /* El pie arrancaba con 40 px de relleno y la tira sumaba 30 de margen: 70 px
+     de aire entre la última tarjeta y la primera cifra del cierre, que a tamaño
+     de teléfono se lee como un salto y no como una separación. */
+  footer { padding: 22px 0 44px; border-top: 1px solid var(--border); margin-top: 8px; }
+  .footer-inner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding-top: 20px; }
   .footer-credit { font-size: 13px; color: var(--text-dim); }
   .footer-credit b { color: var(--text); font-weight: 600; }
   .footer-meta { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-faint); letter-spacing: .04em; }
@@ -1712,7 +1715,7 @@
   .pie-tira {
     display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 1px; background: var(--border); border: 1px solid var(--border);
-    border-radius: 12px; overflow: hidden; margin-top: 30px;
+    border-radius: 12px; overflow: hidden;
   }
   .pie-tira:empty { display: none; }
   .pie-cel { background: var(--surface); padding: 15px 17px; }
@@ -1946,11 +1949,11 @@
              teléfono sigue mostrando lo de antes, no hay manera de saber si
              falta el despliegue o si es la copia guardada del navegador. La
              rellena construir.py al armar la página. -->
-        <div class="nav-sello" id="navSello">versión <b>04/11/2026 21:28</b></div>
+        <div class="nav-sello" id="navSello">versión <b>04/11/2026 21:34</b></div>
       </div>
       <script>
         /* Si alguien abre el archivo fuente sin pasar por construir.py, el
-           hueco sigue sin rellenar: mejor decirlo que mostrar un 04/11/2026 21:28. */
+           hueco sigue sin rellenar: mejor decirlo que mostrar un 04/11/2026 21:34. */
         (function () {
           var e = document.getElementById('navSello');
           if (e && e.textContent.indexOf('__SEL' + 'LO__') >= 0) {
@@ -2358,7 +2361,7 @@
     <div class="pie-tira" id="pieTira"></div>
     <div class="footer-inner">
       <div class="footer-credit">Proyecto dirigido por <b>Alberto Guzmán</b></div>
-      <div class="footer-meta" id="pieMeta">INSPECCIÓN TERMOGRÁFICA OGI/FLIR · VERSIÓN 04/11/2026 21:28</div>
+      <div class="footer-meta" id="pieMeta">INSPECCIÓN TERMOGRÁFICA OGI/FLIR · VERSIÓN 04/11/2026 21:34</div>
     </div>
   </div>
 </footer>
@@ -3953,7 +3956,7 @@ function pintarPie(nBase, base, abierto, eliminado) {
     const trozos = ['INSPECCIÓN TERMOGRÁFICA OGI/FLIR'];
     if (hay.length) trozos.push(hay.join(' · '));
     trozos.push('FACTORES DE CALCULOS CO2 META 2027');
-    trozos.push('VERSIÓN 04/11/2026 21:28');
+    trozos.push('VERSIÓN 04/11/2026 21:34');
     meta.textContent = trozos.join(' · ');
   }
 }
