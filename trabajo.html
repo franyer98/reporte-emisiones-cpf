@@ -673,28 +673,6 @@
   }
 
   /* ---------- MAPA POR AREA ---------- */
-  .mapa-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 14px; margin-bottom: 4px; }
-  .mapa-tile {
-    background: var(--surface); border: 2px solid var(--border); border-radius: 12px;
-    padding: 20px 16px; text-align: center; cursor: pointer; transition: all .15s ease;
-  }
-  .mapa-tile:hover { border-color: var(--text-faint); transform: translateY(-2px); }
-  .mapa-tile.active { border-color: var(--cool); background: var(--surface-2); }
-  .mapa-tile-name { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 15px; margin-bottom: 6px; }
-  .mapa-tile-count { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-faint); }
-  .mapa-tile-tasa { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; color: var(--mid); margin-top: 4px; }
-  .mapa-detail { margin-top: 18px; }
-  .mapa-detail-empty { text-align: center; color: var(--text-faint); font-size: 13px; padding: 24px 0; font-family: 'JetBrains Mono', monospace; }
-  .mapa-point-row {
-    display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--border);
-    border-radius: 10px; padding: 10px 14px; margin-bottom: 8px; cursor: pointer; transition: border-color .15s ease;
-  }
-  .mapa-point-row:hover { border-color: var(--cool); }
-  .mapa-point-thumb { width: 44px; height: 44px; border-radius: 6px; object-fit: cover; flex-shrink: 0; background: #000; }
-  .mapa-point-info { flex: 1; min-width: 0; }
-  .mapa-point-eq { font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 13.5px; }
-  .mapa-point-meta { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: var(--text-faint); text-transform: uppercase; }
-  .mapa-point-tasa { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 13px; white-space: nowrap; }
 
   /* ---------- MAPA 3D ---------- */
   .mapa3d-wrap {
@@ -1569,6 +1547,26 @@
   }
 
   /* ---------- CONTROL DE ZOOM DEL VISOR 3D ---------- */
+  /* La pastilla «Clic para mover» y el botón «Soltar» que la releva.
+     Estaban en «top: 56px», justo encima del recuadro del TOTAL FACILIDAD
+     —que va de 12 a unos 87— y se leían las dos cosas una sobre otra. Abajo a
+     la izquierda la esquina está libre en las dos anchuras: en pantalla
+     angosta el total se va a «bottom: 52px» y esto queda por debajo. */
+  .m3d-pastilla, .m3d-salir {
+    position: absolute; left: 12px; bottom: 12px;
+    padding: 5px 10px; border-radius: 999px; white-space: nowrap;
+    font: 600 11px/1 'Space Grotesk', system-ui, sans-serif; letter-spacing: .02em;
+  }
+  .m3d-pastilla {
+    z-index: 6; pointer-events: none;
+    background: rgba(14,18,24,.72); color: #dbe3ec;
+    box-shadow: 0 2px 8px rgba(0,0,0,.28); transition: opacity .22s ease;
+  }
+  .m3d-salir {
+    z-index: 7; display: none; cursor: pointer; padding: 5px 11px;
+    background: rgba(14,18,24,.82); color: #9fd4ff;
+    border: 1px solid rgba(63,169,245,.55);
+  }
   .zoom3d {
     position: absolute; right: 12px; top: 50%; transform: translateY(-50%); z-index: 6;
     display: flex; flex-direction: column; align-items: center; gap: 8px;
@@ -2129,13 +2127,6 @@
 
 <!-- ============ PANEL CPF-1 ============ -->
 <div class="panel t1" id="panel-t1">
-  <section id="mapa">
-    <div class="wrap">
-      <div class="section-head"><h2>Mapa por área</h2><div class="section-note">TOCA UN ÁREA PARA VER SUS PUNTOS</div></div>
-      <div class="mapa-grid" id="mapaGrid1"></div>
-      <div class="mapa-detail" id="mapaDetail1"></div>
-    </div>
-  </section>
   <section id="mapa3d">
     <div class="wrap">
       <div class="section-head"><h2>Vista 3D de tanques</h2><div class="section-note"><span class="pista3d">TOCA EL MAPA PARA MOVERLO · DOBLE TOQUE: VOLVER A LA VISTA INICIAL · BARRA LATERAL: ZOOM</span></div></div>
@@ -2160,13 +2151,6 @@
 
 <!-- ============ PANEL CPF-2 ============ -->
 <div class="panel t2" id="panel-t2">
-  <section id="mapa2">
-    <div class="wrap">
-      <div class="section-head"><h2>Mapa por área</h2><div class="section-note">TOCA UN ÁREA PARA VER SUS PUNTOS</div></div>
-      <div class="mapa-grid" id="mapaGrid2"></div>
-      <div class="mapa-detail" id="mapaDetail2"></div>
-    </div>
-  </section>
   <section id="mapa3d2">
     <div class="wrap">
       <div class="section-head"><h2>Vista 3D de tanques</h2><div class="section-note"><span class="pista3d">TOCA EL MAPA PARA MOVERLO · DOBLE TOQUE: VOLVER A LA VISTA INICIAL · BARRA LATERAL: ZOOM</span></div></div>
@@ -2194,11 +2178,6 @@
 <div class="panel t3" id="panel-t3">
   <section id="canosur">
     <div class="wrap">
-
-      <div class="section-head"><h2>Mapa por área</h2>
-        <div class="section-note">TOCA UN ÁREA PARA VER SUS PUNTOS</div></div>
-      <div class="mapa-grid" id="mapaGrid3"></div>
-      <div class="mapa-detail" id="mapaDetail3"></div>
 
       <div class="section-head" style="margin-top:34px"><h2>Vista 3D de tanques</h2>
         <div class="section-note"><span class="pista3d">TOCA EL MAPA PARA MOVERLO · DOBLE TOQUE: VOLVER A LA VISTA INICIAL · BARRA LATERAL: ZOOM</span></div></div>
@@ -3159,12 +3138,17 @@ function openLightbox(item, cual) {
   badge.textContent = verif ? 'VERIFICADA' : tierLabelLB(item.tier);
   badge.className = 'lightbox-badge ' + (verif ? 'verificada' : item.tier);
   document.getElementById('lightboxEq').textContent = item.equipo;
-  document.getElementById('lightboxMeta').textContent = verif
-    ? `${item.area} · ${item.punto} · ${item.elemento} · ${(item.tasaCierre || 0).toLocaleString('es-CO')} g/Hr tras reparar`
-    : `${item.area} · ${item.punto} · ${item.elemento} · ${item.tasa.toLocaleString('es-CO')} g/Hr`;
+  /* Un punto puede estar guardado sin elemento o sin descripción —se registra
+     en campo y con prisa—, y escribir «undefined» en la ficha delante de quien
+     sea es peor que no escribir nada. Los campos vacíos simplemente no salen. */
+  const trozos = [item.area, item.punto, item.elemento].filter(Boolean);
+  trozos.push(verif
+    ? `${(item.tasaCierre || 0).toLocaleString('es-CO')} g/Hr tras reparar`
+    : `${item.tasa.toLocaleString('es-CO')} g/Hr`);
+  document.getElementById('lightboxMeta').textContent = trozos.join(' · ');
   document.getElementById('lightboxDesc').textContent = verif
     ? `Medición de verificación posterior a la reparación. Antes marcaba ${item.tasa.toLocaleString('es-CO')} g/Hr.`
-    : item.hallazgo;
+    : (item.hallazgo || '');
   document.getElementById('lightbox').classList.add('open');
 }
 function closeLightbox() {
@@ -3406,8 +3390,8 @@ function renderTarjetas(data, areaActiva, gridId) {
       </div>
       <div class="card-body">
         <div class="card-eq">${d.equipo}${d.fid ? '<span class="cod">' + d.fid + '</span>' : ''}</div>
-        <div class="card-meta">${d.area} · ${d.punto} · ${d.elemento}</div>
-        <div class="card-desc">${d.hallazgo}</div>
+        <div class="card-meta">${[d.area, d.punto, d.elemento].filter(Boolean).join(' · ')}</div>
+        ${d.hallazgo ? '<div class="card-desc">' + d.hallazgo + '</div>' : ''}
         <div class="card-periodo">${PERIODO_GLOBAL === 'hora'
           ? d.tasa.toLocaleString('es-CO') + ' g/Hr'
           : masaAcumulada(d.tasa, PERIODO_GLOBAL) + ' ' + PERIODOS[PERIODO_GLOBAL].etiqueta}</div>
@@ -4143,7 +4127,6 @@ function refrescarTodo() {
   renderFilters1(); renderGrid1();
   renderFilters2(); renderGrid2();
   if (typeof renderCanoSur === 'function') { try { renderCanoSur(); } catch (e) {} }
-  try { pintarMapasArea(); } catch (e) {}
   renderCierres();
   if (typeof initCharts === 'function') { try { initCharts(); } catch (e) {} }
   try { if (map3d1) map3d1.rebuild(DATA1); } catch (e) {}
@@ -5065,67 +5048,6 @@ function repintarPorPeriodo() {
 // ---------- Mapa por area ----------
 function tierLabelMapa(t) { return {alto:'ALTO', medio:'MEDIO', bajo:'BAJO'}[t]; }
 
-function buildMapa(data, gridId, detailId) {
-  const gridEl = document.getElementById(gridId);
-  const detailEl = document.getElementById(detailId);
-  const areas = [...new Set(data.map(d => d.area))];
-  let activeArea = null;
-
-  function renderTiles() {
-    gridEl.innerHTML = '';
-    areas.forEach(area => {
-      const pts = data.filter(d => d.area === area);
-      const totalTasa = pts.reduce((s, d) => s + d.tasa, 0);
-      const tile = document.createElement('div');
-      tile.className = 'mapa-tile' + (area === activeArea ? ' active' : '');
-      tile.innerHTML = `
-        <div class="mapa-tile-name">${area}</div>
-        <div class="mapa-tile-count">${pts.length} punto${pts.length === 1 ? '' : 's'}</div>
-        <div class="mapa-tile-tasa">${totalTasa.toLocaleString('es-CO')} g/Hr</div>
-      `;
-      tile.addEventListener('click', () => {
-        activeArea = (activeArea === area) ? null : area;
-        renderTiles();
-        renderDetail();
-      });
-      gridEl.appendChild(tile);
-    });
-  }
-
-  function renderDetail() {
-    if (!activeArea) {
-      detailEl.innerHTML = '<div class="mapa-detail-empty">Toca un área arriba para ver sus puntos de inspección</div>';
-      return;
-    }
-    const pts = data.filter(d => d.area === activeArea).sort((a, b) => b.tasa - a.tasa);
-    detailEl.innerHTML = pts.map(d => `
-      <div class="mapa-point-row" data-id="${d.id}">
-        <img class="mapa-point-thumb" src="${d.img}" alt="${d.equipo}">
-        <div class="mapa-point-info">
-          <div class="mapa-point-eq">${d.equipo}</div>
-          <div class="mapa-point-meta">${d.punto} · ${d.elemento}</div>
-        </div>
-        <div class="mapa-point-tasa" style="color:${ {alto:'#e02020',medio:'#f5c518',bajo:'#21a038'}[d.tier] }">${d.tasa.toLocaleString('es-CO')} g/Hr</div>
-      </div>
-    `).join('');
-    detailEl.querySelectorAll('.mapa-point-row').forEach(row => {
-      row.addEventListener('click', () => {
-        const id = parseInt(row.dataset.id);
-        const item = data.find(d => d.id === id);
-        if (item) openLightbox(item);
-      });
-    });
-  }
-
-  renderTiles();
-  renderDetail();
-}
-
-function pintarMapasArea() {
-  buildMapa(DATA1, 'mapaGrid1', 'mapaDetail1');
-  buildMapa(DATA2, 'mapaGrid2', 'mapaDetail2');
-}
-alArrancar(() => { try { pintarMapasArea(); } catch (e) {} });
 
 // ---------- Mapa 3D de tanques ----------
 const TIER_HEX = { alto: 0xe81400, medio: 0xffc400, bajo: 0x00b828 };
@@ -6661,37 +6583,15 @@ function buildTankMap3D(canvasId, hintId, data, totalId) {
   canvas.style.touchAction = 'pan-y';
   if (getComputedStyle(wrap).position === 'static') wrap.style.position = 'relative';
 
-  const pastilla = (txt) => {
-    const d = document.createElement('div');
-    d.textContent = txt;
-    Object.assign(d.style, {
-      /* En la esquina y pequeño. Centrado y a 13px se partía en dos
-         líneas en el celular y se comía el mapa, que es justo lo que no
-         debe hacer un aviso. */
-      position: 'absolute', left: '10px', top: '56px',
-      padding: '5px 10px', borderRadius: '999px', zIndex: '6',
-      background: 'rgba(14,18,24,0.72)', color: '#dbe3ec',
-      font: '600 11px/1 "Space Grotesk", system-ui, sans-serif',
-      letterSpacing: '0.02em', whiteSpace: 'nowrap',
-      transition: 'opacity .22s ease', boxShadow: '0 2px 8px rgba(0,0,0,0.28)',
-    });
-    wrap.appendChild(d);
-    return d;
-  };
-
-  const aviso = pastilla(tactil ? 'Toca para mover' : 'Clic para mover');
-  aviso.style.pointerEvents = 'none';
+  const aviso = document.createElement('div');
+  aviso.className = 'm3d-pastilla';
+  aviso.textContent = tactil ? 'Toca para mover' : 'Clic para mover';
+  wrap.appendChild(aviso);
 
   const salir = document.createElement('button');
   salir.type = 'button';
+  salir.className = 'm3d-salir';
   salir.textContent = '\u2715  Soltar';
-  Object.assign(salir.style, {
-    position: 'absolute', left: '10px', top: '56px',
-    padding: '5px 11px', borderRadius: '999px', zIndex: '7', display: 'none',
-    border: '1px solid rgba(63,169,245,0.55)', cursor: 'pointer',
-    background: 'rgba(14,18,24,0.82)', color: '#9fd4ff', whiteSpace: 'nowrap',
-    font: '600 11px/1 "Space Grotesk", system-ui, sans-serif', letterSpacing: '0.02em',
-  });
   wrap.appendChild(salir);
 
   function despertarMapa(v) {
@@ -7010,7 +6910,6 @@ function renderCanoSur() {
   if (t) t.textContent = DATACS.length;
   renderFilters3();
   renderGrid3();
-  if (document.getElementById('mapaGrid3')) buildMapa(DATACS, 'mapaGrid3', 'mapaDetail3');
 }
 alArrancar(renderCanoSur);
 
