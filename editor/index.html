@@ -856,7 +856,11 @@
      la foto la que recorte, que para eso está «object-fit: cover». */
   #ciCuerpo .card-photo{aspect-ratio:auto;width:100%;height:clamp(210px,34vh,300px)}
   #ciCuerpo .cmp img{aspect-ratio:auto;width:100%;height:100%;object-fit:cover}
-  @media (max-width:760px){ #ciCuerpo .card-photo{max-height:none} }
+  /* En el teléfono va una ficha por fila, así que la foto puede ocupar su 4:3
+     entero y verse la fuga. Esta regla soltaba el tope cuando era «max-height»;
+     al pasar a «height» hay que devolver la proporción a mano, o la evidencia
+     se queda pequeña justo en el aparato con el que se mira en campo. */
+  @media (max-width:760px){ #ciCuerpo .card-photo{height:auto;aspect-ratio:4/3} }
   .card-cerrada{opacity:.62;transition:opacity .18s ease}
   .card-cerrada:hover{opacity:1}
   .card-cerrada .card-photo img{filter:grayscale(.72)}

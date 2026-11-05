@@ -10,7 +10,7 @@ class M(http.server.SimpleHTTPRequestHandler):
             s.send_response(404); s.send_header('content-length','0'); s.end_headers(); return
         return super().do_GET()
     def log_message(s,*a): pass
-threading.Thread(target=http.server.ThreadingHTTPServer(('127.0.0.1',8972),M).serve_forever,daemon=True).start()
+threading.Thread(target=http.server.ThreadingHTTPServer(('127.0.0.1',8973),M).serve_forever,daemon=True).start()
 
 def png(w,h,c):
     """Una imagen de las medidas pedidas, para probar proporciones distintas."""
@@ -26,9 +26,12 @@ def png(w,h,c):
 async def main():
     async with async_playwright() as p:
         nav=await p.chromium.launch(args=['--use-gl=swiftshader'])
-        pg=await (await nav.new_context(viewport={'width':1280,'height':1000})).new_page()
+        import os
+        ANCHO=int(os.environ.get('ANCHO','1280'))
+        pg=await (await nav.new_context(viewport={'width':ANCHO,'height':1000},
+                   is_mobile=ANCHO<700,has_touch=ANCHO<700)).new_page()
         errs=[]; pg.on('pageerror',lambda e:errs.append(str(e)))
-        await pg.goto('http://127.0.0.1:8972/'); await pg.wait_for_timeout(3400)
+        await pg.goto('http://127.0.0.1:8973/'); await pg.wait_for_timeout(3400)
         # cuatro cierres con fotos de proporciones MUY distintas y textos de
         # distinto largo: así se ve si las fichas se desalinean
         fotos=[(640,480,(90,90,90)),(640,360,(120,120,120)),
